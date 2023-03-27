@@ -1,0 +1,9 @@
+design.md
+.vscode/
+build/
+
+Testbed/assets
+
+.editorconfig
+*.log
+*.exe

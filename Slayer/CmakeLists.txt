@@ -1,0 +1,58 @@
+cmake_minimum_required(VERSION 3.0.0)
+project(Slayer VERSION 0.1.0)
+set(CMAKE_CXX_STANDARD 20)
+
+# Dependencies
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Thirdparty/glfw)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Thirdparty/glad)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Thirdparty/imgui)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Thirdparty/glm)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Thirdparty/yaml-cpp)
+
+set(SLAYER_GENERATED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated)
+set(SLAYER_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+add_library(Slayer 
+    src/Core/Main.cpp
+    src/Core/Application.cpp
+    src/Core/Engine.cpp
+    src/Core/Log.cpp
+    src/Core/CmdArgs.cpp
+    src/Core/Window.cpp
+
+    src/Rendering/RenderingManager.cpp
+    src/Rendering/Renderer/Texture.cpp
+    src/Rendering/Renderer/Mesh.cpp
+    src/Rendering/Renderer/Model.cpp
+    src/Rendering/Renderer/VertexArray.cpp
+    src/Rendering/Renderer/Buffer.cpp
+    src/Rendering/Renderer/Camera.cpp
+    src/Rendering/Renderer/Material.cpp
+    src/Rendering/Renderer/EnvironmentMap.cpp
+    src/Rendering/Renderer/Lights.cpp
+    src/Rendering/Renderer/Framebuffer.cpp
+    src/Rendering/Renderer/Renderer.cpp
+    src/Rendering/Renderer/Shader.cpp
+
+    src/Resources/AssetPack.cpp
+    src/Resources/ResourceManager.cpp
+
+    src/Input/Input.cpp
+
+    # src/Serialization/SceneSerializer.cpp
+
+    src/Jobs/JobSystem.cpp
+)
+
+target_include_directories(Slayer PUBLIC 
+${SLAYER_INCLUDE_DIR} 
+${SLAYER_GENERATED_DIR}
+)
+
+target_link_libraries(Slayer PUBLIC
+    glfw
+    imgui
+    glad
+    glm
+    yaml-cpp
+)

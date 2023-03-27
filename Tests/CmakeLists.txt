@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.0.0)
+set(CMAKE_CXX_STANDARD 20)
+
+enable_testing()
+
+set(SL_INCLUDE_DIRS "Slayer/include")
+
+# indicates the location of the boost installation tree.
+# hard-coded for our simple example.
+set(BOOST_INCLUDE_DIRS "C:/Program Files/boost/boost_1_79_0/")
+
+# creates the executable
+add_executable(ecstest ecs.cpp)
+target_include_directories(ecstest PRIVATE ${BOOST_INCLUDE_DIRS})
+add_test(NAME ecstest COMMAND ecstest)
+target_link_libraries(ecstest PRIVATE Slayer)
+target_include_directories(ecstest PRIVATE ${SL_INCLUDE_DIRS})
+

@@ -1,0 +1,1 @@
+python -m Resources.packbuilder build -d ../Testbed/assets/ -o ../build/Testbed/Debug/pack.slp

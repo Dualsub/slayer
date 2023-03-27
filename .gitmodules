@@ -1,0 +1,16 @@
+[submodule "Slayer/thirdparty/glfw"]
+	path = Slayer/thirdparty/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "Slayer/--branch"]
+	path = Slayer/--branch
+	url = https://github.com/ocornut/imgui.git
+[submodule "Slayer/Thirdparty/imgui"]
+	path = Slayer/Thirdparty/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking
+[submodule "Slayer/thirdparty/glm"]
+	path = Slayer/thirdparty/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "Slayer/thirdparty/yaml-cpp"]
+	path = Slayer/thirdparty/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git

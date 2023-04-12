@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Application.h"
+#include "Core/Layer.h"
 #include "Core/Log.h"
 #include "Core/Window.h"
 #include "Core/Math.h"
@@ -8,7 +9,9 @@
 
 #include "Rendering/Renderer/Renderer.h"
 #include "Rendering/RenderingSystem.h"
+#include "Rendering/Animation/AnimationSystem.h"
 
+#include "Scene/TransformSystem.h"
 #include "Scene/Components.h"
 #include "Scene/ComponentStore.h"
 #include "Resources/AssetPack.h"
@@ -16,7 +19,7 @@
 #include "Serialization/SceneSerializer.h"
 #include "Serialization/YamlSerializer.h"
 
-#include"Rendering/Renderer/Renderer.h"
+#include "Editor/EditorLayer.h"
 #include "SandboxCamera.h"
 
 #include <iostream>
@@ -25,9 +28,40 @@
 #include <iomanip>
 #include <sstream>
 
-
 namespace Testbed
 {
+    class TestbedLayer: public Slayer::Layer
+    {
+    public:
+        TestbedLayer() = default;
+        ~TestbedLayer() = default;
+
+        virtual void OnAttach()
+        {
+
+        }
+
+        virtual void OnDetach()
+        {
+
+        }
+
+        virtual void OnUpdate(Slayer::Timespan ts)
+        {
+
+        }
+
+        virtual void OnRender()
+        {
+
+        }
+
+        virtual void OnEvent(Slayer::Event& e)
+        {
+
+        }
+    };
+
     enum ApplicationState
     {
         AS_Loading,
@@ -48,8 +82,8 @@ namespace Testbed
         Slayer::Shared<SandboxCamera> m_camera;
         Slayer::Renderer m_renderer;
         Slayer::RenderingSystem m_renderingSystem;
-
-        Slayer::Window m_window;
+        Slayer::AnimationSystem m_animationSystem;
+        Slayer::TransformSystem m_transformSystem;
 
         template<typename T>
         bool LoadScene(std::future<T>& future)
@@ -86,19 +120,23 @@ namespace Testbed
         TestbedApplication() = default;
         ~TestbedApplication() = default;
 
-        virtual bool Initialize() override
+        virtual void OnPreInitialize() override
+        {
+
+        }
+
+        virtual void OnInitialize() override
         {
             InitializeResources();
             InitializeWindow();
             InitializeScene();
-            InitializeGUI();
 
-            return true;
+            PushLayer<class TestbedLayer>();
+            PushLayer<Slayer::EditorLayer>();
         }
 
-        virtual void Update() override
+        virtual void OnUpdate(Slayer::Timespan ts) override
         {
-            CalculateDeltaTime();
             m_window.PollEvents();
             if (m_window.ShouldClose())
                 m_state = AS_Quitting;
@@ -125,39 +163,39 @@ namespace Testbed
             case AS_Running:
                 // Update game
             {
-                m_camera->Update(m_deltaTime);
-                m_renderingSystem.Update(m_deltaTime, m_store);
-
-                m_renderer.Clear();
-                m_renderer.BeginScene({}, Slayer::DirectionalLight(Slayer::Vec3(-1.0f), Slayer::Vec3(1.0f)));
-
-                m_renderingSystem.Render(m_renderer, m_store);
-
-                m_renderer.DrawShadows();
-                m_renderer.Draw();
-                m_renderer.DrawLines();
-
-                m_renderer.EndScene();
+                m_camera->Update(ts);
+                m_animationSystem.Update(ts, m_store);
+                m_transformSystem.Update(ts, m_store);
+                m_renderingSystem.Update(ts, m_store);
                 break;
             }
             case AS_Quitting:
-                Stop();
+                Stop(); 
                 break;
             }
-
-            UpdateGUI();
         }
 
-        virtual void Render() override
+        virtual void OnRender() override
         {
+            m_renderer.Clear();
 
-            m_window.SwapBuffers();
+            if (m_state != AS_Running)
+                return;
+
+            m_renderer.BeginScene({}, Slayer::DirectionalLight(Slayer::Vec3(-1.0f), Slayer::Vec3(1.0f)));
+
+            m_renderingSystem.Render(m_renderer, m_store);
+
+            m_renderer.DrawShadows();
+            m_renderer.Draw();
+            m_renderer.DrawLines();
+
+            m_renderer.EndScene();
         }
 
-        virtual void Shutdown() override
+        virtual void OnShutdown() override
         {
             Slayer::ResourceManager::Shutdown();
-            ShutdownGUI();
             m_window.Shutdown();
         }
 
@@ -175,7 +213,5 @@ namespace Testbed
             m_renderer.Resize(e.width, e.height);
             return true;
         }
-
-        Slayer::Window& GetWindow() { return m_window; }
     };
 }

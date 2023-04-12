@@ -27,21 +27,16 @@ namespace Slayer {
 
         void Update(float dt, ComponentStore& store)
         {
-            store.ForEach<Transform>([&](Entity entity, Transform* transform)
-            {
-                transform->rotation *= Quat(Vec3(0.0f, 0.0f, dt * 0.5f));
-            });
         }
         
         void Render(Renderer& renderer, ComponentStore& store)
         {
             ResourceManager* rm = ResourceManager::Get();
-            store.ForEach<Transform, ModelRenderer>([&](Entity entity, Transform* transform, ModelRenderer* modelRenderer)
+            store.ForEach<Transform, SkeletalRenderer>([&](Entity entity, Transform* transform, SkeletalRenderer* modelRenderer)
             {
-                Mat4 transformMatrix = transform->GetMatrix();
-                Shared<Model> model = rm->GetAsset<Model>(modelRenderer->modelID);
+                Shared<SkeletalModel> model = rm->GetAsset<SkeletalModel>(modelRenderer->modelID);
                 Shared<Material> material = rm->GetAsset<Material>(modelRenderer->materialID);
-                renderer.Submit(model, material, transformMatrix);
+                renderer.Submit(model, modelRenderer->boneTransforms, material, transform->worldTransform);
             });
         }
     };

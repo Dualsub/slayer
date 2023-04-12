@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(BigNumberEntities_Test)
     ecs.RegisterComponent<Velocity>();
     ecs.RegisterComponent<Renderable>();
 
-    const int numEntities = MAX_ENTITIES;
+    const int numEntities = SL_MAX_ENTITIES;
 
     std::vector<Slayer::Entity> entities;
 

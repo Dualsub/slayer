@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Core.h"
+#include "Core/Math.h"
 #include "Serialization/Serialization.h"
 
 #include <fstream>
@@ -186,6 +187,23 @@ namespace Slayer {
             out << YAML::Flow;
             out << YAML::BeginSeq << value.w << value.x << value.y << value.z << YAML::EndSeq;
         }
+
+        void Transfer(Mat4& value, const std::string& name)
+        {
+            Vec3 position;
+            Quat rotation;
+            Vec3 scale;
+            Vec3 skew;
+            Vec4 perspective;
+            if (glm::decompose(value, scale, rotation, position, skew, perspective))
+                return;
+
+			out << YAML::Key << name;
+			out << YAML::Value;
+            Transfer(position, "position");
+            Transfer(rotation, "rotation");
+            Transfer(scale, "scale");
+		}
     };
 
 
@@ -410,6 +428,23 @@ namespace Slayer {
             value.x = node[1].as<float>();
             value.y = node[2].as<float>();
             value.z = node[3].as<float>();
+        }
+
+        template<>
+        void Transfer(Mat4& value, const std::string& name)
+        {
+            auto node = nodeStack.top()[name];
+            if (node[name])
+                return;
+
+            Vec3 position;
+            Transfer(position, "position");
+            Quat rotation;
+            Transfer(rotation, "rotation");
+            Vec3 scale;
+            Transfer(scale, "scale");
+
+            value = glm::translate(Mat4(1.0f), position) * glm::toMat4(rotation) * glm::scale(Mat4(1.0f), scale);
         }
     };
 }

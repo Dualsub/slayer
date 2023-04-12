@@ -1,6 +1,10 @@
 #pragma once
 
+#include "Core/Core.h"
+#include "Core/Containers.h"
+#include "Core/Window.h"
 #include "Core/Log.h"
+#include "Core/Layer.h"
 #include "GameTypesDecl.h"
 
 #include <chrono>
@@ -11,13 +15,17 @@ namespace Slayer
     {
         friend class Engine;
     private:
+        Vector<Unique<Layer>> m_layers;
+
         static Application* s_instance;
         static void SetInstance(Application* app) { s_instance = app; }
     protected:
         bool m_shouldRestart = false;
         bool m_running = true;
         std::chrono::steady_clock::time_point m_lastFrameTime = std::chrono::high_resolution_clock::now();
-        Timespan m_deltaTime = 0.0f;       
+        Timespan m_deltaTime = 0.0f;
+
+        Window m_window;      
     public:
     
         static Application* Get() { return s_instance; }
@@ -27,11 +35,26 @@ namespace Slayer
         Application() = default;
         virtual ~Application() = default;
 
-        virtual void PreInitialize();
-        virtual bool Initialize() = 0;
-        virtual void Update() = 0;
-        virtual void Render() = 0;
-        virtual void Shutdown() = 0;
+        template<typename T, typename... Args>
+        void PushLayer(Args&&... args)
+        {
+            m_layers.emplace_back(MakeUnique<T>(std::forward<Args>(args)...));
+            m_layers.back()->OnAttach();
+        }
+
+        void PreInitialize();
+        bool Initialize();
+        void Update();
+        void Render();
+        void Shutdown();
+        void HandleEvent(Event& e);
+        
+        virtual void OnPreInitialize() = 0;
+        virtual void OnInitialize() = 0;
+        virtual void OnUpdate(Timespan ts) = 0;
+        virtual void OnRender() = 0;
+        virtual void OnShutdown() = 0;
+        virtual void OnEvent(Event& e) = 0;
 
         void Stop() { m_running = false; }
         void Restart() { m_running = false; m_shouldRestart = true; }
@@ -42,5 +65,7 @@ namespace Slayer
 
         Timespan GetDeltaTime() const { return m_deltaTime; }
         void CalculateDeltaTime();
+
+        Window& GetWindow() { return m_window; }
     };
 }

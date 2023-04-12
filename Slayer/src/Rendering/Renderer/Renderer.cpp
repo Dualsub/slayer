@@ -19,14 +19,14 @@ namespace Slayer
 
 	void Renderer::Resize(int width, int height)
 	{
-		camera->SetProjectionMatrix(camera->GetFov(), (float)width, (float)height, 10.0f, 10000.0f);
+		camera->SetProjectionMatrix(camera->GetFov(), (float)width, (float)height, 20.0f, 10000.0f);
 		viewportFramebuffer->Resize(width, height);
 		glViewport(0, 0, width, height);
 	}
 
 	void Renderer::Resize(int x, int y, int width, int height)
 	{
-		camera->SetProjectionMatrix(camera->GetFov(), (float)width, (float)height, 10.0f, 10000.0f);
+		camera->SetProjectionMatrix(camera->GetFov(), (float)width, (float)height, 20.0f, 10000.0f);
 		viewportFramebuffer->Resize(width * 2, height * 2);
 		glViewport(x, y, width, height);
 	}
@@ -50,12 +50,12 @@ namespace Slayer
 
 		// Camera
 		camera = inCamera;
-		camera->SetProjectionMatrix(45.0f, (float)width, (float)height, 10.0f, 10000.0f);
+		camera->SetProjectionMatrix(45.0f, (float)width, (float)height, 20.0f, 10000.0f);
 		cameraBuffer = UniformBuffer::Create(sizeof(CameraData), 0);
 
 		// Lights
 		lightsBuffer = UniformBuffer::Create(sizeof(LightsData), 1);
-		boneBuffer = UniformBuffer::Create(MAX_BONES * sizeof(Mat4), 2);
+		boneBuffer = UniformBuffer::Create(SL_MAX_BONES * sizeof(Mat4), 2);
 		directionalLight = { Vec3(0.0f), Vec3(0.0f) };
 		pointLights = {
 			{{4.0f, 4.0f, -33.0f}, {1.0f, 0.0f, 0.0f}},
@@ -65,6 +65,7 @@ namespace Slayer
 
 		ResourceManager* rm = ResourceManager::Get();
 		shaderStatic = rm->GetAsset<Shader>("PBR_shadows_static");
+		shaderSkeletal = rm->GetAsset<Shader>("PBR_shadows_skeletal");
 
 		screenShader = rm->GetAsset<Shader>("ScreenShader");
 
@@ -164,6 +165,22 @@ namespace Slayer
 			RenderJob job = { mesh->GetVaoID(),
 								mesh->GetIndexCount(),
 								mesh->GetMaterial(),
+								shaderSkeletal,
+								transform,
+								inBoneMatrices };
+
+			mainPass.Submit(job);
+			shadowPass.Submit(job);
+		}
+	}
+
+	void Renderer::Submit(Shared<SkeletalModel> model, Mat4* inBoneMatrices, Shared<Material> material, const Mat4& transform)
+	{
+		for (auto& mesh : model->GetMeshes())
+		{
+			RenderJob job = { mesh->GetVaoID(),
+								mesh->GetIndexCount(),
+								material,
 								shaderSkeletal,
 								transform,
 								inBoneMatrices };
@@ -290,7 +307,7 @@ namespace Slayer
 				shadowShader->Bind();
 				shadowShader->SetUniform("lightSpaceMatrix", lightSpaceMatrix);
 				shadowShader->SetUniform("lightPos", lightPos);
-				boneBuffer->SetData((void*)job.boneMatrices, MAX_BONES * sizeof(Mat4));
+				boneBuffer->SetData((void*)job.boneMatrices, SL_MAX_BONES * sizeof(Mat4));
 			}
 			else if (shadowShader == nullptr || shadowShader->GetID() == shadowShaderSkeletal->GetID())
 			{
@@ -360,7 +377,7 @@ namespace Slayer
 
 			if (job.boneMatrices)
 			{
-				boneBuffer->SetData((void*)job.boneMatrices, MAX_BONES * sizeof(Mat4));
+				boneBuffer->SetData((void*)job.boneMatrices, SL_MAX_BONES * sizeof(Mat4));
 			}
 			currentShader->SetUniform("transformMatrix", job.transform);
 			glDrawElements(GL_TRIANGLES, job.indexCount, GL_UNSIGNED_INT, 0);

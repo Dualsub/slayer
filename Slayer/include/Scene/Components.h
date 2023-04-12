@@ -3,11 +3,15 @@
 #include "Core/Core.h"
 #include "GameTypesDecl.h"
 #include "Resources/Asset.h"
+#include "Rendering/Renderer/SkeletalModel.h"
 
 #define ENGINE_COMPONENTS \
     Slayer::EntityID, \
     Slayer::Transform, \
-    Slayer::ModelRenderer
+    Slayer::ModelRenderer, \
+    Slayer::SkeletalRenderer, \
+    Slayer::SkeletalSockets, \
+    Slayer::SocketAttacher
 
 namespace Slayer {
 
@@ -27,6 +31,8 @@ namespace Slayer {
 
     struct Transform 
     {
+        AssetID parentId;
+        Mat4 worldTransform = Mat4(1.0f);
         Vec3 position = Vec3(0.0f);
         Quat rotation = Quat(0.0f, 0.0f, 0.0f, 1.0f);
         Vec3 scale = Vec3(1.0f);
@@ -46,6 +52,7 @@ namespace Slayer {
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
+            SL_TRANSFER_VAR(parentId);
             SL_TRANSFER_VAR(position);
             SL_TRANSFER_VAR(scale);
             // We serialize the rotation as a Euler angle because it's easier to read, in degrees
@@ -79,6 +86,82 @@ namespace Slayer {
             SL_TRANSFER_VAR(modelID);
             SL_TRANSFER_VAR(materialID);
         }
+    };
+
+    struct SkeletalRenderer
+    {
+        AssetID modelID;
+        AssetID materialID;
+        Mat4 boneTransforms[SL_MAX_BONES];
+
+        SkeletalRenderer() = default;
+        ~SkeletalRenderer() = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(modelID);
+            SL_TRANSFER_VAR(materialID);
+        }
+    };
+
+    // Socket on a skeletal model
+    struct SkeletalSockets
+    {
+        Vector<Socket> sockets;
+        Dict<std::string, Mat4> worldTransforms;
+
+        SkeletalSockets() = default;
+        ~SkeletalSockets() = default;
+
+        const Mat4& GetWorldTransform(const std::string& name) const
+        {
+            SL_ASSERT(worldTransforms.find(name) != worldTransforms.end() && "Can't find socket.");
+			return worldTransforms.at(name);
+		}
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+			SL_TRANSFER_VEC(sockets);
+            if (serializer.GetFlags() == SerializationFlags::Write)
+            {
+                for (auto& socket : sockets)
+                {
+                    worldTransforms[socket.name] = Mat4(1.0f);
+				}
+            }
+		}
+    };
+
+    // Attaches a entity to a socket on a skeletal model
+    struct SocketAttacher
+    {
+        std::string name;
+        
+        SocketAttacher() = default;
+        ~SocketAttacher() = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(name);
+        }
+    };
+
+    struct AnimationState
+    {
+        struct AnimationClip
+        {
+			AssetID id;
+			float time = 0.0f;
+			float speed = 1.0f;
+			bool loop = true;
+			float weight = 1.0f;
+		};
+
+        Vector<AnimationClip> clips;
+        Vector<AnimationClip> additiveClips;
     };
 
     void ForEachComponentType(auto&& f)

@@ -14,3 +14,9 @@
 [submodule "Slayer/thirdparty/yaml-cpp"]
 	path = Slayer/thirdparty/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "Tools/lib/thirdparty/assimp"]
+	path = Tools/lib/thirdparty/assimp
+	url = https://github.com/assimp/assimp
+[submodule "Tools/lib/thirdparty/pybind11"]
+	path = Tools/lib/thirdparty/pybind11
+	url = https://github.com/pybind/pybind11.git

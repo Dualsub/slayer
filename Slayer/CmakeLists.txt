@@ -14,8 +14,9 @@ set(SLAYER_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_library(Slayer 
     src/Core/Main.cpp
-    src/Core/Application.cpp
     src/Core/Engine.cpp
+    src/Core/Application.cpp
+    src/Core/Layer.cpp
     src/Core/Log.cpp
     src/Core/CmdArgs.cpp
     src/Core/Window.cpp
@@ -25,6 +26,7 @@ add_library(Slayer
     src/Rendering/Renderer/Mesh.cpp
     src/Rendering/Renderer/Model.cpp
     src/Rendering/Renderer/VertexArray.cpp
+    src/Rendering/Renderer/SkeletalModel.cpp
     src/Rendering/Renderer/Buffer.cpp
     src/Rendering/Renderer/Camera.cpp
     src/Rendering/Renderer/Material.cpp
@@ -34,6 +36,8 @@ add_library(Slayer
     src/Rendering/Renderer/Renderer.cpp
     src/Rendering/Renderer/Shader.cpp
 
+    src/Rendering/Animation/Animation.cpp
+
     src/Resources/AssetPack.cpp
     src/Resources/ResourceManager.cpp
 
@@ -42,7 +46,7 @@ add_library(Slayer
     # src/Serialization/SceneSerializer.cpp
 
     src/Jobs/JobSystem.cpp
-)
+ "include/Rendering/Animation/AnimationSystem.h" "include/Rendering/Animation/Animation.h" "src/Rendering/Animation/Animation.cpp" "include/Serialization/BinarySerializer.h" "include/Rendering/Animation/AnimationChannel.h" "include/Rendering/Animation/Socket.h" "include/Scene/TransformSystem.h" "include/Rendering/Animation/AnimationTexture.h" "src/Rendering/Animation/AnimationTexture.cpp")
 
 target_include_directories(Slayer PUBLIC 
 ${SLAYER_INCLUDE_DIR} 

@@ -11,7 +11,7 @@ namespace Slayer {
         SL_GROUP_PHYSICS = 1 << 1,
         SL_GROUP_AI = 1 << 2,
         SL_GROUP_AUDIO = 1 << 3,
-        SL_GROUP_INPUT = 1 << 4,
+        SL_GROUP_TRANSFORM = 1 << 4,
         SL_GROUP_NETWORK = 1 << 5,
         SL_GROUP_ANIMATION = 1 << 6,
     };

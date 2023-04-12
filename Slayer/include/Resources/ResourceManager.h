@@ -10,7 +10,8 @@
 #include "Rendering/Renderer/Shader.h"
 #include "Rendering/Renderer/Material.h"
 #include "Rendering/Renderer/Model.h"
-// #include "Rendering/Renderer/SkeletalModel.h"
+#include "Rendering/Renderer/SkeletalModel.h"
+#include "Rendering/Animation/Animation.h"
 
 #include <future>
 #include <thread>
@@ -23,6 +24,7 @@ namespace Slayer
         Vector<Tuple<TextureAsset, AssetRecord>> textures = {};
         Vector<Tuple<ShaderAsset, AssetRecord>> shaders = {};
         Vector<Tuple<ModelAsset, AssetRecord>> models = {};
+        Vector<Tuple<SkeletalModelAsset, AssetRecord>> skeletalModels = {};
 
         GPULoadData() = default;
         ~GPULoadData() = default;
@@ -74,6 +76,25 @@ namespace Slayer
                 }
                 m_assetStore.AddAsset(record.id, record.name, model);
             }
+
+            for (auto& [sma, record] : gpuLoadData.skeletalModels)
+            {
+                auto& mesh = sma.meshes[0];
+
+                // Populate bone map.
+                Dict<std::string, BoneInfo> bones;
+                for (auto& bone : mesh.bones)
+                    bones[bone.name] = { bone.name, bone.id, bone.parentId, bone.transform };
+
+                static_assert(sizeof(SkeletalVertex) == 64);
+
+                Vector<SkeletalVertex> vertices(mesh.vertices.size());
+                Copy(mesh.vertices.data(), vertices.data(), mesh.vertices.size() * sizeof(SkeletalVertex));
+
+                Shared<SkeletalModel> skeletalModel = SkeletalModel::Create(vertices, mesh.indices, bones, mesh.globalInverseTransform);
+                skeletalModel->AddSockets(sma.sockets);
+                m_assetStore.AddAsset(record.id, record.name, skeletalModel);
+            }
         }
 
         std::future<GPULoadData> LoadAssetsAsync(const std::string& assetPackPath)
@@ -119,6 +140,23 @@ namespace Slayer
                         gpuLoadData.models.push_back({ma, record});
                         continue;
                     }
+                    case AssetType::SL_ASSET_TYPE_SKELETAL_MODEL:
+                    {
+                        SkeletalModelAsset sma = assetPack.GetAssetData<SkeletalModelAsset>(id);
+                        gpuLoadData.skeletalModels.push_back({ sma, record });
+                        continue;
+                    }
+                    case AssetType::SL_ASSET_TYPE_ANIMATION:
+                    {
+						AnimationAsset aa = assetPack.GetAssetData<AnimationAsset>(id);
+                        Dict<std::string, AnimationChannel> channels;
+                        for (auto& channel : aa.channels)
+                            channels[channel.name] = AnimationChannel(channel.name, channel.positionKeys, channel.rotationKeys, channel.scaleKeys);
+
+                        Shared<Animation> animation = MakeShared<Animation>(aa.duration, aa.ticksPerSecond, channels);
+						m_assetStore.AddAsset(id, record.name, animation);
+						continue;
+					}
                     default:
                         break;
                     }

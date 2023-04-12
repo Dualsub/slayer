@@ -3,6 +3,8 @@
 #include "Core/Core.h"
 
 #define SL_TRANSFER_VAR(variable) serializer.Transfer(variable, #variable)
+#define SL_TRANSFER_VEC(variable) serializer.TransferVector(variable, #variable)
+#define SL_TRANSFER_DICT(variable) serializer.TransferDict(variable, #variable)
 
 namespace Slayer {
 

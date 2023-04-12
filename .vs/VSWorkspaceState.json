@@ -1,6 +1,23 @@
 {
+  "OutputFoldersPerTargetSystem": {
+    "Local Machine": [
+      "out\\build\\Debug",
+      "out\\install\\Debug",
+      "out\\build\\Release",
+      "out\\install\\Release"
+    ]
+  },
   "ExpandedNodes": [
-    ""
+    "",
+    "\\Slayer\\include",
+    "\\Slayer\\include\\Core",
+    "\\Slayer\\include\\Scene",
+    "\\Testbed",
+    "\\Testbed\\assets\\Shaders",
+    "\\Testbed\\src",
+    "\\Tools",
+    "\\Tools\\lib"
   ],
+  "SelectedNode": "\\Tools\\lib\\.gitignore",
   "PreviewInSolutionExplorer": false
 }

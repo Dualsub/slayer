@@ -6,7 +6,10 @@
 #include "Resources/Asset.h"
 #include "Scene/Components.h"
 
-#define MAX_ENTITIES 10000
+#include <future>
+
+#define SL_MAX_ENTITIES 10000
+#define SL_INVALID_ENTITY -1
 
 namespace Slayer
 {
@@ -37,8 +40,6 @@ namespace Slayer
     class ComponentArrayBase
     {
     public:
-        virtual void InsertRawData(Entity entity, void* data, size_t size) = 0;
-        virtual std::vector<char> GetRawData(Entity entity) = 0;
         virtual void RemoveEntity(Entity entity) = 0;
 
         ComponentArrayBase() = default;
@@ -49,15 +50,13 @@ namespace Slayer
     class ComponentArray: public ComponentArrayBase
     {
     private:
-        std::array<T, MAX_ENTITIES> m_componentArray {};
-        DictHash<Entity, size_t, EntityHash> m_entityToIndexMap {};
+        std::vector<T> m_componentArray;
+        std::unordered_map<Entity, size_t, EntityHash> m_entityToIndexMap;
         // Vacant entities are stored in a set
-        std::set<size_t> m_emptyIndcies {};
+        std::set<size_t> m_emptyIndcies;
         size_t m_size = 0;
 
     public:
-        ComponentArray() = default;
-        ~ComponentArray() = default;
 
         virtual void RemoveEntity(Entity entity)
         {
@@ -68,34 +67,22 @@ namespace Slayer
             }
         }
 
-        virtual void InsertRawData(Entity entity, void* data, size_t size)
-        {
-            SL_ASSERT(size == sizeof(T) && "Size of data does not match size of component type.");
-            InsertData(entity, *(T*)data);
-        }
-
-        virtual std::vector<char> GetRawData(Entity entity)
-        {
-            SL_ASSERT(m_entityToIndexMap.find(entity) != m_entityToIndexMap.end() && "Component not found for entity.");
-
-            return std::vector<char>((char*)&m_componentArray[m_entityToIndexMap[entity]], (char*)&m_componentArray[m_entityToIndexMap[entity]] + sizeof(T));
-        }
-
         void InsertData(Entity entity, T component)
         {
             SL_ASSERT(m_entityToIndexMap.find(entity) == m_entityToIndexMap.end() && "Component added to same entity more than once.");
-            SL_ASSERT(m_size < MAX_ENTITIES && "Too many entities, consider increasing MAX_ENTITIES.");
+            SL_ASSERT(m_size < SL_MAX_ENTITIES && "Too many entities, consider increasing SL_MAX_ENTITIES.");
 
-            size_t newIndex = m_size;
-            if (!m_emptyIndcies.empty())
+            if (m_emptyIndcies.empty())
             {
-                newIndex = *m_emptyIndcies.begin();
+                m_componentArray.push_back(component);
+                m_entityToIndexMap[entity] = m_size;
+                m_size++;
+            }
+            else
+            {
+                size_t newIndex = *m_emptyIndcies.begin();
                 m_emptyIndcies.erase(newIndex);
             }
-
-            m_entityToIndexMap[entity] = newIndex;
-            m_componentArray[newIndex] = component;
-            m_size++;
         }
 
         T* GetComponent(Entity entity)
@@ -104,6 +91,15 @@ namespace Slayer
 
             return &m_componentArray[m_entityToIndexMap[entity]];
         }
+    };
+
+    class Singleton
+    {
+    public:
+        Singleton() = default;
+        virtual ~Singleton() = default;
+        Singleton(const Singleton&) = delete;
+        Singleton& operator=(const Singleton&) = delete;
     };
 
     class ComponentStore
@@ -118,8 +114,8 @@ namespace Slayer
         };
 
         using ComponentDict = DictHash<ComponentType, ComponentRecord, std::hash<ComponentType>>;
+        using SingletonDict = DictHash<ComponentType, Shared<Singleton>, std::hash<ComponentType>>;
     private:
-
         Entity entityIndex = 0;
 
         // Stores the what component types are associated with each entity
@@ -129,6 +125,7 @@ namespace Slayer
         Dict<Archetype, std::set<Entity>> m_archetypeEntityMap;
         // Stores the component array for each component type
         ComponentDict m_components;
+        SingletonDict m_singletons;
 
         inline void UpdateArachtype(Entity entity, Archetype oldArchetype, Archetype newArchetype)
         {
@@ -141,11 +138,12 @@ namespace Slayer
             m_entityComponentIndexMap[entity] = newArchetype;
         }
 
+
     public:
 
         Entity CreateEntity()
         {
-            SL_ASSERT(m_entityComponentIndexMap.size() < MAX_ENTITIES && "Too many entities.");
+            SL_ASSERT(m_entityComponentIndexMap.size() < SL_MAX_ENTITIES && "Too many entities.");
 
             Entity entity = entityIndex++;
 
@@ -158,7 +156,7 @@ namespace Slayer
 
         Entity CreateEntity(AssetID id)
         {
-            SL_ASSERT(m_entityComponentIndexMap.size() < MAX_ENTITIES && "Too many entities.");
+            SL_ASSERT(m_entityComponentIndexMap.size() < SL_MAX_ENTITIES && "Too many entities.");
 
             Entity entity = entityIndex++;
 
@@ -171,7 +169,7 @@ namespace Slayer
 
         Entity CreateEntityWithoutID()
         {
-            SL_ASSERT(m_entityComponentIndexMap.size() < MAX_ENTITIES && "Too many entities.");
+            SL_ASSERT(m_entityComponentIndexMap.size() < SL_MAX_ENTITIES && "Too many entities.");
 
             Entity entity = entityIndex++;
 
@@ -190,8 +188,18 @@ namespace Slayer
 
         bool IsValid(Entity entity)
         {
-            return m_entityComponentIndexMap.find(entity) != m_entityComponentIndexMap.end();
+            return entity != SL_INVALID_ENTITY && m_entityComponentIndexMap.find(entity) != m_entityComponentIndexMap.end();
         }
+
+        Entity GetEntity(AssetID id)
+        {
+            if (m_entityIdMap.find(id) != m_entityIdMap.end())
+            {
+				return m_entityIdMap[id];
+			}
+
+			return SL_INVALID_ENTITY;
+		}
 
         template <typename... Ts>
         void RegisterComponents()
@@ -214,25 +222,10 @@ namespace Slayer
         {
             uint32_t typeHash = HashType<T>();
 
-            SL_ASSERT(m_components.find(typeHash) != m_components.end() && "Component not registered before use.");
+            if (m_components.find(typeHash) == m_components.end())
+                RegisterComponent<T>();
 
             return static_cast<ComponentArray<T> *>(m_components[typeHash].componentArray.get());
-        }
-
-        ComponentArrayBase* GetComponentArray(ComponentType type)
-        {
-            SL_ASSERT(m_components.find(type) != m_components.end() && "Component not registered before use.");
-
-            return m_components[type].componentArray.get();
-        }
-
-        template <typename C>
-        void AddComponent(Entity entity, ComponentType type, void* data, size_t size)
-        {
-            GetComponentArray()->InsertData(entity, data, size);
-            Archetype oldArch = m_entityComponentIndexMap[entity];
-            Archetype newArch = oldArch | (1 << m_components[HashType<C>()].bitIndex);
-            UpdateArachtype(entity, oldArch, newArch);
         }
 
         template <typename C>
@@ -299,6 +292,38 @@ namespace Slayer
                     }
                 }
             }
+        }
+
+        template <typename... Ts>
+        void ForEachAsync(auto&& func)
+        {
+            const std::vector<uint32_t> hashes = { HashType<Ts>()... };
+
+            // Build a bit mask of all the component types
+            Archetype searchArchetype = 0;
+            for (auto& hash : hashes)
+            {
+                SL_ASSERT(m_components.find(hash) != m_components.end() && "Component not registered before use.");
+                searchArchetype |= (1 << m_components[hash].bitIndex);
+            }
+
+            std::vector<std::future<void>> futures;
+
+            for (auto& [archetype, entitySet] : m_archetypeEntityMap)
+            {
+                if ((archetype & searchArchetype) == searchArchetype)
+                {
+                    for (auto& entity : entitySet)
+                    {
+                        futures.push_back(std::async(std::launch::async, func, entity, GetComponent<Ts>(entity)...));
+                    }
+                }
+            }
+
+            for (auto& future : futures)
+            {
+				future.get();
+			}
         }
 
         template <typename... Ts>
@@ -379,6 +404,32 @@ namespace Slayer
         const ComponentDict& GetComponents()
         {
             return m_components;
+        }
+
+        template<typename T, typename... Args>
+        void AddSingleton(Args... args)
+        {
+			uint32_t typeHash = HashType<T>();
+			SL_ASSERT(m_singletons.find(typeHash) == m_singletons.end() && "Singleton already exists.");
+            m_singletons.insert(std::make_pair(typeHash, MakeShared<T>(args)));
+		}
+
+        template<typename T>
+        T* GetSingleton()
+        {
+			uint32_t typeHash = HashType<T>();
+			SL_ASSERT(m_singletons.find(typeHash) != m_singletons.end() && "Singleton does not exist.");
+			return static_cast<T*>(m_singletons[typeHash].get());
+		}
+
+        template<typename T>
+        void RemoveSingleton()
+        {
+			uint32_t typeHash = HashType<T>();
+            if (m_singletons.find(typeHash) != m_singletons.end())
+            {
+				m_singletons.erase(typeHash);
+			}
         }
 
         template<typename Serializer>

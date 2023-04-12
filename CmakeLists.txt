@@ -4,6 +4,7 @@ project(SlayerProject)
 set(CMAKE_CXX_STANDARD 20)
 
 add_subdirectory(Slayer)
+add_subdirectory(Tools/lib)
 add_subdirectory(Testbed)
 
 # Run python script to generate headers before build

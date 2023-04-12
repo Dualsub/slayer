@@ -102,10 +102,10 @@ namespace Slayer {
 
 	struct BoneData
 	{
-		Mat4 boneMatrices[MAX_BONES];
+		Mat4 boneMatrices[SL_MAX_BONES];
 		BoneData(Mat4* inBoneMatrices)
 		{
-			std::copy(inBoneMatrices, (Mat4*)(inBoneMatrices + (MAX_BONES - 1) * sizeof(Mat4)), boneMatrices);
+			std::copy(inBoneMatrices, (Mat4*)(inBoneMatrices + (SL_MAX_BONES - 1) * sizeof(Mat4)), boneMatrices);
 		}
 	};
 
@@ -173,6 +173,7 @@ namespace Slayer {
 		void BeginScene(const LightInfo& lightInfo, const ShadowInfo& shadowSettings);
 		void BeginScene(const Vector<PointLight>& inPointLights, const DirectionalLight& inDirectionalLight);
 		void Submit(Shared<SkeletalModel> model, const Mat4& transform, Mat4* inBoneMatrices);
+		void Submit(Shared<SkeletalModel> model, Mat4* inBoneMatrices, Shared<Material> material, const Mat4& transform);
 		void Submit(Shared<Model> model, Shared<Material> material, const Mat4& transform);
 		void Submit(Shared<Mesh> mesh, const Mat4& transform);
 		void SubmitQuad(Shared<Material> material, const Mat4& transform);

@@ -6,6 +6,7 @@
 #include <array>
 #include <cassert>
 #include <unordered_map>
+#include <string>
 #include <map>
 #include <set>
 #include <stack>
@@ -14,6 +15,7 @@
 #include <initializer_list>
 #include <functional>
 #include <tuple>
+#include <algorithm>
 
 #undef NDEBUG
 #define SL_ASSERT(x) assert(x)

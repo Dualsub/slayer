@@ -75,12 +75,7 @@ namespace Slayer
             AssetRecord record;
             record.id = assetHeader.id;
             record.type = assetHeader.type;
-
-            // Read the name
-            std::string name;
-            name.resize(assetHeader.nameLength);
-            inputStream.read(name.data(), assetHeader.nameLength);
-            record.name = name;
+            record.name = assetHeader.name;
 
             record.dataIndex = dataIndex;
             dataIndex += assetHeader.dataLength;

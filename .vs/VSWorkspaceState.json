@@ -9,15 +9,11 @@
   },
   "ExpandedNodes": [
     "",
-    "\\Slayer\\include",
-    "\\Slayer\\include\\Core",
-    "\\Slayer\\include\\Scene",
+    "\\Slayer",
+    "\\Slayer\\thirdparty",
     "\\Testbed",
-    "\\Testbed\\assets\\Shaders",
-    "\\Testbed\\src",
-    "\\Tools",
-    "\\Tools\\lib"
+    "\\Testbed\\src"
   ],
-  "SelectedNode": "\\Tools\\lib\\.gitignore",
+  "SelectedNode": "\\Slayer\\CmakeLists.txt",
   "PreviewInSolutionExplorer": false
 }

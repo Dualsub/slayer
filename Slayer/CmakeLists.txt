@@ -3,11 +3,11 @@ project(Slayer VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 20)
 
 # Dependencies
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Thirdparty/glfw)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Thirdparty/glad)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Thirdparty/imgui)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Thirdparty/glm)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Thirdparty/yaml-cpp)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glfw)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glad)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glm)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/yaml-cpp)
 
 set(SLAYER_GENERATED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated)
 set(SLAYER_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -46,7 +46,7 @@ add_library(Slayer
     # src/Serialization/SceneSerializer.cpp
 
     src/Jobs/JobSystem.cpp
- "include/Rendering/Animation/AnimationSystem.h" "include/Rendering/Animation/Animation.h" "src/Rendering/Animation/Animation.cpp" "include/Serialization/BinarySerializer.h" "include/Rendering/Animation/AnimationChannel.h" "include/Rendering/Animation/Socket.h" "include/Scene/TransformSystem.h" "include/Rendering/Animation/AnimationTexture.h" "src/Rendering/Animation/AnimationTexture.cpp")
+)
 
 target_include_directories(Slayer PUBLIC 
 ${SLAYER_INCLUDE_DIR} 

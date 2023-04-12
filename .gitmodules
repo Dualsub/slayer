@@ -1,11 +1,8 @@
 [submodule "Slayer/thirdparty/glfw"]
 	path = Slayer/thirdparty/glfw
 	url = https://github.com/glfw/glfw.git
-[submodule "Slayer/--branch"]
-	path = Slayer/--branch
-	url = https://github.com/ocornut/imgui.git
-[submodule "Slayer/Thirdparty/imgui"]
-	path = Slayer/Thirdparty/imgui
+[submodule "Slayer/thirdparty/imgui"]
+	path = Slayer/thirdparty/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
 [submodule "Slayer/thirdparty/glm"]

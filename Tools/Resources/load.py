@@ -111,6 +111,22 @@ def load_material(path: str) -> list:
     return textures
 
 
+def load_skeletons(model_files: list[str]):
+    skeletons = {}
+    for file_tuple in model_files:
+        name, file = file_tuple
+        scene = assimp.load(file)
+        if len(scene.animations) > 0 or any(len(mesh.bones) == 0 for mesh in scene.meshes):
+            continue
+
+        _, _, bones, inv_transform = load_bone_data(file)
+
+        skeletons[name] = {"bone_data": {bone_name: {"id": bone_id, "parent_id": parent_id, "offset_matrix": offset_matrix}
+                           for bone_name, (bone_id, parent_id, offset_matrix) in bones.items()}, "inv_transform": inv_transform}
+
+    return skeletons
+
+
 def load_skeletal_model(path) -> tuple:
     # Load model
     vertices, indices, bone_data, inv_transform = load_bone_data(path)
@@ -125,9 +141,7 @@ def load_skeletal_model(path) -> tuple:
 
 
 def load_animation(scene) -> list:
-
     animation = scene.animations[0]
-    name = animation.name
     duration = animation.duration
     ticks_per_second = animation.ticks_per_second
     channels = []

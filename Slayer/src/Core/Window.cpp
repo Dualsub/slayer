@@ -5,6 +5,23 @@
 
 namespace Slayer {
 
+	void MessageCallback(GLenum source,
+		GLenum type,
+		GLuint id,
+		GLenum severity,
+		GLsizei length,
+		const GLchar* message,
+		const void* userParam)
+	{
+		if (severity == 0x826b)
+			return;
+		 fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+		 	(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+		 	type, severity, message);
+		 std::cout << std::endl;
+	}
+
+
     void Window::Initialize(const std::string& title, uint32_t width, uint32_t height)
     {
         SL_ASSERT(glfwInit() && "Failed to initialize GLFW");
@@ -96,6 +113,10 @@ namespace Slayer {
 		});
 
 		SetCursorEnabled(false);
+
+		// Errors
+		glEnable(GL_DEBUG_OUTPUT);
+		glDebugMessageCallback(MessageCallback, 0);
     }
 
     void Window::Shutdown()

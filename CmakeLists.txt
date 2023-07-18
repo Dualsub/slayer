@@ -3,17 +3,10 @@ cmake_minimum_required(VERSION 3.0)
 project(SlayerProject)
 set(CMAKE_CXX_STANDARD 20)
 
-add_subdirectory(Slayer)
-add_subdirectory(Tools/lib)
+add_subdirectory(Examples/Pong)
 add_subdirectory(Testbed)
+add_subdirectory(Tools/lib)
+add_subdirectory(Slayer EXCLUDE_FROM_ALL)
 
-# Run python script to generate headers before build
-add_custom_target(
-    GenerateHeaders
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/Slayer/scripts/generate_headers.py Testbed/include ${CMAKE_CURRENT_SOURCE_DIR}/Slayer/generated/GameTypesDecl.h
-)
-add_dependencies(Slayer GenerateHeaders)
-
-enable_testing()
-add_subdirectory(Tests)
+# enable_testing()
+# add_subdirectory(Tests)

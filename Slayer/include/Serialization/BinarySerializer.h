@@ -156,7 +156,7 @@ namespace Slayer {
         {
             Copy(m_current, dst, size);
             m_current += size;
-		}
+        }
 
         template<typename T>
         void Deserialize(T& obj, const char* data, size_t size)
@@ -289,7 +289,7 @@ namespace Slayer {
 
             value.resize(size);
             Copy(m_current, value.data(), size);
-			m_current += size;
+            m_current += size;
         }
 
         template<typename T>
@@ -305,7 +305,7 @@ namespace Slayer {
             for (uint32_t i = 0; i < size; ++i)
             {
                 Transfer(values[i], std::to_string(i));
-			}
+            }
         }
 
         template<typename T>
@@ -315,6 +315,8 @@ namespace Slayer {
             Copy(m_current, &size, sizeof(uint32_t));
             m_current += sizeof(uint32_t);
 
+            if (!(m_current + size * sizeof(T) <= m_data + m_size))
+                Slayer::Log::Error(name, "Out of bounds size:", size, "sizeof(T):", sizeof(T), "m_size:", m_size);
             SL_ASSERT((m_current + size * sizeof(T) <= m_data + m_size) && "Out of bounds.");
 
             values.resize(size);

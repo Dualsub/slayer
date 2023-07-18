@@ -9,29 +9,22 @@ namespace Slayer {
 	{
 	private:
 		float duration = 0.0f;
-		float ticksPerSecond = 0.0f;
-		Dict<std::string, AnimationChannel> channels;
+		
+		// GPU Animation Data
+		uint32_t textureID = 0;
+		uint32_t numChannels = 0;
+		Vector<float> times = {};
 	public:
-		Animation(float duration, float ticksPerSecond, const Dict<std::string, AnimationChannel>& channels)
-			: duration(duration), ticksPerSecond(ticksPerSecond), channels(channels)
+		Animation(uint32_t textureID, uint32_t numChannels, float duration, const Vector<float>& times)
+			: textureID(textureID), numChannels(numChannels), duration(duration), times(times)
 		{
 		}
 		~Animation() = default;
-		const Dict<std::string, AnimationChannel>& GetChannels() { return channels; }
 		
-		const AnimationChannel& GetChannel(const std::string& name)
-		{
-			SL_ASSERT(channels.find(name) != channels.end() && "Could not find channel.");
-			return channels[name];
-		}
-
-		Mat4 SampleChannel(const std::string& name, float time) const
-		{
-			SL_ASSERT(channels.find(name) != channels.end() && "Could not find channel.");
-			return channels.at(name).Sample(time);
-		}
-
+		static Shared<Animation> Create(const Vector<float>& data, const Vector<float>& times, float duration);
+		
 		float GetDuration() const { return duration; }
-		float GetTicksPerSecond() const { return ticksPerSecond; }
+		const Vector<float>& GetTimes() const { return times; }
+		uint32_t GetTextureID() const { return textureID; }
 	};
 }

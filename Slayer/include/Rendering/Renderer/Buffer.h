@@ -70,7 +70,14 @@ namespace Slayer {
 
 		void  Bind();
 		void  Unbind();
-		void SetData(void* data, size_t size, int offset = 0);
+
+		template<typename T>
+		void SetData(T* data, size_t size, int offset = 0)
+		{
+			Bind();
+			glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
+			Unbind();
+		}
 
 		static Shared<UniformBuffer> Create(size_t size, int binding);
 	};

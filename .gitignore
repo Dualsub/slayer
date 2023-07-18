@@ -8,6 +8,8 @@ CmakeSettings.json
 .editorconfig
 *.log
 *.exe
+*.dll
+*.slp
 
 **/assets/*
 

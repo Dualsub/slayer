@@ -9,7 +9,7 @@
 namespace Slayer
 {
 
-    Shader::Shader(unsigned int programID, unsigned int vertexShaderID, unsigned int fragmentShaderID):
+    Shader::Shader(int programID, int vertexShaderID, int fragmentShaderID) :
         programID(programID), vertexShaderID(vertexShaderID), fragmentShaderID(fragmentShaderID)
     {
     }
@@ -29,31 +29,39 @@ namespace Slayer
     {
         int shaderID = glCreateShader(type);
         const char* sourceShared = source.c_str();
-        glShaderSource(shaderID, 1, &sourceShared, nullptr);
+        GLint length = (GLint)source.length();
+        glShaderSource(shaderID, 1, &sourceShared, &length);
         glCompileShader(shaderID);
 
-        int success;
-        glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
+        GLint compileSuccess;
+        glGetShaderiv(shaderID, GL_COMPILE_STATUS, &compileSuccess);
         char infoLog[512];
         glGetShaderInfoLog(shaderID, 512, nullptr, infoLog);
-        if (!success)
+        if (compileSuccess == GL_FALSE)
         {
-                Log::Error("Shader compilation failed: " + std::string(infoLog));
-                std::cout << "Source:\n" << source << std::endl;
-                SL_ASSERT(false);
+            Log::Error("Shader compilation failed: " + std::string(infoLog));
+            std::cout << "Source:\n" << source << std::endl;
+            SL_ASSERT(false);
         }
-#if LOG_VERBOSE
-        else {
-            std::cout << "SHADER::COMPLIATION_SUCCESS" << std::endl;
-            std::cout << infoLog << std::endl;
-        }
-#endif
         return shaderID;
+    }
+
+    bool Shader::IsBound()
+    {
+        int currentProgramID;
+        glGetIntegerv(GL_CURRENT_PROGRAM, &currentProgramID);
+        return currentProgramID == (int)programID;
     }
 
     void Shader::Bind()
     {
         glUseProgram(programID);
+    }
+
+    void Shader::BindWithCheck()
+    {
+        glUseProgram(programID);
+        SL_WARN_ASSERT(IsBound(), "Shader is not bound!");
     }
 
     void Shader::Unbind()
@@ -95,12 +103,16 @@ namespace Slayer
         std::cout << "Loading: " << fsFile << std::endl;
 
         auto shader = LoadShader(vertexCode, fragmentCode);
-        shader->vsName = vsFile + vertexCode;
-        shader->fsName = fsFile + fragmentCode;
         return shader;
 #else
         return LoadShader(vertexCode, fragmentCode);
 #endif
+    }
+
+    bool Shader::HasUniform(const std::string& name)
+    {
+        int loc = glGetUniformLocation(programID, name.c_str());
+        return loc != -1;
     }
 
     void Shader::SetUniform(const std::string& name, const bool value)
@@ -116,6 +128,15 @@ namespace Slayer
         glUniform1i(loc, value);
     }
 
+    void Shader::SetUniform(const std::string& name, const int* values, size_t count)
+    {
+        int loc = glGetUniformLocation(programID, name.c_str());
+#if ASSERT_UNIFORM
+        assert(loc != -1);
+#endif
+        glUniform1iv(loc, count, values);
+    }
+
     void Shader::SetUniform(const std::string& name, const float value)
     {
         int loc = glGetUniformLocation(programID, name.c_str());
@@ -125,6 +146,15 @@ namespace Slayer
         glUniform1f(loc, value);
     }
 
+    void Shader::SetUniform(const std::string& name, const float* values, size_t count)
+    {
+        int loc = glGetUniformLocation(programID, name.c_str());
+#if ASSERT_UNIFORM
+        assert(loc != -1);
+#endif
+        glUniform1fv(loc, count, values);
+    }
+
     void Shader::SetUniform(const std::string& name, const Vec2& value)
     {
         int loc = glGetUniformLocation(programID, name.c_str());
@@ -132,6 +162,14 @@ namespace Slayer
         assert(loc != -1);
 #endif
         glUniform2f(loc, value.x, value.y);
+    }
+    void Shader::SetUniform(const std::string& name, const Vec2i& value)
+    {
+        int loc = glGetUniformLocation(programID, name.c_str());
+#if ASSERT_UNIFORM
+        assert(loc != -1);
+#endif
+        glUniform2i(loc, value.x, value.y);
     }
 
     void Shader::SetUniform(const std::string& name, const Vec3& value)
@@ -184,7 +222,27 @@ namespace Slayer
         glAttachShader(programID, fsID);
         glLinkProgram(programID);
 
-        return std::make_shared<Shader>(programID, vsID, fsID);
+        if (vs.find("Skeletal VS") != std::string::npos)
+        {
+            std::cout << vs << std::endl;
+        }
+
+
+        GLint linkSuccess;
+        glGetProgramiv(programID, GL_LINK_STATUS, &linkSuccess);
+        char infoLog[512];
+        glGetProgramInfoLog(programID, 512, nullptr, infoLog);
+        if (linkSuccess == GL_FALSE)
+        {
+            Log::Error("Shader linking failed: " + std::string(infoLog));
+            SL_ASSERT(false);
+        }
+
+
+        Shared<Shader> shader = MakeShared<Shader>(programID, vsID, fsID);
+        shader->vsSource = vs;
+        shader->fsSource = fs;
+        return shader;
     }
 
 }

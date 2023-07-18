@@ -17,4 +17,8 @@ namespace Slayer
     using Quat = glm::quat;
     using Mat3 = glm::mat3;
     using Mat2 = glm::mat2;
+
+    using Vec2i = glm::ivec2;
+    using Vec3i = glm::ivec3;
+    using Vec4i = glm::ivec4;
 }

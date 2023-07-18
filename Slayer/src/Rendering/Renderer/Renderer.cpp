@@ -1,6 +1,7 @@
 #include "Rendering/Renderer/Renderer.h"
 
 #include "Core/Core.h"
+#include "Core/Log.h"
 
 #include "Resources/ResourceManager.h"
 
@@ -9,6 +10,8 @@
 #include "Rendering/Renderer/Texture.h"
 #include "Rendering/Renderer/Camera.h"
 #include "Rendering/Renderer/EnvironmentMap.h"
+
+#include "Rendering/Animation/AnimationState.h"
 
 #include "glad/glad.h"
 #include "glm/gtc/matrix_transform.hpp"
@@ -42,11 +45,15 @@ namespace Slayer
 
 		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
+		int result;
+		glGetIntegerv(GL_MAX_UNIFORM_LOCATIONS, (GLint*)&result);
+		Log::Info("Max uniform locations:", result);
+
 		// Framebuffers
 		Vector<Attachment> colorAttachments = { { AttachmentTarget::RGBA8 } };
-        Attachment depthAttachment = { AttachmentTarget::DEPTH24STENCIL8 };
-        viewportFramebuffer = Framebuffer::Create(colorAttachments, depthAttachment, width, height);
-		
+		Attachment depthAttachment = { AttachmentTarget::DEPTH24STENCIL8 };
+		viewportFramebuffer = Framebuffer::Create(colorAttachments, depthAttachment, width, height);
+
 
 		// Camera
 		camera = inCamera;
@@ -98,8 +105,8 @@ namespace Slayer
 		shadowShaderStatic = rm->GetAsset<Shader>("ShadowMap_static");
 		shadowShaderSkeletal = rm->GetAsset<Shader>("ShadowMap_skeletal");
 		lightProjection = glm::ortho(shadowMapScale * -20.0f, shadowMapScale * 20.0f, shadowMapScale * -20.0f, shadowMapScale * 20.0f, 5.0f, shadowMapScale * 200.0f);
-	
-		Resize(-width/2, -height/2, width / 2, height / 2);
+
+		Resize(-width / 2, -height / 2, width / 2, height / 2);
 	}
 
 	void Renderer::BeginScene()
@@ -158,7 +165,7 @@ namespace Slayer
 		shadowPass.Submit(job);
 	}
 
-	void Renderer::Submit(Shared<SkeletalModel> model, const Mat4& transform, Mat4* inBoneMatrices)
+	void Renderer::Submit(Shared<SkeletalModel> model, const Mat4& transform, AnimationState* animationState)
 	{
 		for (auto& mesh : model->GetMeshes())
 		{
@@ -167,14 +174,14 @@ namespace Slayer
 								mesh->GetMaterial(),
 								shaderSkeletal,
 								transform,
-								inBoneMatrices };
+								animationState };
 
 			mainPass.Submit(job);
 			shadowPass.Submit(job);
 		}
 	}
 
-	void Renderer::Submit(Shared<SkeletalModel> model, Mat4* inBoneMatrices, Shared<Material> material, const Mat4& transform)
+	void Renderer::Submit(Shared<SkeletalModel> model, AnimationState* animationState, Shared<Material> material, const Mat4& transform)
 	{
 		for (auto& mesh : model->GetMeshes())
 		{
@@ -183,7 +190,7 @@ namespace Slayer
 								material,
 								shaderSkeletal,
 								transform,
-								inBoneMatrices };
+								animationState };
 
 			mainPass.Submit(job);
 			shadowPass.Submit(job);
@@ -255,6 +262,26 @@ namespace Slayer
 		}
 	}
 
+	void Renderer::BindAnimation(AnimationState* animationState, Shared<Shader> shader)
+	{
+		const int animTexSlot = 16;
+
+		SL_ASSERT(shader && "Shader was null.");
+		SL_WARN_ASSERT(shader->HasUniform("frames"), "Shader does not have uniform 'frames'.");
+		SL_WARN_ASSERT(shader->HasUniform("time"), "Shader does not have uniform 'time'.");
+		SL_ASSERT(animationState && "Animation state was null.");
+		SL_ASSERT(animationState->inverseBindPose && "Animation state frames were null.");
+
+		// Bind uniforms and buffers.
+		boneBuffer->SetData(animationState->inverseBindPose, SL_MAX_BONES * sizeof(Mat4));
+		shader->SetUniform("frames", animationState->frames);
+		shader->SetUniform("time", animationState->time);
+
+		// Bind animation texture.
+		Texture::BindTexture(animationState->textureID, animTexSlot);
+		shader->SetUniform("animTex", animTexSlot);
+	}
+
 	void Renderer::SubmitLine(Vec3 p1, Vec3 p2, Vec4 color)
 	{
 		lineBuffer.insert(lineBuffer.end(), { p1.x, p1.y, p1.z });
@@ -288,7 +315,6 @@ namespace Slayer
 	{
 		SL_EVENT("Shadow Pass");
 
-		Shared<Shader> currentShader = nullptr;
 		Shared<Shader> shadowShader = nullptr;
 		unsigned int currentVao = 0;
 
@@ -301,20 +327,14 @@ namespace Slayer
 		const auto& jobs = mainPass.GetQueue();
 		for (auto& job : jobs)
 		{
-			if (job.boneMatrices && (shadowShader == nullptr || shadowShader->GetID() == shadowShaderStatic->GetID()))
+			int32_t wantedShaderID = job.animationState ? shadowShaderSkeletal->GetID() : shadowShaderStatic->GetID();
+			if (shadowShader == nullptr || shadowShader->GetID() != wantedShaderID)
 			{
-				shadowShader = shadowShaderSkeletal;
-				shadowShader->Bind();
+				if (shadowShader)
+					shadowShader->Unbind();
+				shadowShader = job.animationState ? shadowShaderSkeletal : shadowShaderStatic;
+				shadowShader->BindWithCheck();
 				shadowShader->SetUniform("lightSpaceMatrix", lightSpaceMatrix);
-				shadowShader->SetUniform("lightPos", lightPos);
-				boneBuffer->SetData((void*)job.boneMatrices, SL_MAX_BONES * sizeof(Mat4));
-			}
-			else if (shadowShader == nullptr || shadowShader->GetID() == shadowShaderSkeletal->GetID())
-			{
-				shadowShader = shadowShaderStatic;
-				shadowShader->Bind();
-				shadowShader->SetUniform("lightSpaceMatrix", lightSpaceMatrix);
-				shadowShader->SetUniform("lightPos", lightPos);
 			}
 
 			if (currentVao != job.vaoID)
@@ -323,6 +343,9 @@ namespace Slayer
 				VertexArray::Bind(job.vaoID);
 				currentVao = job.vaoID;
 			}
+
+			if (job.animationState)
+				BindAnimation(job.animationState, shadowShader);
 
 			shadowShader->SetUniform("transformMatrix", job.transform);
 			glDrawElements(GL_TRIANGLES, job.indexCount, GL_UNSIGNED_INT, 0);
@@ -340,7 +363,6 @@ namespace Slayer
 		viewportFramebuffer->Bind();
 
 		Shared<Shader> currentShader = nullptr;
-		Shared<Shader> shadowShader = nullptr;
 		unsigned int currentVao = 0;
 
 		glCullFace(GL_BACK);
@@ -354,9 +376,10 @@ namespace Slayer
 		{
 			if (currentShader == nullptr || currentShader->GetID() != job.shader->GetID())
 			{
-				currentShader->Unbind();
+				if (currentShader)
+					currentShader->Unbind();
 				currentShader = job.shader;
-				currentShader->Bind();
+				currentShader->BindWithCheck();
 				currentShader->SetUniform("ibl.irradiance", 0);
 				currentShader->SetUniform("ibl.prefilter", 1);
 				currentShader->SetUniform("ibl.brdf", 2);
@@ -375,10 +398,9 @@ namespace Slayer
 
 			BindMaterial(job.material, currentShader);
 
-			if (job.boneMatrices)
-			{
-				boneBuffer->SetData((void*)job.boneMatrices, SL_MAX_BONES * sizeof(Mat4));
-			}
+			if (job.animationState)
+				BindAnimation(job.animationState, currentShader);
+
 			currentShader->SetUniform("transformMatrix", job.transform);
 			glDrawElements(GL_TRIANGLES, job.indexCount, GL_UNSIGNED_INT, 0);
 			debugInfo.drawCalls++;
@@ -392,7 +414,7 @@ namespace Slayer
 	void Renderer::EndScene()
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
-		
+
 		screenShader->Bind();
 		screenShader->SetUniform("screenTexture", 0);
 		glBindVertexArray(Mesh::GetQuadVaoID());
@@ -413,11 +435,11 @@ namespace Slayer
 		Resize(-windowSize.x / 2, -windowSize.y / 2, windowSize.x / 2, windowSize.y / 2);
 	}
 
-	RenderJob::RenderJob(unsigned int vaoID, unsigned int indexCount, Shared<Material> material, Shared<Shader> shader, const Mat4& transform): vaoID(vaoID), indexCount(indexCount), material(material), shader(shader), transform(transform)
+	RenderJob::RenderJob(unsigned int vaoID, unsigned int indexCount, Shared<Material> material, Shared<Shader> shader, const Mat4& transform) : vaoID(vaoID), indexCount(indexCount), material(material), shader(shader), transform(transform)
 	{
 	}
 
-	RenderJob::RenderJob(unsigned int vaoID, unsigned int indexCount, Shared<Material> material, Shared<Shader> shader, const Mat4& transform, Mat4* boneMatrices): vaoID(vaoID), indexCount(indexCount), material(material), shader(shader), transform(transform), boneMatrices(boneMatrices)
+	RenderJob::RenderJob(unsigned int vaoID, unsigned int indexCount, Shared<Material> material, Shared<Shader> shader, const Mat4& transform, AnimationState* animationState) : vaoID(vaoID), indexCount(indexCount), material(material), shader(shader), transform(transform), animationState(animationState)
 	{
 	}
 

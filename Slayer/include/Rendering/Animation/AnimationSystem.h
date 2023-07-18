@@ -34,29 +34,32 @@ namespace Slayer {
 				static Dict<Entity, float> timeDict;
 				if (timeDict.find(entity) == timeDict.end())
 				{
-					timeDict[entity] = 0.0f;
+					timeDict[entity] = (float)rand() / RAND_MAX * animation->GetDuration();
 				}
 				float& time = timeDict[entity];
-				time = fmod(time + dt * animation->GetTicksPerSecond(), animation->GetDuration());
+				time = fmod(time + dt, animation->GetDuration());
 
-				auto& bones = model->GetBones();
-				auto globalInv = model->GetGlobalInverseTransform();
+				AnimationState* state = &renderer->state;
+				
+				uint32_t frameNow = 0;
+				uint32_t frameNext = 0;
+				float timeFraction = 0.0f;
 
-				Vector<Mat4> localTransform(bones.size());
-				Vector<Mat4> modelTransform(bones.size());
-
-				localTransform[0] = animation->SampleChannel(bones[0].name, time);
-				modelTransform[0] = localTransform[0];
-				renderer->boneTransforms[0] = globalInv * modelTransform[0] * bones[0].offset;
-				SkeletalSockets* sockets = store.HasComponent<SkeletalSockets>(entity) ? store.GetComponent<SkeletalSockets>(entity) : nullptr;
-
-				for (size_t i = 1; i < bones.size(); ++i)
+				const Vector<float>& times = animation->GetTimes();
+				for (uint32_t i = 0; i < times.size(); i++)
 				{
-					auto& bone = bones[i];
-					localTransform[i] = animation->SampleChannel(bone.name, time);
-					modelTransform[i] = modelTransform[bone.parentID] * localTransform[i];
-					renderer->boneTransforms[i] = globalInv * modelTransform[i] * bone.offset;
+					if (time < times[i])
+					{
+						frameNow = i - 1;
+						frameNext = i;
+						timeFraction = (time - times[i - 1]) / (times[i] - times[i - 1]);
+						break;
+					}
 				}
+
+				state->frames = { frameNow, frameNext };
+				state->time = timeFraction;
+				state->textureID = animation->GetTextureID();
 			});
 		}
 

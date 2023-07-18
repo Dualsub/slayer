@@ -1,29 +1,30 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from io import BufferedReader, BufferedWriter, BytesIO
+from concurrent.futures import ThreadPoolExecutor
+from io import BufferedReader, BufferedWriter
 import os
 import struct
 import argparse
 import impasse as assimp
 import numpy as np
-import cv2 as cv
-import PIL.Image as Image
 import json
 from termcolor import colored
+from Resources.process_animation import process_animation
 from common import *
 from Resources.load import *
 import time
+
 
 def save_meta(meta: dict):
     # Remove old_data element from meta
     if "old_data" in meta:
         del meta["old_data"]
-    
+
     meta_file = meta["meta_file"]
     if "meta_file" in meta:
         del meta["meta_file"]
 
     with open(meta_file, "w") as f:
         json.dump(meta, f, indent=4)
+
 
 def serialize_texture(name, width, height, channels, target, data, meta: dict = {}):
     old_id = meta["old_data"]["id"] if "old_data" in meta and "id" in meta["old_data"] else None
@@ -54,18 +55,16 @@ def serialize_model(name, meshes: list, meta: dict = {}):
     old_id = meta["old_data"]["id"] if "old_data" in meta and "id" in meta["old_data"] else None
     # Create header
     header = struct.pack("<I", len(meshes))
-
     mesh_data = b""
     for mesh in meshes:
         # Create mesh header, vertices are list of floats and indices are list of uint32
         vertices = mesh["vertices"]
         indices = mesh["indices"]
         # Add mesh header and data to the mesh data
-        mesh_data += mesh_header
-        mesh_header = struct.pack("<I", len(vertices))
-        mesh_data += struct.pack("<" + "f" * len(vertices), *vertices)
-        mesh_header += struct.pack("<I", len(indices))
-        mesh_data += struct.pack("<" + "I" * len(indices), *indices)
+        mesh_data += struct.pack("<I", len(vertices))
+        mesh_data += np.array(vertices, dtype=np.float32).tobytes()
+        mesh_data += struct.pack("<I", len(indices))
+        mesh_data += np.array(indices, dtype=np.uint32).tobytes()
 
     # Add header and data to the pack
     return serialize_asset(name, header + mesh_data, "model", meta)
@@ -81,7 +80,7 @@ def serialize_skeletal_model(name, meshes: list, meta: dict = {}):
         # Create mesh header, vertices are list of floats and indices are list of uint32
         vertices = mesh["vertices"]
         indices = mesh["indices"]
-        bone_data = mesh["bone_data"]
+        bone_ids = mesh["bone_data"]
         inv_transform = mesh["inv_transform"]
         # Add mesh header and data to the mesh data
 
@@ -91,7 +90,8 @@ def serialize_skeletal_model(name, meshes: list, meta: dict = {}):
         # Redo with numpy
         vertices = np.array(vertices)
 
-        dt = np.dtype([('vert', np.float32, 8), ('bone_ids', np.int32, 4), ('weights', np.float32, 4)])
+        dt = np.dtype([('vert', np.float32, 8), ('bone_ids',
+                      np.int32, 4), ('weights', np.float32, 4)])
 
         # Convert vertices array to structured array
         vertices_struct = np.empty(vertices.shape[0], dtype=dt)
@@ -109,8 +109,8 @@ def serialize_skeletal_model(name, meshes: list, meta: dict = {}):
         mesh_data += struct.pack("<I", len(indices))
         mesh_data += struct.pack("<" + "I" * len(indices), *indices)
 
-        mesh_data += struct.pack("<I", len(bone_data))
-        for bone_name, bone in bone_data.items():
+        mesh_data += struct.pack("<I", len(bone_ids))
+        for bone_name, bone in bone_ids.items():
             # Bone name
             bone_name_data = bone_name.encode("utf-8")
             mesh_data += struct.pack("<I", len(bone_name_data))
@@ -139,7 +139,8 @@ def serialize_skeletal_model(name, meshes: list, meta: dict = {}):
             bone_name_data = bone_name.encode("utf-8")
             socket_data += struct.pack("<I", len(bone_name_data))
             socket_data += bone_name_data
-            socket_data += struct.pack("<16f", *np.array(socket["transform"]).flatten())
+            socket_data += struct.pack("<16f", *
+                                       np.array(socket["transform"]).flatten())
     else:
         socket_data += struct.pack("<I", 0)
 
@@ -194,6 +195,48 @@ def serialize_animation(name, duration, ticks_per_second, channels, meta: dict =
 
     # Add header and data to the pack
     return serialize_asset(name, header + channel_data + events_data, "animation", meta)
+
+
+def serialize_animation_texture(name, duration, ticks_per_second, channels, bone_data: dict, meta: dict = {}):
+    # Create header
+    data = struct.pack("<f", duration)
+    data += struct.pack("<f", ticks_per_second)
+    data += struct.pack("<I", len(bone_data))
+
+    assert all(len(channel["position_keys"]) == len(
+        channels[0]["position_keys"]) for channel in channels)
+    assert all(len(channel["rotation_keys"]) == len(
+        channels[0]["rotation_keys"]) for channel in channels)
+    assert all(len(channel["scale_keys"]) == len(
+        channels[0]["scale_keys"]) for channel in channels)
+
+    timestamps = np.array(
+        channels[0]["position_keys"], dtype=np.float32).T[0] / ticks_per_second
+    data += struct.pack("<I", timestamps.size)
+    data += struct.pack("<" + "f" * timestamps.size, *timestamps.flatten())
+
+    texture = np.zeros((len(timestamps), len(
+        bone_data) * 3, 4), dtype=np.float32)
+    for frame in range(len(timestamps)):
+        for channel in channels:
+            bone_name = channel["node_name"]
+            bone_id = bone_data[bone_name]["id"]
+            texture[frame, bone_id * 3 + 0,
+                    :3] = np.array(channel["position_keys"])[frame][1:]
+            texture[frame, bone_id * 3 + 1,
+                    :4] = np.array(channel["rotation_keys"])[frame][1:]
+            texture[frame, bone_id * 3 + 2,
+                    :3] = np.array(channel["scale_keys"])[frame][1:]
+
+    # texture = np.flip(texture, axis=0)
+    # Transpose only in 2d, not the color vectors
+    texture = np.transpose(texture, (1, 0, 2))
+
+    data += struct.pack("<I", texture.size)
+    data += struct.pack("<" + "f" * texture.size, *texture.flatten())
+
+    # Add header and data to the pack
+    return serialize_asset(name, data, "animation", meta)
 
 
 def serialize_material(name, textures: list, texture_ids: list, meta: dict = {}):
@@ -260,14 +303,15 @@ def load_pack_meta(f: BufferedReader):
             asset_name = f.read(name_size).decode("utf-8")
             asset_size = struct.unpack("<I", f.read(UINT32_SIZE))[0]
             asset_data = f.read(asset_size)
-            
+
             f.seek(start_pos)
-            full_asset_data = f.read(ASSET_ID_SIZE + ASSET_TYPE_SIZE + UINT32_SIZE + name_size + UINT32_SIZE + asset_size) 
+            full_asset_data = f.read(
+                ASSET_ID_SIZE + ASSET_TYPE_SIZE + UINT32_SIZE + name_size + UINT32_SIZE + asset_size)
 
             assetNameToMeta[asset_name] = {
                 "id": asset_id,
                 "type": asset_type,
-                "data" : full_asset_data
+                "data": full_asset_data
             }
 
         print("Loaded", len(assetNameToMeta), "asset IDs from pack file.")
@@ -294,7 +338,7 @@ def serialize_pack(data, num_assets, f: BufferedWriter):
     return len(MAGIC) + UINT32_SIZE * 2 + len(data)
 
 
-def pack_file(file_tuple: tuple, old_data: dict = {}, texture_ids={}, force_rebuild = False) -> tuple:
+def pack_file(file_tuple: tuple, old_data: dict = {}, skeletons={}, texture_ids={}, force_rebuild=True) -> tuple:
     file, path = file_tuple
     # Get file name
     name = os.path.splitext(os.path.basename(file))[0]
@@ -302,7 +346,6 @@ def pack_file(file_tuple: tuple, old_data: dict = {}, texture_ids={}, force_rebu
     ext = os.path.splitext(os.path.basename(file))[1].lower()
 
     # Check if there is a file wit the same name but with .meta extension
-
     meta_file = os.path.splitext(path)[0] + ".meta"
     meta = {
         "old_data": old_data.get(name, {}),
@@ -310,11 +353,26 @@ def pack_file(file_tuple: tuple, old_data: dict = {}, texture_ids={}, force_rebu
     }
     if os.path.isfile(meta_file):
         # Read meta file
-        with open(meta_file, "r") as f:
-            meta = {**meta, **json.load(f)}
+        tries = 0
+        while True:
+            try:
+                with open(meta_file, "r", encoding="utf8") as f:
+                    meta_file_str = f.read()
+                    if len(meta_file_str) > 0:
+                        meta = {**meta, **json.loads(meta_file_str)}
+                break
+            except Exception as e:
+                tries += 1
+                if tries > 3:
+                    print(colored("[ERROR]", "red"),
+                          "Failed to read meta file.")
+                    print(name)
+                    print(e)
+                    raise e
 
-    if ("hash" in meta and hash_file(path) == meta["hash"] and "old_data" in meta and len(meta["old_data"]) > 0 and not force_rebuild):
-        print(colored("[SKIPPED]", "yellow"), f"name: {name}, type: {ext[1:]}, id: {meta['old_data']['id']}")
+    if ("hash" in meta and hash_file(path) == meta["hash"] and "old_data" in meta and len(meta["old_data"]) > 0) and not force_rebuild:
+        print(colored("[SKIPPED]", "yellow"),
+              f"name: {name}, type: {ext[1:]}, id: {meta['old_data']['id']}")
         return meta["old_data"]["id"], name, meta["old_data"]["data"]
     else:
         meta["hash"] = hash_file(path)
@@ -335,7 +393,10 @@ def pack_file(file_tuple: tuple, old_data: dict = {}, texture_ids={}, force_rebu
 
         if len(scene.animations) > 0:
             duration, ticks_per_second, channels = load_animation(scene)
-            return serialize_animation(name, duration, ticks_per_second, channels, meta)
+            bone_data = skeletons[meta["skeleton"]]["bone_data"]
+            inv_transform = skeletons[meta["skeleton"]]["inv_transform"]
+            channels = process_animation(channels, bone_data, inv_transform)
+            return serialize_animation_texture(name, duration, ticks_per_second, channels, bone_data, meta)
 
         is_skeletal = all(len(mesh.bones) > 0 for mesh in scene.meshes)
         if is_skeletal:
@@ -391,7 +452,13 @@ def main():
         model_files = [file for file in files if os.path.splitext(
             os.path.basename(file[0]))[1].lower() in MODEL_EXTS]
 
-        other_files = list(set(files) - set(texture_files) - set(model_files))
+        skeleton_files = [file for file in files if os.path.splitext(
+            os.path.basename(file[0]))[1].lower() in SKELETON_EXTS]
+
+        other_files = list(set(files) - set(texture_files) -
+                           set(model_files) - set(skeleton_files))
+
+        skeletons = load_skeletons(model_files)
 
         pack_data = b""
         num_assets = 0
@@ -399,7 +466,7 @@ def main():
         with ThreadPoolExecutor() as executor:
 
             model_futures = [executor.submit(
-                pack_file, file_tuple, old_data) for file_tuple in model_files]
+                pack_file, file_tuple, old_data, skeletons) for file_tuple in model_files]
 
             print("Packing textures...")
 
@@ -417,7 +484,7 @@ def main():
             print("Textures done. Packing other files...")
 
             futures = [executor.submit(
-                pack_file, file_tuple, old_data, texture_ids) for file_tuple in other_files]
+                pack_file, file_tuple, old_data, skeletons, texture_ids, True) for file_tuple in other_files]
             results = [future.result() for future in futures]
             for assetId, name, data in results:
                 if data is None:

@@ -3,7 +3,7 @@
 #include "Core/Core.h"
 #include "Resources/Asset.h"
 
-#define LOG_VERBOSE 0
+#define LOG_VERBOSE 1
 #define ASSERT_UNIFORM 0
 
 namespace Slayer
@@ -11,30 +11,36 @@ namespace Slayer
 	class Shader
 	{
 	private:
-		unsigned int programID = 0;
-		unsigned int vertexShaderID = 0;
-		unsigned int fragmentShaderID = 0;
+		int programID = 0;
+		int vertexShaderID = 0;
+		int fragmentShaderID = 0;
 #if LOG_VERBOSE
-		std::string vsName;
-		std::string fsName;
+		std::string vsSource;
+		std::string fsSource;
 #endif
 		static int CompileShader(const std::string& source, unsigned int type);
 
 	public:
 		AssetID assetID;
 
-		Shader(unsigned int programID, unsigned int vertexShaderID, unsigned int fragmentShaderID);
+		Shader(int programID, int vertexShaderID, int fragmentShaderID);
 		~Shader();
 
 		void Bind();
+		void BindWithCheck();
 		void Unbind();
 
+		bool IsBound();
+		bool HasUniform(const std::string& name);
 		inline unsigned int GetID() { return programID; };
 
 		void SetUniform(const std::string& name, const bool value);
 		void SetUniform(const std::string& name, const int value);
+		void SetUniform(const std::string& name, const int* values, size_t count);
 		void SetUniform(const std::string& name, const float value);
+		void SetUniform(const std::string& name, const float* values, size_t count);
 		void SetUniform(const std::string& name, const Vec2& value);
+		void SetUniform(const std::string& name, const Vec2i& value);
 		void SetUniform(const std::string& name, const Vec3& value);
 		void SetUniform(const std::string& name, const Vec4& value);
 		void SetUniform(const std::string& name, const Mat3& value);

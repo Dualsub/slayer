@@ -95,9 +95,6 @@ namespace Testbed
         void InitializeScene();
         void InitializeRendering();
         void InitializeWindow();
-        void InitializeGUI();
-        void UpdateGUI();
-        void ShutdownGUI();
         void ShutdownRendering();
 
         std::future<void> SaveScene(const std::string& filename, Slayer::ComponentStore& store)
@@ -105,7 +102,7 @@ namespace Testbed
             return std::async(std::launch::async, [filename, &store]() {
                 Slayer::YamlSerializer serializer;
                 serializer.Serialize(store, filename);
-                });
+            });
         }
 
         std::future<void> LoadScene(const std::string& filename, Slayer::ComponentStore& store)
@@ -113,7 +110,7 @@ namespace Testbed
             return std::async(std::launch::async, [filename, &store]() {
                 Slayer::YamlDeserializer deserializer;
                 deserializer.Deserialize(store, filename);
-                });
+            });
         }
 
     public:
@@ -186,7 +183,7 @@ namespace Testbed
 
             m_renderingSystem.Render(m_renderer, m_store);
 
-            m_renderer.DrawShadows();
+            //m_renderer.DrawShadows();
             m_renderer.Draw();
             m_renderer.DrawLines();
 

@@ -50,15 +50,20 @@ namespace Slayer {
 		: meshes(meshes), bones(bones), boneCounter(boneCounter), globalInverseTransform(globalInverseTransform)
 	{
 		bones = Vector<BoneInfo>(boneDict.size());
+		// Set all parents in the static array to -1
+		std::memset(parents, -1, SL_MAX_BONES * sizeof(int32_t));
+		
 		for (auto& [name, bone] : boneDict)
 		{
 			bones[bone.id] = bone;
 			bonesIds[name] = bone.id;
+			parents[bone.id] = bone.parentID;
 		}
 
-		for (auto& bone : bones)
+		for (size_t i = 0; i < bones.size(); i++)
 		{
-			std::cout << bone.name << " " << bone.id << std::endl;
+			auto& bone = bones[i];
+			inverseBindPoseMatrices[i] = glm::inverse(bone.offset);
 		}
 	}
 

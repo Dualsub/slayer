@@ -8,6 +8,7 @@
 #include "Rendering/Renderer/SkeletalModel.h"
 #include "Rendering/Renderer/Lights.h"
 #include "Rendering/Renderer/Framebuffer.h"
+#include "Rendering/Animation/AnimationState.h"
 
 namespace Slayer {
 
@@ -54,9 +55,9 @@ namespace Slayer {
 		Shared<Material> material;
 		Shared<Shader> shader;
 		Mat4 transform;
-		Mat4* boneMatrices = nullptr;
+		AnimationState* animationState = nullptr;
 		RenderJob(unsigned int vaoID, unsigned int indexCount, Shared<Material> material, Shared<Shader> shader, const Mat4& transform);
-		RenderJob(unsigned int vaoID, unsigned int indexCount, Shared<Material> material, Shared<Shader> shader, const Mat4& transform, Mat4* boneMatrices);
+		RenderJob(unsigned int vaoID, unsigned int indexCount, Shared<Material> material, Shared<Shader> shader, const Mat4& transform, AnimationState* animationState);
 	};
 
 	using SortingFunction = std::function<bool(const RenderJob&, const RenderJob&)>;
@@ -163,6 +164,7 @@ namespace Slayer {
 		DebugInfo debugInfo;
 
 		void BindMaterial(Shared<Material> material, Shared<Shader> shader);
+		void BindAnimation(AnimationState* animationState, Shared<Shader> shader);
 	public:
 		void SetActiveCamera(Shared<Camera> inCamera, const Vec2& windowSize);
 		void Initialize(Shared<Camera> inCamera, int width, int height);
@@ -172,8 +174,8 @@ namespace Slayer {
 		void BeginScene();
 		void BeginScene(const LightInfo& lightInfo, const ShadowInfo& shadowSettings);
 		void BeginScene(const Vector<PointLight>& inPointLights, const DirectionalLight& inDirectionalLight);
-		void Submit(Shared<SkeletalModel> model, const Mat4& transform, Mat4* inBoneMatrices);
-		void Submit(Shared<SkeletalModel> model, Mat4* inBoneMatrices, Shared<Material> material, const Mat4& transform);
+		void Submit(Shared<SkeletalModel> model, const Mat4& transform, AnimationState* animationState);
+		void Submit(Shared<SkeletalModel> model, AnimationState* animationState, Shared<Material> material, const Mat4& transform);
 		void Submit(Shared<Model> model, Shared<Material> material, const Mat4& transform);
 		void Submit(Shared<Mesh> mesh, const Mat4& transform);
 		void SubmitQuad(Shared<Material> material, const Mat4& transform);

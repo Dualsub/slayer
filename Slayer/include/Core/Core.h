@@ -18,6 +18,7 @@
 #include <algorithm>
 
 #undef NDEBUG
+#undef NRELEASE
 #define SL_ASSERT(x) assert(x)
 
 #define SL_EVENT(x)

@@ -100,13 +100,6 @@ namespace Slayer {
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 
-	void UniformBuffer::SetData(void* data, size_t size, int offset)
-	{
-		Bind();
-		glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
-		Unbind();
-	}
-
 	Shared<UniformBuffer> UniformBuffer::Create(size_t size, int binding)
 	{
 		unsigned int uboID;

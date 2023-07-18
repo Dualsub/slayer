@@ -50,7 +50,7 @@ namespace Slayer
     void Application::HandleEvent(Event& e)
     {
         OnEvent(e);
-        for (size_t i = m_layers.size() - 1; i > 0; i--)
+        for (int i = m_layers.size() - 1; i > 0; i--)
             m_layers[i]->OnEvent(e);
     }
 

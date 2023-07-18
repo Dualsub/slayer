@@ -15,7 +15,7 @@ namespace Slayer
         uint32_t height = 0;
         uint32_t channels = 0;
         uint32_t target = 0;
-        std::vector<uint8_t> data = {};
+        Vector<uint8_t> data = {};
 
         TextureAsset() = default;
         ~TextureAsset() = default;
@@ -80,8 +80,8 @@ namespace Slayer
         // Next is a map of texture names to texture ids.
         struct MeshAsset
         {
-            std::vector<float> vertices = {};
-            std::vector<uint32_t> indices = {};
+            Vector<float> vertices = {};
+            Vector<uint32_t> indices = {};
 
             MeshAsset() = default;
             ~MeshAsset() = default;
@@ -171,37 +171,22 @@ namespace Slayer
         ~SkeletalModelAsset() = default;
     };
 
-
     struct AnimationAsset
     {
         float duration = 0.0f;
         float ticksPerSecond = 0.0f;
-
-        struct Channel
-        {
-            std::string name = "";
-            Vector<Frame<Vec3>> positionKeys = {};
-            Vector<Frame<Quat>> rotationKeys = {};
-            Vector<Frame<Vec3>> scaleKeys = {};
-
-            template<typename Serializer>
-            void Transfer(Serializer& serializer)
-            {
-				SL_TRANSFER_VAR(name);
-                serializer.TransferVectorPacked(positionKeys, "positionKeys");
-                serializer.TransferVectorPacked(rotationKeys, "rotationKeys");
-                serializer.TransferVectorPacked(scaleKeys, "scaleKeys");
-			}
-        };
-
-        Vector<Channel> channels = {};
+        uint32_t numChannels = 0;
+        Vector<float> times = {};
+        Vector<float> data = {};
 
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
 			SL_TRANSFER_VAR(duration);
 			SL_TRANSFER_VAR(ticksPerSecond);
-			SL_TRANSFER_VEC(channels);
+            SL_TRANSFER_VAR(numChannels);
+            serializer.TransferVectorPacked(times, "times");
+            serializer.TransferVectorPacked(data, "data");
 		}
     };
 

@@ -1,15 +1,12 @@
-cmake_minimum_required(VERSION 3.0.0)
-project(Testbed VERSION 0.1.0)
-set(CMAKE_CXX_STANDARD 20)
-
-set(SLAYER_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-add_executable(Testbed 
-    "src/Editor/EditorLayer.cpp"
+add_executable(Testbed
+    src/Editor/EditorLayer.cpp
     src/Testbed.cpp
     src/SandboxCamera.cpp
 )
 
-target_include_directories(Testbed PRIVATE include)
+target_link_libraries(Testbed PRIVATE Slayer)
+target_include_directories(Testbed PRIVATE i${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(Testbed PUBLIC Slayer)
+set(SLAYER_GAME_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE INTERNAL "")
+
+message("Testbed: ${SLAYER_GAME_HEADERS}")

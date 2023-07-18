@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#define SL_WARN_ASSERT(condition, x) if (!condition) Slayer::Log::Warn(x)
+
 namespace Slayer
 {
     // Static functions for logging.

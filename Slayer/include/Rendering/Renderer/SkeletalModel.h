@@ -33,6 +33,8 @@ namespace Slayer {
 		Dict<std::string, Socket> sockets;
 		Dict<std::string, size_t> bonesIds;
 		Vector<BoneInfo> bones;
+		int32_t parents[SL_MAX_BONES];
+		Mat4 inverseBindPoseMatrices[SL_MAX_BONES];
 		int boneCounter = 0;
 		Mat4 globalInverseTransform = Mat4(1.0f);
 		Vector<Shared<Mesh>> meshes;
@@ -48,6 +50,8 @@ namespace Slayer {
 			return bones[bonesIds[name]];
 		}
 		const Mat4& GetGlobalInverseTransform() { return globalInverseTransform; }
+		Mat4* GetInverseBindPoseMatrices() { return inverseBindPoseMatrices; }
+		int32_t* GetParents() { return parents; }
 		const Mat4& GetSocketTransform(const std::string& name);
 		void SetSocketOffset(const std::string& name, const Mat4& offset);
 		void AddSocket(const std::string& name, const std::string& boneName, const Mat4& offset);

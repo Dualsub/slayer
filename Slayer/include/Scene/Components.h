@@ -4,6 +4,7 @@
 #include "GameTypesDecl.h"
 #include "Resources/Asset.h"
 #include "Rendering/Renderer/SkeletalModel.h"
+#include "Rendering/Animation/AnimationState.h"
 
 #define ENGINE_COMPONENTS \
     Slayer::EntityID, \
@@ -92,7 +93,7 @@ namespace Slayer {
     {
         AssetID modelID;
         AssetID materialID;
-        Mat4 boneTransforms[SL_MAX_BONES];
+        AnimationState state;
 
         SkeletalRenderer() = default;
         ~SkeletalRenderer() = default;
@@ -149,7 +150,7 @@ namespace Slayer {
         }
     };
 
-    struct AnimationState
+    struct AnimationPlayer
     {
         struct AnimationClip
         {

@@ -6,6 +6,10 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include "glm/gtx/matrix_decompose.hpp"
 
 namespace py = pybind11;
 
@@ -145,7 +149,6 @@ py::tuple load_bone_data(const std::string& file_path) {
         }
     }
 
-    // PrintHeirarchy(mesh->mBones[0]->mNode);
     ReadParents(mesh->mBones[0]->mNode, bones);
 
     importer.FreeScene();
@@ -156,9 +159,77 @@ py::tuple load_bone_data(const std::string& file_path) {
     return bone_data;
 }
 
+py::tuple transform_decompose(const py::array_t<float>& transform)
+{
+    py::buffer_info buf_info = transform.request();
+    if (buf_info.ndim != 2)
+        throw std::runtime_error("Number of dimensions must be two");
+    if (buf_info.shape[0] != 4 || buf_info.shape[1] != 4)
+        throw std::runtime_error("Shape must be 4x4");
+
+    glm::mat4 transform_mat = *(glm::mat4*)buf_info.ptr;
+    glm::vec3 translation;
+    glm::quat rotation;
+    glm::vec3 scale;
+    glm::vec3 skew;
+    glm::vec4 perspective;
+    glm::decompose(transform_mat, scale, rotation, translation, skew, perspective);
+
+    py::array::ShapeContainer shape = { 3 };
+    py::array::StridesContainer strides = { sizeof(float) };
+    py::buffer_info translation_buf_info = py::buffer_info(&translation.x, sizeof(float), py::format_descriptor<float>::format(), 1, shape, strides);
+    py::array_t<float> translation_array(translation_buf_info);
+
+    py::array::ShapeContainer quat_shape = { 4 };
+    py::buffer_info rotation_buf_info = py::buffer_info(&rotation.x, sizeof(float), py::format_descriptor<float>::format(), 1, quat_shape, strides);
+    py::array_t<float> rotation_array(rotation_buf_info);
+
+    py::buffer_info scale_buf_info = py::buffer_info(&scale.x, sizeof(float), py::format_descriptor<float>::format(), 1, shape, strides);
+    py::array_t<float> scale_array(scale_buf_info);
+
+    return py::make_tuple(translation_array, rotation_array, scale_array);
+}
+
+py::array_t<float> transform_compose(const py::array_t<float>& translation, const py::array_t<float>& rotation, const py::array_t<float>& scale)
+{
+    py::buffer_info translation_buf_info = translation.request();
+    if (translation_buf_info.ndim != 1)
+        throw std::runtime_error("Number of dimensions must be one");
+    if (translation_buf_info.shape[0] != 3)
+        throw std::runtime_error("Translation shape must be 3");
+
+    py::buffer_info rotation_buf_info = rotation.request();
+    if (rotation_buf_info.ndim != 1)
+        throw std::runtime_error("Number of dimensions must be one");
+    if (rotation_buf_info.shape[0] != 4)
+        throw std::runtime_error("Rotation shape must be 4");
+
+    py::buffer_info scale_buf_info = scale.request();
+    if (scale_buf_info.ndim != 1)
+        throw std::runtime_error("Number of dimensions must be one");
+    if (scale_buf_info.shape[0] != 3)
+        throw std::runtime_error("Scale shape must be 3");
+
+    glm::vec3 translation_vec = *(glm::vec3*)translation_buf_info.ptr;
+    glm::quat rotation_quat = *(glm::quat*)rotation_buf_info.ptr;
+    glm::vec3 scale_vec = *(glm::vec3*)scale_buf_info.ptr;
+
+    glm::mat4 transform_mat = glm::translate(glm::mat4(1.0f), translation_vec) * glm::mat4_cast(rotation_quat) * glm::scale(glm::mat4(1.0f), scale_vec);
+
+    py::array::ShapeContainer shape = { 4, 4 };
+    py::array::StridesContainer strides = { 4 * sizeof(float), sizeof(float) };
+    py::buffer_info buf_info = py::buffer_info(&transform_mat[0][0], sizeof(float), py::format_descriptor<float>::format(), 2, shape, strides);
+    py::array_t<float> transform_array(buf_info);
+
+    return transform_array;
+}
+
 // Define the Python module
 PYBIND11_MODULE(slayer_bindings, m) {
     m.doc() = "Slayer bindings tools";
     m.def_submodule("assimp")
         .def("load_bone_data", &load_bone_data, "Compute bone weights, influencing bones, and offset matrices for a given mesh file path");
+    m.def_submodule("glm")
+        .def("transform_decompose", &transform_decompose, "Decompose a 4x4 transformation matrix into a translation, rotation, and scale")
+        .def("transform_compose", &transform_compose, "Compose a 4x4 transformation matrix from a translation, rotation, and scale");
 }

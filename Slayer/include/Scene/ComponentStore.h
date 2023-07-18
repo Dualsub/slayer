@@ -47,7 +47,7 @@ namespace Slayer
     };
 
     template <typename T>
-    class ComponentArray: public ComponentArrayBase
+    class ComponentArray : public ComponentArrayBase
     {
     private:
         std::vector<T> m_componentArray;
@@ -195,11 +195,24 @@ namespace Slayer
         {
             if (m_entityIdMap.find(id) != m_entityIdMap.end())
             {
-				return m_entityIdMap[id];
-			}
+                return m_entityIdMap[id];
+            }
 
-			return SL_INVALID_ENTITY;
-		}
+            return SL_INVALID_ENTITY;
+        }
+
+        template <typename... Ts>
+        Entity FindFirst()
+        {
+            Archetype archetype = GetArchetype<Ts...>();
+
+            if (m_archetypeEntityMap.find(archetype) != m_archetypeEntityMap.end())
+            {
+                return *m_archetypeEntityMap[archetype].begin();
+            }
+
+            return SL_INVALID_ENTITY;
+        }
 
         template <typename... Ts>
         void RegisterComponents()
@@ -275,12 +288,7 @@ namespace Slayer
             const std::vector<uint32_t> hashes = { HashType<Ts>()... };
 
             // Build a bit mask of all the component types
-            Archetype searchArchetype = 0;
-            for (auto& hash : hashes)
-            {
-                SL_ASSERT(m_components.find(hash) != m_components.end() && "Component not registered before use.");
-                searchArchetype |= (1 << m_components[hash].bitIndex);
-            }
+            Archetype searchArchetype = GetArchetype<Ts...>();
 
             for (auto& [archetype, entitySet] : m_archetypeEntityMap)
             {
@@ -322,8 +330,8 @@ namespace Slayer
 
             for (auto& future : futures)
             {
-				future.get();
-			}
+                future.get();
+            }
         }
 
         template <typename... Ts>
@@ -387,6 +395,22 @@ namespace Slayer
             return m_entityComponentIndexMap.size();
         }
 
+        template <typename... Ts>
+        Archetype GetArchetype()
+        {
+            const std::vector<uint32_t> hashes = { HashType<Ts>()... };
+
+            // Build a bit mask of all the component types
+            Archetype searchArchetype = 0;
+            for (auto& hash : hashes)
+            {
+                SL_ASSERT(m_components.find(hash) != m_components.end() && "Component not registered before use.");
+                searchArchetype |= (1 << m_components[hash].bitIndex);
+            }
+
+            return searchArchetype;
+        }
+
         size_t GetComponentCount(Entity entity)
         {
             Archetype archetype = m_entityComponentIndexMap[entity];
@@ -409,27 +433,27 @@ namespace Slayer
         template<typename T, typename... Args>
         void AddSingleton(Args... args)
         {
-			uint32_t typeHash = HashType<T>();
-			SL_ASSERT(m_singletons.find(typeHash) == m_singletons.end() && "Singleton already exists.");
+            uint32_t typeHash = HashType<T>();
+            SL_ASSERT(m_singletons.find(typeHash) == m_singletons.end() && "Singleton already exists.");
             m_singletons.insert(std::make_pair(typeHash, MakeShared<T>(args)));
-		}
+        }
 
         template<typename T>
         T* GetSingleton()
         {
-			uint32_t typeHash = HashType<T>();
-			SL_ASSERT(m_singletons.find(typeHash) != m_singletons.end() && "Singleton does not exist.");
-			return static_cast<T*>(m_singletons[typeHash].get());
-		}
+            uint32_t typeHash = HashType<T>();
+            SL_ASSERT(m_singletons.find(typeHash) != m_singletons.end() && "Singleton does not exist.");
+            return static_cast<T*>(m_singletons[typeHash].get());
+        }
 
         template<typename T>
         void RemoveSingleton()
         {
-			uint32_t typeHash = HashType<T>();
+            uint32_t typeHash = HashType<T>();
             if (m_singletons.find(typeHash) != m_singletons.end())
             {
-				m_singletons.erase(typeHash);
-			}
+                m_singletons.erase(typeHash);
+            }
         }
 
         template<typename Serializer>

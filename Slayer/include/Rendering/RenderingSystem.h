@@ -28,16 +28,25 @@ namespace Slayer {
         void Update(float dt, ComponentStore& store)
         {
         }
-        
+
         void Render(Renderer& renderer, ComponentStore& store)
         {
             ResourceManager* rm = ResourceManager::Get();
             store.ForEach<Transform, SkeletalRenderer>([&](Entity entity, Transform* transform, SkeletalRenderer* modelRenderer)
-            {
-                Shared<SkeletalModel> model = rm->GetAsset<SkeletalModel>(modelRenderer->modelID);
-                Shared<Material> material = rm->GetAsset<Material>(modelRenderer->materialID);
-                renderer.Submit(model, modelRenderer->boneTransforms, material, transform->worldTransform);
-            });
+                {
+                    Shared<SkeletalModel> model = rm->GetAsset<SkeletalModel>(modelRenderer->modelID);
+                    Shared<Material> material = rm->GetAsset<Material>(modelRenderer->materialID);
+                    modelRenderer->state.inverseBindPose = model->GetInverseBindPoseMatrices();
+                    modelRenderer->state.parents = model->GetParents();
+                    renderer.Submit(model, &modelRenderer->state, material, transform->worldTransform);
+                });
+
+            store.ForEach<Transform, ModelRenderer>([&](Entity entity, Transform* transform, ModelRenderer* modelRenderer)
+                {
+                    Shared<Model> model = rm->GetAsset<Model>(modelRenderer->modelID);
+                    Shared<Material> material = rm->GetAsset<Material>(modelRenderer->materialID);
+                    renderer.Submit(model, material, transform->worldTransform);
+                });
         }
     };
 }

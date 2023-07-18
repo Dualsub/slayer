@@ -11,7 +11,7 @@
 #include "yaml-cpp/yaml.h"
 
 namespace Slayer {
-    class YamlSerializer: public Serializer<SerializationFlags::Read>
+    class YamlSerializer : public Serializer<SerializationFlags::Read>
     {
     private:
         std::string path;
@@ -198,16 +198,16 @@ namespace Slayer {
             if (glm::decompose(value, scale, rotation, position, skew, perspective))
                 return;
 
-			out << YAML::Key << name;
-			out << YAML::Value;
+            out << YAML::Key << name;
+            out << YAML::Value;
             Transfer(position, "position");
             Transfer(rotation, "rotation");
             Transfer(scale, "scale");
-		}
+        }
     };
 
 
-    class YamlDeserializer: public Serializer<SerializationFlags::Write>
+    class YamlDeserializer : public Serializer<SerializationFlags::Write>
     {
     private:
         std::string path;
@@ -222,6 +222,11 @@ namespace Slayer {
         template<typename T>
         T Deserialize(T& obj, const std::string& path)
         {
+            if (!std::filesystem::exists(path))
+            {
+                Log::Error("File does not exist: ", std::filesystem::absolute(path).string());
+                SL_ASSERT(false);
+            }
             auto node = YAML::LoadFile(path);
             nodeStack.push(node);
             obj.Transfer(*this);
@@ -358,6 +363,14 @@ namespace Slayer {
             auto node = nodeStack.top();
             if (node[name])
                 value = node[name].as<float>();
+        }
+
+        template<>
+        void Transfer(char& value, const std::string& name)
+        {
+            auto node = nodeStack.top();
+            if (node[name])
+                value = node[name].as<char>();
         }
 
         template<>

@@ -9,10 +9,9 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glm)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/yaml-cpp)
 
-set(SLAYER_GENERATED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated)
 set(SLAYER_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_library(Slayer 
+add_library(Slayer
     src/Core/Main.cpp
     src/Core/Engine.cpp
     src/Core/Application.cpp
@@ -44,13 +43,16 @@ add_library(Slayer
     src/Input/Input.cpp
 
     # src/Serialization/SceneSerializer.cpp
-
     src/Jobs/JobSystem.cpp
-)
+    "include/Rendering/Animation/AnimationState.h")
 
-target_include_directories(Slayer PUBLIC 
-${SLAYER_INCLUDE_DIR} 
-${SLAYER_GENERATED_DIR}
+message("SLAYER_GAME_HEADERS: ${SLAYER_GAME_HEADERS}")
+
+
+target_include_directories(Slayer PUBLIC
+    ${SLAYER_INCLUDE_DIR}
+    ${SLAYER_GENERATED_DIR}
+    ${SLAYER_GAME_HEADERS}
 )
 
 target_link_libraries(Slayer PUBLIC

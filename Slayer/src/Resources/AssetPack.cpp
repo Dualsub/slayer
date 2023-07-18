@@ -9,36 +9,6 @@ namespace Slayer
 {
     void AssetPack::Save(const std::string& path)
     {
-        // std::vector<char> data;
-
-        // // Write the header
-        // AssetPackHeader header;
-        // header.version = SL_ASSET_PACK_VERSION;
-        // header.numAssets = m_assets.size();
-        // std::copy(data.data(), data.data() + sizeof(AssetPackHeader), &header);
-
-        // // Write assets
-        // uint32_t offset = sizeof(AssetPackHeader);
-        // for (auto& [id, record] : m_assets)
-        // {
-        //     // Write the header
-        //     AssetHeader assetHeader;
-        //     assetHeader.id = record.id;
-        //     assetHeader.type = record.type;
-        //     assetHeader.nameLength = record.name.length();
-        //     assetHeader.dataLength = record.dataLength;
-        //     std::copy(data.data(), data.data() + sizeof(AssetHeader), &assetHeader);
-
-        //     // Write the name
-        //     std::copy(data.data(), data.data() + record.name.length(), record.name.data());
-
-        //     // Write the data
-        //     std::copy(data.data(), data.data() + record.dataLength, &m_data[record.dataIndex]);
-
-        //     // Update the record
-        //     record.dataIndex = offset;
-        //     offset += sizeof(AssetHeader) + record.name.length() + record.dataLength;
-        // }
     }
 
     void AssetPack::Load(const std::string& path)
@@ -47,6 +17,8 @@ namespace Slayer
         // Attach an input stream to the wanted file
         std::ifstream inputStream(path, std::ios::binary);
         // Check stream status
+        if (!inputStream.is_open())
+            std::cerr << path << std::endl;
         SL_ASSERT(inputStream.is_open() && "Failed to open asset pack!");
 
         // Read the header
@@ -71,11 +43,13 @@ namespace Slayer
         {
             AssetHeader assetHeader;
             assetHeader.Read(inputStream);
-
             AssetRecord record;
             record.id = assetHeader.id;
             record.type = assetHeader.type;
             record.name = assetHeader.name;
+
+            std::cout << "Asset name: " << record.name << std::endl;
+            std::cout << "\tData Length: " << assetHeader.dataLength << std::endl;
 
             record.dataIndex = dataIndex;
             dataIndex += assetHeader.dataLength;
@@ -84,13 +58,13 @@ namespace Slayer
             m_assets[record.id] = record;
             m_assetNames[record.name] = record.id;
 
-            std::cout << "Loaded asset: " << record.name << " with id: " << record.id << " and type: " << record.type << std::endl;
-
             // Add the data to the data buffer
             std::vector<char> data;
             data.resize(assetHeader.dataLength);
             inputStream.read(data.data(), assetHeader.dataLength);
             m_data.insert(m_data.end(), data.begin(), data.end());
+
+
         }
     }
 

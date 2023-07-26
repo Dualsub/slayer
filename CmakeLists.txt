@@ -3,10 +3,10 @@ cmake_minimum_required(VERSION 3.0)
 project(SlayerProject)
 set(CMAKE_CXX_STANDARD 20)
 
-add_subdirectory(Examples/Pong)
+# add_subdirectory(Examples/Pong)
 add_subdirectory(Testbed)
+add_subdirectory(Slayer)
 add_subdirectory(Tools/lib)
-add_subdirectory(Slayer EXCLUDE_FROM_ALL)
 
 # enable_testing()
 # add_subdirectory(Tests)

@@ -12,25 +12,6 @@ namespace Slayer {
 		// Animation texture: frames x (channels * 3 vectors) x 4 floats per vector
 		uint32_t numChannels = data.size() / times.size() / 4;
 
-		/*std::fstream file("animation.txt", std::ios::out);
-		for (uint32_t i = 0; i < times.size(); i++)
-		{
-			file << "Time:" << times[i] << std::endl;
-			for (uint32_t j = 0; j < numChannels / 3; j++)
-			{
-				file << "Channel:" << j << std::endl;
-				for (uint32_t k = 0; k < 3; k++)
-				{
-					Vec4 vec;
-					Copy(data.data() + (i * numChannels + j * 3 + k) * 4, &vec, sizeof(Vec4));
-					file << vec << std::endl;
-				}
-			}
-			file << std::endl;
-			file << std::endl;
-		}*/
-
-
 		glGenTextures(1, &textureID);
 		glBindTexture(GL_TEXTURE_2D, textureID);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

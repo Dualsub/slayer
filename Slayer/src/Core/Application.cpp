@@ -21,6 +21,7 @@ namespace Slayer
 
     void Application::Update()
     {
+        SL_EVENT();
         CalculateDeltaTime();
         OnUpdate(m_deltaTime);
         for (auto& layer : m_layers)
@@ -29,11 +30,15 @@ namespace Slayer
 
     void Application::Render()
     {
+        SL_EVENT();
         OnRender();
         for (auto& layer : m_layers)
             layer->OnRender();
 
-        m_window.SwapBuffers();
+        {
+            SL_EVENT("SwapBuffers");
+            m_window.SwapBuffers();
+        }
     }
 
     void Application::Shutdown()

@@ -214,6 +214,9 @@ py::array_t<float> transform_compose(const py::array_t<float>& translation, cons
     glm::quat rotation_quat = *(glm::quat*)rotation_buf_info.ptr;
     glm::vec3 scale_vec = *(glm::vec3*)scale_buf_info.ptr;
 
+    // Shift the rotation quaternion to the w component
+    rotation_quat = glm::quat(rotation_quat.x, rotation_quat.y, rotation_quat.z, rotation_quat.w);
+
     glm::mat4 transform_mat = glm::translate(glm::mat4(1.0f), translation_vec) * glm::mat4_cast(rotation_quat) * glm::scale(glm::mat4(1.0f), scale_vec);
 
     py::array::ShapeContainer shape = { 4, 4 };
@@ -224,6 +227,75 @@ py::array_t<float> transform_compose(const py::array_t<float>& translation, cons
     return transform_array;
 }
 
+py::tuple transform_bone(const py::array_t<float>& translation, const py::array_t<float>& rotation, const py::array_t<float>& scale, const py::array_t<float>& parent, const py::array_t<float>& inv_transform, const py::array_t<float>& offset)
+{
+    py::buffer_info translation_buf_info = translation.request();
+    if (translation_buf_info.ndim != 1)
+        throw std::runtime_error("Number of dimensions must be one");
+    if (translation_buf_info.shape[0] != 3)
+        throw std::runtime_error("Translation shape must be 3");
+
+    py::buffer_info rotation_buf_info = rotation.request();
+    if (rotation_buf_info.ndim != 1)
+        throw std::runtime_error("Number of dimensions must be one");
+    if (rotation_buf_info.shape[0] != 4)
+        throw std::runtime_error("Rotation shape must be 4");
+
+    py::buffer_info scale_buf_info = scale.request();
+    if (scale_buf_info.ndim != 1)
+        throw std::runtime_error("Number of dimensions must be one");
+    if (scale_buf_info.shape[0] != 3)
+        throw std::runtime_error("Scale shape must be 3");
+
+    py::buffer_info parent_buf_info = parent.request();
+    if (parent_buf_info.ndim != 2)
+        throw std::runtime_error("Number of dimensions must be two");
+    if (parent_buf_info.shape[0] != 4 || parent_buf_info.shape[1] != 4)
+        throw std::runtime_error("Shape must be 4x4");
+
+    py::buffer_info inv_transform_buf_info = inv_transform.request();
+    if (inv_transform_buf_info.ndim != 2)
+        throw std::runtime_error("Number of dimensions must be two");
+    if (inv_transform_buf_info.shape[0] != 4 || inv_transform_buf_info.shape[1] != 4)
+        throw std::runtime_error("Shape must be 4x4");
+
+    py::buffer_info offset_buf_info = offset.request();
+    if (offset_buf_info.ndim != 2)
+        throw std::runtime_error("Number of dimensions must be two");
+    if (offset_buf_info.shape[0] != 4 || offset_buf_info.shape[1] != 4)
+        throw std::runtime_error("Shape must be 4x4");
+
+    glm::vec3 translation_vec = *(glm::vec3*)translation_buf_info.ptr;
+    glm::quat rotation_quat = *(glm::quat*)rotation_buf_info.ptr;
+    glm::vec3 scale_vec = *(glm::vec3*)scale_buf_info.ptr;
+    glm::mat4 parent_mat = *(glm::mat4*)parent_buf_info.ptr;
+    glm::mat4 inv_transform_mat = *(glm::mat4*)inv_transform_buf_info.ptr;
+    glm::mat4 offset_mat = *(glm::mat4*)offset_buf_info.ptr;
+
+    glm::mat4 local_transform = glm::translate(glm::mat4(1.0f), translation_vec) * glm::mat4_cast(rotation_quat) * glm::scale(glm::mat4(1.0f), scale_vec);
+    glm::mat4 model_transform = parent_mat * local_transform;
+
+    glm::mat4 bone_transform = inv_transform_mat * model_transform * offset_mat;
+
+    glm::vec3 new_translation;
+    glm::quat new_rotation;
+    glm::vec3 new_scale;
+    glm::vec3 skew;
+    glm::vec4 perspective;
+    glm::decompose(bone_transform, new_scale, new_rotation, new_translation, skew, perspective);
+
+    py::array::ShapeContainer shape = { 4, 4 };
+    py::array::StridesContainer strides = { 4 * sizeof(float), sizeof(float) };
+    py::buffer_info buf_info = py::buffer_info(&model_transform[0][0], sizeof(float), py::format_descriptor<float>::format(), 2, shape, strides);
+    py::array_t<float> model_array(buf_info);
+
+    std::vector<float> new_translation_vec = { new_translation.x, new_translation.y, new_translation.z };
+    std::vector<float> new_rotation_vec = { new_rotation.w, new_rotation.x, new_rotation.y, new_rotation.z };
+    std::vector<float> new_scale_vec = { new_scale.x, new_scale.y, new_scale.z };
+
+    return py::make_tuple(new_translation_vec, new_rotation_vec, new_scale_vec, model_array);
+}
+
 // Define the Python module
 PYBIND11_MODULE(slayer_bindings, m) {
     m.doc() = "Slayer bindings tools";
@@ -231,5 +303,7 @@ PYBIND11_MODULE(slayer_bindings, m) {
         .def("load_bone_data", &load_bone_data, "Compute bone weights, influencing bones, and offset matrices for a given mesh file path");
     m.def_submodule("glm")
         .def("transform_decompose", &transform_decompose, "Decompose a 4x4 transformation matrix into a translation, rotation, and scale")
-        .def("transform_compose", &transform_compose, "Compose a 4x4 transformation matrix from a translation, rotation, and scale");
+        .def("transform_compose", &transform_compose, "Compose a 4x4 transformation matrix from a translation, rotation, and scale")
+        .def("transform_bone", &transform_bone, "Transforms a local bone transform to global space");
+
 }

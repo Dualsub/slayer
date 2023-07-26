@@ -11,6 +11,7 @@ namespace Slayer
 	class Shader
 	{
 	private:
+		Dict<std::string, int> uniformLocations = {};
 		int programID = 0;
 		int vertexShaderID = 0;
 		int fragmentShaderID = 0;
@@ -19,7 +20,7 @@ namespace Slayer
 		std::string fsSource;
 #endif
 		static int CompileShader(const std::string& source, unsigned int type);
-
+		int GetUniformLocation(const std::string& name);
 	public:
 		AssetID assetID;
 
@@ -41,16 +42,17 @@ namespace Slayer
 		void SetUniform(const std::string& name, const float* values, size_t count);
 		void SetUniform(const std::string& name, const Vec2& value);
 		void SetUniform(const std::string& name, const Vec2i& value);
+		void SetUniform(const std::string& name, const Vec2i* values, size_t count);
 		void SetUniform(const std::string& name, const Vec3& value);
 		void SetUniform(const std::string& name, const Vec4& value);
 		void SetUniform(const std::string& name, const Mat3& value);
 		void SetUniform(const std::string& name, const Mat4& value);
+		void SetUniform(const std::string& name, const Mat4* values, size_t count);
 
 		void Dispose();
 
 		static Shared<Shader> LoadShaderFromFiles(const std::string& vsFile, const std::string& fsFile);
 		static Shared<Shader> LoadShader(const std::string& vs, const std::string& fs);
-
 	};
 
 }

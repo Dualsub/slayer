@@ -55,11 +55,13 @@ namespace Slayer
 
     void Shader::Bind()
     {
+        SL_EVENT();
         glUseProgram(programID);
     }
 
     void Shader::BindWithCheck()
     {
+        SL_EVENT();
         glUseProgram(programID);
         SL_WARN_ASSERT(IsBound(), "Shader is not bound!");
     }
@@ -109,9 +111,20 @@ namespace Slayer
 #endif
     }
 
+    int Shader::GetUniformLocation(const std::string& name)
+    {
+        auto it = uniformLocations.find(name);
+        if (it != uniformLocations.end())
+            return it->second;
+
+        int loc = glGetUniformLocation(programID, name.c_str());
+        uniformLocations[name] = loc;
+        return loc;
+    }
+
     bool Shader::HasUniform(const std::string& name)
     {
-        int loc = glGetUniformLocation(programID, name.c_str());
+        int loc = GetUniformLocation(name);
         return loc != -1;
     }
 
@@ -121,7 +134,7 @@ namespace Slayer
 
     void Shader::SetUniform(const std::string& name, const int value)
     {
-        int loc = glGetUniformLocation(programID, name.c_str());
+        int loc = GetUniformLocation(name);
 #if ASSERT_UNIFORM
         assert(loc != -1);
 #endif
@@ -130,16 +143,16 @@ namespace Slayer
 
     void Shader::SetUniform(const std::string& name, const int* values, size_t count)
     {
-        int loc = glGetUniformLocation(programID, name.c_str());
+        int loc = GetUniformLocation(name);
 #if ASSERT_UNIFORM
         assert(loc != -1);
 #endif
-        glUniform1iv(loc, count, values);
+        glUniform1iv(loc, (GLsizei)count, values);
     }
 
     void Shader::SetUniform(const std::string& name, const float value)
     {
-        int loc = glGetUniformLocation(programID, name.c_str());
+        int loc = GetUniformLocation(name);
 #if ASSERT_UNIFORM
         assert(loc != -1);
 #endif
@@ -148,7 +161,7 @@ namespace Slayer
 
     void Shader::SetUniform(const std::string& name, const float* values, size_t count)
     {
-        int loc = glGetUniformLocation(programID, name.c_str());
+        int loc = GetUniformLocation(name);
 #if ASSERT_UNIFORM
         assert(loc != -1);
 #endif
@@ -157,7 +170,7 @@ namespace Slayer
 
     void Shader::SetUniform(const std::string& name, const Vec2& value)
     {
-        int loc = glGetUniformLocation(programID, name.c_str());
+        int loc = GetUniformLocation(name);
 #if ASSERT_UNIFORM
         assert(loc != -1);
 #endif
@@ -165,16 +178,25 @@ namespace Slayer
     }
     void Shader::SetUniform(const std::string& name, const Vec2i& value)
     {
-        int loc = glGetUniformLocation(programID, name.c_str());
+        int loc = GetUniformLocation(name);
 #if ASSERT_UNIFORM
         assert(loc != -1);
 #endif
         glUniform2i(loc, value.x, value.y);
     }
 
+    void Shader::SetUniform(const std::string& name, const Vec2i* values, size_t count)
+    {
+        int loc = GetUniformLocation(name);
+#if ASSERT_UNIFORM
+        assert(loc != -1);
+#endif
+        glUniform2iv(loc, (GLsizei)count, &values[0].x);
+    }
+
     void Shader::SetUniform(const std::string& name, const Vec3& value)
     {
-        int loc = glGetUniformLocation(programID, name.c_str());
+        int loc = GetUniformLocation(name);
 #if ASSERT_UNIFORM
         assert(loc != -1);
 #endif
@@ -183,7 +205,7 @@ namespace Slayer
 
     void Shader::SetUniform(const std::string& name, const Vec4& value)
     {
-        int loc = glGetUniformLocation(programID, name.c_str());
+        int loc = GetUniformLocation(name);
 #if ASSERT_UNIFORM
         assert(loc != -1);
 #endif
@@ -192,7 +214,7 @@ namespace Slayer
 
     void Shader::SetUniform(const std::string& name, const Mat3& value)
     {
-        int loc = glGetUniformLocation(programID, name.c_str());
+        int loc = GetUniformLocation(name);
 #if ASSERT_UNIFORM
         assert(loc != -1);
 #endif
@@ -201,11 +223,20 @@ namespace Slayer
 
     void Shader::SetUniform(const std::string& name, const Mat4& value)
     {
-        int loc = glGetUniformLocation(programID, name.c_str());
+        int loc = GetUniformLocation(name);
 #if ASSERT_UNIFORM
         assert(loc != -1);
 #endif
         glUniformMatrix4fv(loc, 1, GL_FALSE, &value[0][0]);
+    }
+
+    void Shader::SetUniform(const std::string& name, const Mat4* values, size_t count)
+    {
+        int loc = GetUniformLocation(name);
+#if ASSERT_UNIFORM
+        assert(loc != -1);
+#endif
+        glUniformMatrix4fv(loc, (GLsizei)count, GL_FALSE, &values[0][0][0]);
     }
 
     void Shader::Dispose()

@@ -1,10 +1,11 @@
 #pragma once
-
+#undef NDEBUG
+#undef NRELEASE
 #include <iostream>
 #include <vector>
 #include <memory>
 #include <array>
-#include <cassert>
+#include <assert.h>
 #include <unordered_map>
 #include <string>
 #include <map>
@@ -17,11 +18,20 @@
 #include <tuple>
 #include <algorithm>
 
-#undef NDEBUG
-#undef NRELEASE
 #define SL_ASSERT(x) assert(x)
 
-#define SL_EVENT(x)
+#define PROFILING_ENABLED 1
+// Profiling
+#if PROFILING_ENABLED
+#include "optick.h"
+#define SL_FRAME(ARGS) OPTICK_FRAME(ARGS)
+#define SL_EVENT(...) OPTICK_EVENT(__VA_ARGS__)
+#define SL_GPU_EVENT(...) OPTICK_GPU_EVENT(__VA_ARGS__)
+#else
+#define SL_FRAME(VA_ARGS)
+#define SL_EVENT(...)
+#endif // PROFILING_ENABLED
+
 
 namespace Slayer
 {

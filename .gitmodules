@@ -17,3 +17,6 @@
 [submodule "Tools/lib/thirdparty/pybind11"]
 	path = Tools/lib/thirdparty/pybind11
 	url = https://github.com/pybind/pybind11.git
+[submodule "Slayer/thirdparty/optick"]
+	path = Slayer/thirdparty/optick
+	url = https://github.com/bombomby/optick.git

@@ -5,8 +5,8 @@
 #include "Input/Input.h"
 
 #include "imgui.h"
-#include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "backends/imgui_impl_glfw.h"
 
 namespace Slayer {
 
@@ -77,6 +77,7 @@ namespace Slayer {
 
     void EditorLayer::UpdateGUI()
     {
+        SL_EVENT();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -88,14 +89,22 @@ namespace Slayer {
 
         static auto lastTick = std::chrono::high_resolution_clock::now();
         static std::string text;
+        static auto totalFrames = 0;
+        static auto totalSeconds = 0.0f;
+        totalFrames++;
+        totalSeconds += m_deltaTime;
         auto now = std::chrono::high_resolution_clock::now();
         if (now - lastTick > std::chrono::milliseconds(250))
         {
+            float avg = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTick).count() / (float)totalFrames;
+
             std::stringstream stream;
-            stream << std::fixed << std::setprecision(2) << m_deltaTime * 1000.0f << " ms" << std::endl;
-            stream << std::fixed << std::setprecision(0) << 1.0f / m_deltaTime << " FPS" << std::endl;
+            stream << std::fixed << std::setprecision(2) << avg << " ms" << std::endl;
+            stream << std::fixed << std::setprecision(0) << 1000.0f / avg << " FPS" << std::endl;
             text = stream.str();
             lastTick = now;
+            totalFrames = 0;
+            totalSeconds = 0.0f;
         }
         ImGui::Text(text.c_str());
         ImGui::End();

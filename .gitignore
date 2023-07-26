@@ -6,8 +6,6 @@ out/
 CmakeSettings.json
 
 **/assets/*
-!*.slp
-!*/assets/*.yml
 
 .editorconfig
 *.log
@@ -17,4 +15,5 @@ CmakeSettings.json
 **/__pycache__/*
 **/.venv/*
 *.pyc
+*.*.pyc
 *.pyd

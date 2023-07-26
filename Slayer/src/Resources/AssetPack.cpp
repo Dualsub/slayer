@@ -63,8 +63,6 @@ namespace Slayer
             data.resize(assetHeader.dataLength);
             inputStream.read(data.data(), assetHeader.dataLength);
             m_data.insert(m_data.end(), data.begin(), data.end());
-
-
         }
     }
 

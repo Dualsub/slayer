@@ -1,8 +1,9 @@
-#include "Slayer.h"
 #include "Core/Engine.h"
-#include "Core/Log.h"
 
+#include "Slayer.h"
+#include "Core/Log.h"
 #include "Rendering/RenderingManager.h"
+
 #include <string>
 
 namespace Slayer
@@ -39,6 +40,7 @@ namespace Slayer
 
         while (app->IsRunning())
         {
+            SL_FRAME("MainThread");
             app->Update();
             Update();
             app->Render();

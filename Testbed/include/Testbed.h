@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/Core.h"
 #include "Core/Application.h"
 #include "Core/Layer.h"
 #include "Core/Log.h"
@@ -10,6 +11,7 @@
 #include "Rendering/Renderer/Renderer.h"
 #include "Rendering/RenderingSystem.h"
 #include "Rendering/Animation/AnimationSystem.h"
+#include "Rendering/Animation/AnimationChannel.h"
 
 #include "Scene/TransformSystem.h"
 #include "Scene/Components.h"
@@ -30,7 +32,7 @@
 
 namespace Testbed
 {
-    class TestbedLayer: public Slayer::Layer
+    class TestbedLayer : public Slayer::Layer
     {
     public:
         TestbedLayer() = default;
@@ -69,7 +71,7 @@ namespace Testbed
         AS_Quitting
     };
 
-    class TestbedApplication: public Slayer::Application
+    class TestbedApplication : public Slayer::Application
     {
     private:
         ApplicationState m_state = AS_Running;
@@ -102,7 +104,7 @@ namespace Testbed
             return std::async(std::launch::async, [filename, &store]() {
                 Slayer::YamlSerializer serializer;
                 serializer.Serialize(store, filename);
-            });
+                });
         }
 
         std::future<void> LoadScene(const std::string& filename, Slayer::ComponentStore& store)
@@ -110,7 +112,7 @@ namespace Testbed
             return std::async(std::launch::async, [filename, &store]() {
                 Slayer::YamlDeserializer deserializer;
                 deserializer.Deserialize(store, filename);
-            });
+                });
         }
 
     public:
@@ -124,8 +126,8 @@ namespace Testbed
 
         virtual void OnInitialize() override
         {
-            InitializeResources();
             InitializeWindow();
+            InitializeResources();
             InitializeScene();
 
             PushLayer<class TestbedLayer>();
@@ -167,17 +169,18 @@ namespace Testbed
                 break;
             }
             case AS_Quitting:
-                Stop(); 
+                Stop();
                 break;
             }
         }
 
         virtual void OnRender() override
         {
-            m_renderer.Clear();
-
+            SL_EVENT();
             if (m_state != AS_Running)
                 return;
+
+            m_renderer.Clear();
 
             m_renderer.BeginScene({}, Slayer::DirectionalLight(Slayer::Vec3(-1.0f), Slayer::Vec3(1.0f)));
 
@@ -185,7 +188,7 @@ namespace Testbed
 
             //m_renderer.DrawShadows();
             m_renderer.Draw();
-            m_renderer.DrawLines();
+            // m_renderer.DrawLines();
 
             m_renderer.EndScene();
         }

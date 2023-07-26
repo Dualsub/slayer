@@ -98,6 +98,6 @@ def compose_transform_matrix(pos, rot, scale):
     trans_mat[2, 3] = pos[2]
 
     # Compute transform matrix from the other matrices
-    T = scale_mat @ rot_mat @ trans_mat
+    T = trans_mat @ rot_mat @ scale_mat
 
     return T

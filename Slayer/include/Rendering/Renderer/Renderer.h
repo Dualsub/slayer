@@ -6,9 +6,12 @@
 #include "Serialization/Serialization.h"
 #include "Rendering/Renderer/Model.h"
 #include "Rendering/Renderer/SkeletalModel.h"
+#include "Rendering/Renderer/Shader.h"
 #include "Rendering/Renderer/Lights.h"
 #include "Rendering/Renderer/Framebuffer.h"
 #include "Rendering/Animation/AnimationState.h"
+
+#define SL_MAX_INSTANCES 300
 
 namespace Slayer {
 
@@ -62,17 +65,94 @@ namespace Slayer {
 
 	using SortingFunction = std::function<bool(const RenderJob&, const RenderJob&)>;
 
+	struct Batch
+	{
+		struct InstanceData
+		{
+			Vec2i frames;
+			float time;
+			float padding = 0.0;
+
+			InstanceData(const Vec2i& frames, float time)
+				: frames(frames), time(time)
+			{
+			}
+		};
+
+		unsigned int vaoID;
+		unsigned int indexCount;
+		unsigned int animationID;
+		Shared<Material> material;
+		Shared<Shader> shader;
+		int32_t parents[SL_MAX_BONES * 4];
+		Mat4* inverseBindPose;
+		Vector<Mat4> transforms = {};
+		Vector<InstanceData> instances = {};
+
+		Batch(const RenderJob& job)
+			: vaoID(job.vaoID), indexCount(job.indexCount), animationID(job.animationState->textureID), material(job.material), shader(job.shader), inverseBindPose(job.animationState->inverseBindPose)
+		{
+			for (int i = 0; i < SL_MAX_BONES; i++)
+			{
+				parents[i * 4] = job.animationState->parents[i];
+			}
+			transforms.reserve(SL_MAX_INSTANCES);
+			instances.reserve(SL_MAX_INSTANCES);
+
+			std::memset(transforms.data(), 0, sizeof(Mat4) * SL_MAX_INSTANCES);
+			std::memset(instances.data(), 0, sizeof(InstanceData) * SL_MAX_INSTANCES);
+
+			Add(job);
+		}
+
+		void Add(const RenderJob& job)
+		{
+			transforms.push_back(job.transform);
+			instances.push_back(InstanceData(job.animationState->frames, job.animationState->time));
+		}
+
+		// Generate batch hash without external functions
+		static size_t GetHash(const RenderJob& job)
+		{
+			size_t hash = 0;
+			const size_t prime = 31; // A common prime number used for hash calculations
+
+			hash = (hash * prime) ^ job.vaoID;
+			hash = (hash * prime) ^ job.animationState->textureID;
+			hash = (hash * prime) ^ job.shader->GetID();
+			hash = (hash * prime) ^ job.material->assetID;
+
+			return hash;
+		}
+	};
+
 	struct RenderPass
 	{
 		Vector<RenderJob> queue;
+		Dict<size_t, size_t> batchIndices;
+		Vector<Batch> batches;
 		Shared<Framebuffer> framebuffer;
 		SortingFunction sortingFunction;
 
 		RenderPass() = default;
 		RenderPass(Shared<Framebuffer> framebuffer, SortingFunction sortingFunction);
+
 		void Submit(const RenderJob& job)
 		{
-			queue.push_back(job);
+			if (job.animationState == nullptr)
+				return;
+
+			// queue.push_back(job);
+			size_t hash = Batch::GetHash(job);
+			if (batchIndices.find(hash) == batchIndices.end())
+			{
+				batchIndices[hash] = batches.size();
+				batches.push_back(Batch(job));
+			}
+			else
+			{
+				batches[batchIndices[hash]].Add(job);
+			}
 		}
 
 		void Sort()
@@ -82,12 +162,30 @@ namespace Slayer {
 
 		void Clear()
 		{
-			queue.clear();
+			if (queue.size() > 0)
+			{
+				queue.clear();
+			}
+
+			if (batches.size() > 0)
+			{
+				batches.clear();
+			}
+
+			if (batchIndices.size() > 0)
+			{
+				batchIndices.clear();
+			}
 		}
 
 		const Vector<RenderJob>& GetQueue() const
 		{
 			return queue;
+		}
+
+		const Vector<Batch>& GetBatches() const
+		{
+			return batches;
 		}
 	};
 
@@ -132,6 +230,7 @@ namespace Slayer {
 		Shared<Camera> camera;
 		Shared<UniformBuffer> cameraBuffer;
 		Shared<UniformBuffer> boneBuffer;
+		Shared<UniformBuffer> instanceBuffer;
 		Shared<UniformBuffer> lightsBuffer;
 
 		// Lines
@@ -177,6 +276,7 @@ namespace Slayer {
 		void Submit(Shared<SkeletalModel> model, const Mat4& transform, AnimationState* animationState);
 		void Submit(Shared<SkeletalModel> model, AnimationState* animationState, Shared<Material> material, const Mat4& transform);
 		void Submit(Shared<Model> model, Shared<Material> material, const Mat4& transform);
+		void Submit(Shared<SkeletalModel> model, Shared<Material> material, const Mat4& transform);
 		void Submit(Shared<Mesh> mesh, const Mat4& transform);
 		void SubmitQuad(Shared<Material> material, const Mat4& transform);
 		void SubmitLine(Vec3 p1, Vec3 p2, Vec4 color);

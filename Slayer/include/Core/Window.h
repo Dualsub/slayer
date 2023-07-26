@@ -7,6 +7,7 @@
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3native.h"
 #include "GLFW/glfw3.h"
+#include "glad/glad.h"
 #include <functional>
 
 namespace Slayer
@@ -17,7 +18,7 @@ namespace Slayer
     public:
         using WindowResizeCallback = std::function<void(uint32_t, uint32_t)>;
 
-        Window() 
+        Window()
         {
             m_keyMap.Insert(SlayerKey::KEY_UNKNOWN, GLFW_KEY_UNKNOWN);
             m_keyMap.Insert(SlayerKey::KEY_SPACE, GLFW_KEY_SPACE);

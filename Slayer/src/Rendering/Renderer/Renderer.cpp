@@ -60,9 +60,12 @@ namespace Slayer
 		camera->SetProjectionMatrix(45.0f, (float)width, (float)height, 20.0f, 10000.0f);
 		cameraBuffer = UniformBuffer::Create(sizeof(CameraData), 0);
 
+		// Animation
+		instanceBuffer = UniformBuffer::Create(SL_MAX_INSTANCES * (sizeof(Mat4) + sizeof(Batch::InstanceData)), 3);
+		boneBuffer = UniformBuffer::Create(SL_MAX_BONES * (sizeof(Mat4) + 4 * sizeof(int32_t)), 2);
+
 		// Lights
 		lightsBuffer = UniformBuffer::Create(sizeof(LightsData), 1);
-		boneBuffer = UniformBuffer::Create(SL_MAX_BONES * sizeof(Mat4), 2);
 		directionalLight = { Vec3(0.0f), Vec3(0.0f) };
 		pointLights = {
 			{{4.0f, 4.0f, -33.0f}, {1.0f, 0.0f, 0.0f}},
@@ -116,9 +119,9 @@ namespace Slayer
 
 	void Renderer::Clear()
 	{
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		shadowPass.Clear();
 		mainPass.Clear();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
 	void Renderer::BeginScene(const LightInfo& inLightInfo, const ShadowInfo& inShadowInfo)
@@ -142,6 +145,7 @@ namespace Slayer
 
 	void Renderer::BeginScene(const Vector<PointLight>& inPointLights, const DirectionalLight& inDirectionalLight)
 	{
+		SL_EVENT();
 		CameraData cameraData(camera->GetProjectionMatrix(), camera->GetViewMatrix(), camera->GetPosition());
 		cameraBuffer->SetData((void*)&cameraData, sizeof(CameraData));
 		lightPos = -30.0f * glm::normalize(inDirectionalLight.direction);
@@ -198,6 +202,20 @@ namespace Slayer
 	}
 
 	void Renderer::Submit(Shared<Model> model, Shared<Material> material, const Mat4& transform)
+	{
+		for (auto& mesh : model->GetMeshes())
+		{
+			RenderJob job = { mesh->GetVaoID(),
+								mesh->GetIndexCount(),
+								material,
+								shaderStatic,
+								transform };
+			mainPass.Submit(job);
+			shadowPass.Submit(job);
+		}
+	}
+
+	void Renderer::Submit(Shared<SkeletalModel> model, Shared<Material> material, const Mat4& transform)
 	{
 		for (auto& mesh : model->GetMeshes())
 		{
@@ -271,9 +289,11 @@ namespace Slayer
 		SL_WARN_ASSERT(shader->HasUniform("time"), "Shader does not have uniform 'time'.");
 		SL_ASSERT(animationState && "Animation state was null.");
 		SL_ASSERT(animationState->inverseBindPose && "Animation state frames were null.");
+		SL_ASSERT(animationState->parents && "Animation state parents were null.");
 
 		// Bind uniforms and buffers.
 		boneBuffer->SetData(animationState->inverseBindPose, SL_MAX_BONES * sizeof(Mat4));
+		shader->SetUniform("parents", animationState->parents, SL_MAX_BONES);
 		shader->SetUniform("frames", animationState->frames);
 		shader->SetUniform("time", animationState->time);
 
@@ -347,8 +367,8 @@ namespace Slayer
 			if (job.animationState)
 				BindAnimation(job.animationState, shadowShader);
 
-			shadowShader->SetUniform("transformMatrix", job.transform);
-			glDrawElements(GL_TRIANGLES, job.indexCount, GL_UNSIGNED_INT, 0);
+			shadowShader->SetUniform("transformMatrices", &job.transform, 1);
+			glDrawElementsInstanced(GL_TRIANGLES, job.indexCount, GL_UNSIGNED_INT, 0, 1);
 			debugInfo.drawCalls++;
 		}
 
@@ -362,8 +382,8 @@ namespace Slayer
 
 		viewportFramebuffer->Bind();
 
-		Shared<Shader> currentShader = nullptr;
-		unsigned int currentVao = 0;
+		// Shared<Shader> currentShader = nullptr;
+		// unsigned int currentVao = 0;
 
 		glCullFace(GL_BACK);
 
@@ -371,15 +391,49 @@ namespace Slayer
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		const auto& jobs = mainPass.GetQueue();
-		for (auto& job : jobs)
+		// const auto& jobs = mainPass.GetQueue();
+		// for (auto& job : jobs)
+		// {
+		// 	if (currentShader == nullptr || currentShader->GetID() != job.shader->GetID())
+		// 	{
+		// 		if (currentShader)
+		// 			currentShader->Unbind();
+		// 		currentShader = job.shader;
+		// 		currentShader->BindWithCheck();
+		// 		currentShader->SetUniform("ibl.irradiance", 0);
+		// 		currentShader->SetUniform("ibl.prefilter", 1);
+		// 		currentShader->SetUniform("ibl.brdf", 2);
+		// 		currentShader->SetUniform("shadowMap", 3);
+		// 		Texture::BindTexture(environmentMap->GetIrradianceMapID(), 0, TextureTarget::TEXTURE_CUBE_MAP);
+		// 		Texture::BindTexture(environmentMap->GetPrefilterMapID(), 1, TextureTarget::TEXTURE_CUBE_MAP);
+		// 		Texture::BindTexture(environmentMap->GetBRDFTextureID(), 2, TextureTarget::TEXTURE_2D);
+		// 		Texture::BindTexture(shadowFramebuffer->GetDepthAttachmentID(), 3, TextureTarget::TEXTURE_2D);
+		// 	}
+		// 	if (currentVao != job.vaoID)
+		// 	{
+		// 		VertexArray::Unbind();
+		// 		VertexArray::Bind(job.vaoID);
+		// 		currentVao = job.vaoID;
+		// 	}
+
+		// 	BindMaterial(job.material, currentShader);
+
+		// 	if (job.animationState)
+		// 		BindAnimation(job.animationState, currentShader);
+
+		// 	currentShader->SetUniform("transformMatrices", &job.transform, 1);
+		// 	glDrawElementsInstanced(GL_TRIANGLES, job.indexCount, GL_UNSIGNED_INT, 0, 1);
+		// 	debugInfo.drawCalls++;
+		// }
+
+
+		const auto& batches = mainPass.GetBatches();
+		for (auto& batch : batches)
 		{
-			if (currentShader == nullptr || currentShader->GetID() != job.shader->GetID())
+			Shared<Shader> currentShader = batch.shader;
 			{
-				if (currentShader)
-					currentShader->Unbind();
-				currentShader = job.shader;
-				currentShader->BindWithCheck();
+				SL_GPU_EVENT("Shader Setup");
+				currentShader->Bind();
 				currentShader->SetUniform("ibl.irradiance", 0);
 				currentShader->SetUniform("ibl.prefilter", 1);
 				currentShader->SetUniform("ibl.brdf", 2);
@@ -389,20 +443,47 @@ namespace Slayer
 				Texture::BindTexture(environmentMap->GetBRDFTextureID(), 2, TextureTarget::TEXTURE_2D);
 				Texture::BindTexture(shadowFramebuffer->GetDepthAttachmentID(), 3, TextureTarget::TEXTURE_2D);
 			}
-			if (currentVao != job.vaoID)
+
 			{
+				SL_GPU_EVENT("VAO Bind");
 				VertexArray::Unbind();
-				VertexArray::Bind(job.vaoID);
-				currentVao = job.vaoID;
+				VertexArray::Bind(batch.vaoID);
 			}
 
-			BindMaterial(job.material, currentShader);
+			{
+				SL_GPU_EVENT("Material Bind");
+				BindMaterial(batch.material, currentShader);
+			}
 
-			if (job.animationState)
-				BindAnimation(job.animationState, currentShader);
+			if (batch.animationID >= 0)
+			{
+				{
+					SL_GPU_EVENT("Animation Texture");
+					// Bind animation texture.
+					Texture::BindTexture(batch.animationID, 16);
+					currentShader->SetUniform("animTex", 16);
+				}
 
-			currentShader->SetUniform("transformMatrix", job.transform);
-			glDrawElements(GL_TRIANGLES, job.indexCount, GL_UNSIGNED_INT, 0);
+				{
+					SL_GPU_EVENT("Bone buffer");
+					const size_t inverseBindPoseSize = SL_MAX_BONES * sizeof(Mat4);
+					boneBuffer->SetData(batch.inverseBindPose, inverseBindPoseSize);
+					boneBuffer->SetData(&batch.parents[0], SL_MAX_BONES * sizeof(int32_t) * 4, inverseBindPoseSize);
+				}
+
+				{
+					SL_GPU_EVENT("Instance buffer");
+					const size_t instanceDataSize = SL_MAX_INSTANCES * sizeof(Batch::InstanceData);
+					instanceBuffer->SetData(batch.transforms.data(), batch.transforms.size() * sizeof(Mat4));
+					instanceBuffer->SetData(batch.instances.data(), instanceDataSize, SL_MAX_INSTANCES * sizeof(Mat4));
+				}
+			}
+
+			{
+				SL_GPU_EVENT("Draw call");
+				glDrawElementsInstanced(GL_TRIANGLES, batch.indexCount, GL_UNSIGNED_INT, 0, (GLsizei)batch.transforms.size());
+			}
+
 			debugInfo.drawCalls++;
 		}
 
@@ -413,6 +494,7 @@ namespace Slayer
 
 	void Renderer::EndScene()
 	{
+		SL_EVENT();
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		screenShader->Bind();

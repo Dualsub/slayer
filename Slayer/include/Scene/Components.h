@@ -30,7 +30,7 @@ namespace Slayer {
         }
     };
 
-    struct Transform 
+    struct Transform
     {
         AssetID parentId;
         Mat4 worldTransform = Mat4(1.0f);
@@ -39,6 +39,10 @@ namespace Slayer {
         Vec3 scale = Vec3(1.0f);
 
         Transform() = default;
+        Transform(const Vec3& position, const Quat& rotation, const Vec3& scale) :
+            position(position), rotation(rotation), scale(scale)
+        {
+        }
         ~Transform() = default;
 
         Mat4 GetMatrix() const
@@ -73,12 +77,16 @@ namespace Slayer {
         }
     };
 
-    struct ModelRenderer 
+    struct ModelRenderer
     {
         AssetID modelID;
         AssetID materialID;
 
         ModelRenderer() = default;
+        ModelRenderer(const AssetID& modelID, const AssetID& materialID) :
+            modelID(modelID), materialID(materialID)
+        {
+        }
         ~ModelRenderer() = default;
 
         template<typename Serializer>
@@ -96,6 +104,10 @@ namespace Slayer {
         AnimationState state;
 
         SkeletalRenderer() = default;
+        SkeletalRenderer(const AssetID& modelID, const AssetID& materialID) :
+            modelID(modelID), materialID(materialID)
+        {
+        }
         ~SkeletalRenderer() = default;
 
         template<typename Serializer>
@@ -118,28 +130,28 @@ namespace Slayer {
         const Mat4& GetWorldTransform(const std::string& name) const
         {
             SL_ASSERT(worldTransforms.find(name) != worldTransforms.end() && "Can't find socket.");
-			return worldTransforms.at(name);
-		}
+            return worldTransforms.at(name);
+        }
 
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
-			SL_TRANSFER_VEC(sockets);
+            SL_TRANSFER_VEC(sockets);
             if (serializer.GetFlags() == SerializationFlags::Write)
             {
                 for (auto& socket : sockets)
                 {
                     worldTransforms[socket.name] = Mat4(1.0f);
-				}
+                }
             }
-		}
+        }
     };
 
     // Attaches a entity to a socket on a skeletal model
     struct SocketAttacher
     {
         std::string name;
-        
+
         SocketAttacher() = default;
         ~SocketAttacher() = default;
 
@@ -154,12 +166,12 @@ namespace Slayer {
     {
         struct AnimationClip
         {
-			AssetID id;
-			float time = 0.0f;
-			float speed = 1.0f;
-			bool loop = true;
-			float weight = 1.0f;
-		};
+            AssetID id;
+            float time = 0.0f;
+            float speed = 1.0f;
+            bool loop = true;
+            float weight = 1.0f;
+        };
 
         Vector<AnimationClip> clips;
         Vector<AnimationClip> additiveClips;

@@ -3,11 +3,7 @@ project(Slayer VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 20)
 
 # Dependencies
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glfw)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glad)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glm)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/yaml-cpp)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
 
 set(SLAYER_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -44,10 +40,10 @@ add_library(Slayer
 
     # src/Serialization/SceneSerializer.cpp
     src/Jobs/JobSystem.cpp
-    "include/Rendering/Animation/AnimationState.h")
+    "include/Rendering/Animation/AnimationState.h"
+)
 
 message("SLAYER_GAME_HEADERS: ${SLAYER_GAME_HEADERS}")
-
 
 target_include_directories(Slayer PUBLIC
     ${SLAYER_INCLUDE_DIR}
@@ -61,4 +57,5 @@ target_link_libraries(Slayer PUBLIC
     glad
     glm
     yaml-cpp
+    optick
 )

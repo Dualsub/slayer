@@ -1,1 +1,0 @@
-python -m Resources.packbuilder peek -o ../Testbed/assets/pack.slp

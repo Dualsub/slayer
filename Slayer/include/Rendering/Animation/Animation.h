@@ -9,7 +9,7 @@ namespace Slayer {
 	{
 	private:
 		float duration = 0.0f;
-		
+
 		// GPU Animation Data
 		uint32_t textureID = 0;
 		uint32_t numChannels = 0;
@@ -20,9 +20,9 @@ namespace Slayer {
 		{
 		}
 		~Animation() = default;
-		
+
 		static Shared<Animation> Create(const Vector<float>& data, const Vector<float>& times, float duration);
-		
+
 		float GetDuration() const { return duration; }
 		const Vector<float>& GetTimes() const { return times; }
 		uint32_t GetTextureID() const { return textureID; }

@@ -28,19 +28,19 @@ namespace Slayer {
 
 		auto vao = VertexArray::Create();
 		auto vbo = VertexBuffer::Create((void*)vertices.data(), vertices.size() * sizeof(SkeletalVertex));
-	
+
 		vbo->SetLayout({
 			{"position", 3},
 			{"texCoord", 2},
 			{"normal", 3},
 			{"boneIDs", SL_MAX_BONE_WEIGHTS, AttribType::SL_ATTRIB_INT},
 			{"weights", SL_MAX_BONE_WEIGHTS}
-		});
-	
+			});
+
 		vao->AddVertexBuffer(vbo);
 		auto ebo = IndexBuffer::Create(indices.data(), indices.size() * sizeof(uint32_t));
 		vao->SetIndexBuffer(ebo);
-	
+
 		meshes.push_back(MakeShared<Mesh>(vbo, ebo, vao, indices.size()));
 
 		return MakeShared<SkeletalModel>(meshes, bones, bones.size(), globalInverseTransform);
@@ -52,7 +52,7 @@ namespace Slayer {
 		bones = Vector<BoneInfo>(boneDict.size());
 		// Set all parents in the static array to -1
 		std::memset(parents, -1, SL_MAX_BONES * sizeof(int32_t));
-		
+
 		for (auto& [name, bone] : boneDict)
 		{
 			bones[bone.id] = bone;
@@ -63,7 +63,7 @@ namespace Slayer {
 		for (size_t i = 0; i < bones.size(); i++)
 		{
 			auto& bone = bones[i];
-			inverseBindPoseMatrices[i] = glm::inverse(bone.offset);
+			inverseBindPoseMatrices[i] = bone.offset;
 		}
 	}
 

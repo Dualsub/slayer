@@ -23,12 +23,12 @@ namespace Slayer
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
-			SL_TRANSFER_VAR(width);
-			SL_TRANSFER_VAR(height);
-			SL_TRANSFER_VAR(channels);
-			SL_TRANSFER_VAR(target);
+            SL_TRANSFER_VAR(width);
+            SL_TRANSFER_VAR(height);
+            SL_TRANSFER_VAR(channels);
+            SL_TRANSFER_VAR(target);
             serializer.TransferVectorPacked(data, "data");
-		}
+        }
     };
 
     struct ShaderAsset
@@ -39,9 +39,9 @@ namespace Slayer
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
-			SL_TRANSFER_VAR(vsSource);
-			SL_TRANSFER_VAR(fsSource);
-		}
+            SL_TRANSFER_VAR(vsSource);
+            SL_TRANSFER_VAR(fsSource);
+        }
     };
 
     struct MaterialAsset
@@ -58,9 +58,9 @@ namespace Slayer
             template<typename Serializer>
             void Transfer(Serializer& serializer)
             {
-				SL_TRANSFER_VAR(type);
-				SL_TRANSFER_VAR(textureId);
-			}
+                SL_TRANSFER_VAR(type);
+                SL_TRANSFER_VAR(textureId);
+            }
         };
 
         Vector<MaterialTexture> textures = {};
@@ -68,9 +68,9 @@ namespace Slayer
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
-			SL_TRANSFER_VEC(textures);
-		}
-     
+            SL_TRANSFER_VEC(textures);
+        }
+
         MaterialAsset() = default;
         ~MaterialAsset() = default;
     };
@@ -163,9 +163,9 @@ namespace Slayer
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
-			SL_TRANSFER_VEC(meshes);
+            SL_TRANSFER_VEC(meshes);
             SL_TRANSFER_VEC(sockets);
-		}
+        }
 
         SkeletalModelAsset() = default;
         ~SkeletalModelAsset() = default;
@@ -182,12 +182,12 @@ namespace Slayer
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
-			SL_TRANSFER_VAR(duration);
-			SL_TRANSFER_VAR(ticksPerSecond);
+            SL_TRANSFER_VAR(duration);
+            SL_TRANSFER_VAR(ticksPerSecond);
             SL_TRANSFER_VAR(numChannels);
             serializer.TransferVectorPacked(times, "times");
             serializer.TransferVectorPacked(data, "data");
-		}
+        }
     };
 
 }

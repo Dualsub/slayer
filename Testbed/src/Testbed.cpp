@@ -6,7 +6,7 @@
 
 #include <filesystem>
 
-const std::string assetPath = "Testbed/assets/";
+const std::string assetPath = "C:/dev/repos/Slayer/Testbed/assets/";
 
 namespace Testbed
 {
@@ -27,8 +27,23 @@ namespace Testbed
             m_store.RegisterComponent<T>();
         });
 
-        Slayer::YamlDeserializer deserializer;
-        deserializer.Deserialize(m_store, assetPath + "scene.yml");
+        // Slayer::YamlDeserializer deserializer;
+        // deserializer.Deserialize(m_store, assetPath + "scene.yml");
+
+        const size_t numEntities = 30;
+        const size_t side = (int)glm::sqrt(numEntities);
+
+        for (size_t i = 0; i < side; i++)
+        {
+            for (size_t j = 0; j < side; j++)
+            {
+                Slayer::Entity e = m_store.CreateEntity();
+                float x = i * 100.0f;
+                float z = j * 100.0f;
+                m_store.AddComponent(e, Slayer::Transform(Slayer::Vec3(x, 0.0, z), Slayer::Quat(Slayer::Vec3(-glm::pi<float>() / 2, 0, 0)), Slayer::Vec3(1.0)));
+                m_store.AddComponent(e, Slayer::SkeletalRenderer(17529307428130246956, 5244792205592968665));
+            }
+        }
     }
 
     void TestbedApplication::InitializeRendering()

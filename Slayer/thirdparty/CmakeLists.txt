@@ -1,0 +1,32 @@
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/glfw)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/glad)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/glm)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/yaml-cpp)
+
+#ImGUI
+add_library(imgui STATIC
+    imgui/imgui.cpp
+    imgui/imgui_draw.cpp
+    imgui/imgui_widgets.cpp
+    imgui/imgui_demo.cpp
+    imgui/imgui_tables.cpp
+    imgui/backends/imgui_impl_glfw.cpp
+    imgui/backends/imgui_impl_opengl3.cpp
+)
+
+target_include_directories(imgui PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/imgui
+)
+
+target_link_libraries(imgui PRIVATE
+    glad
+    glfw
+    ${OPENGL_LIBRARIES}
+)
+
+# Optick
+file(GLOB OPTICK_SRC "optick/src/*.*")
+add_library(optick STATIC ${OPTICK_SRC})
+target_include_directories(optick PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/optick/src)
+target_compile_definitions(optick PUBLIC USE_OPTICK=1)
+target_compile_definitions(optick PUBLIC OPTICK_ENABLE_GPU_VULKAN=0)

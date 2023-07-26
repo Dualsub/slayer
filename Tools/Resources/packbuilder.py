@@ -228,9 +228,13 @@ def serialize_animation_texture(name, duration, ticks_per_second, channels, bone
             texture[frame, bone_id * 3 + 2,
                     :3] = np.array(channel["scale_keys"])[frame][1:]
 
-    # texture = np.flip(texture, axis=0)
+        #     print(bone_name, bone_id, "\n",
+        #           texture[frame, bone_id*3:bone_id*3+3, :4])
+        # exit()
+
     # Transpose only in 2d, not the color vectors
     texture = np.transpose(texture, (1, 0, 2))
+    # texture = np.flip(texture, axis=0)
 
     data += struct.pack("<I", texture.size)
     data += struct.pack("<" + "f" * texture.size, *texture.flatten())
@@ -395,7 +399,7 @@ def pack_file(file_tuple: tuple, old_data: dict = {}, skeletons={}, texture_ids=
             duration, ticks_per_second, channels = load_animation(scene)
             bone_data = skeletons[meta["skeleton"]]["bone_data"]
             inv_transform = skeletons[meta["skeleton"]]["inv_transform"]
-            channels = process_animation(channels, bone_data, inv_transform)
+            # channels = process_animation(channels, bone_data, inv_transform)
             return serialize_animation_texture(name, duration, ticks_per_second, channels, bone_data, meta)
 
         is_skeletal = all(len(mesh.bones) > 0 for mesh in scene.meshes)

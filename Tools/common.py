@@ -32,6 +32,7 @@ ASSET_TYPES = {
     "font": 8,
     "prefab": 9,
     "scene": 10,
+    "compute_shader": 11,
 }
 
 TEXTURE_EXTS = [".png", ".jpg", ".jpeg", ".tga", ".bmp", ".hdr"]

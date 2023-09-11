@@ -7,7 +7,7 @@ namespace Slayer
 {
     using AssetID = uint64_t;
 
-    enum AssetType: uint16_t
+    enum AssetType : uint16_t
     {
         SL_ASSET_TYPE_NONE = 0,
         SL_ASSET_TYPE_TEXTURE = 1,
@@ -20,6 +20,7 @@ namespace Slayer
         SL_ASSET_TYPE_FONT = 8,
         SL_ASSET_TYPE_PREFAB = 9,
         SL_ASSET_TYPE_SCENE = 10,
+        SL_ASSET_TYPE_COMPUTE_SHADER = 11,
     };
 
     static AssetID GenerateAssetID()

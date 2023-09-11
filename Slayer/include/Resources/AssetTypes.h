@@ -44,6 +44,17 @@ namespace Slayer
         }
     };
 
+    struct ComputeShaderAsset
+    {
+        std::string source = "";
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(source);
+        }
+    };
+
     struct MaterialAsset
     {
         // Next is a map of texture names to texture ids.

@@ -8,22 +8,22 @@
 ## Features
 
 ### Runtime
-- [ ] ECS: (Custom or EnTT)
-- [ ] 3D Renderer: (OpenGL or DirectX 11)
-  - [ ] Forward rendering
-  - [ ] PBR rendering
+- [x] ECS: (Custom or EnTT)
+- [x] 3D Renderer: (OpenGL or DirectX 11)
+  - [x] Forward rendering
+  - [x] PBR rendering
   - [ ] FXAA Anti-aliasing
   - [ ] MSAA Anti-aliasing
-  - [ ] Shadow mapping
+  - [x] Shadow mapping
   <!-- - [ ] Screen-space ambient occlusion -->
   <!-- - [ ] Screen-space reflections -->
   <!-- - [ ] Screen-space refraction -->
   <!-- - [ ] Depth of field -->
   <!-- - [ ] Bloom -->
 - [ ] Asset Pipeline:
-  - [ ] Asset compilation
+  - [x] Asset compilation
   - [ ] Asset compression
-  - [ ] Asset packaging
+  - [x] Asset packaging
   - [ ] Asset streaming
 - [ ] Animation System
 - [ ] Physcis: (Bullet)

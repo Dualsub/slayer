@@ -51,6 +51,16 @@ def serialize_shader(name, vsSource: str, fsSource: str, meta: dict = {}):
     return serialize_asset(name, data, "shader", meta)
 
 
+def serialize_compute_shader(name, source, meta: dict = {}):
+    old_id = meta["old_data"]["id"] if "old_data" in meta and "id" in meta["old_data"] else None
+    # Create header
+    data = source.encode("utf-8")
+    data = struct.pack("<I", len(data)) + data
+
+    # Add header and data to the pack
+    return serialize_asset(name, data, "compute_shader", meta)
+
+
 def serialize_model(name, meshes: list, meta: dict = {}):
     old_id = meta["old_data"]["id"] if "old_data" in meta and "id" in meta["old_data"] else None
     # Create header
@@ -415,6 +425,9 @@ def pack_file(file_tuple: tuple, old_data: dict = {}, skeletons={}, texture_ids=
     elif ext == ".material":
         textures = load_material(path)
         return serialize_material(name, textures, texture_ids, meta)
+    elif ext == ".comp":
+        source = load_compute_shader(path)
+        return serialize_compute_shader(name, source, meta)
     else:
         return None, None, None
 

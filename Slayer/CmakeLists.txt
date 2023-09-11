@@ -7,7 +7,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
 
 set(SLAYER_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_library(Slayer
+set(SLAYER_SRC
     src/Core/Main.cpp
     src/Core/Engine.cpp
     src/Core/Application.cpp
@@ -30,6 +30,7 @@ add_library(Slayer
     src/Rendering/Renderer/Framebuffer.cpp
     src/Rendering/Renderer/Renderer.cpp
     src/Rendering/Renderer/Shader.cpp
+    src/Rendering/Renderer/ComputeShader.cpp
 
     src/Rendering/Animation/Animation.cpp
 
@@ -37,11 +38,13 @@ add_library(Slayer
     src/Resources/ResourceManager.cpp
 
     src/Input/Input.cpp
-
-    # src/Serialization/SceneSerializer.cpp
-    src/Jobs/JobSystem.cpp
-    "include/Rendering/Animation/AnimationState.h"
 )
+
+# file(GLOB_RECURSE SLAYER_SRC
+# ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+# ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
+# )
+add_library(Slayer STATIC ${SLAYER_SRC})
 
 message("SLAYER_GAME_HEADERS: ${SLAYER_GAME_HEADERS}")
 

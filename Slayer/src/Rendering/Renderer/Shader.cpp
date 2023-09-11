@@ -1,6 +1,6 @@
+#include "Rendering/Renderer/Shader.h"
 #include "Core/Core.h"
 #include "Core/Log.h"
-#include "Rendering/Renderer/Shader.h"
 #include "glad/glad.h"
 #include <sstream>
 #include <fstream>

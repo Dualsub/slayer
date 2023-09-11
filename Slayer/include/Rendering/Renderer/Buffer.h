@@ -6,7 +6,7 @@
 
 namespace Slayer {
 
-	enum AttribType 
+	enum AttribType
 	{
 		SL_ATTRIB_NONE = 0,
 		SL_ATTRIB_FLOAT = GL_FLOAT,
@@ -68,18 +68,32 @@ namespace Slayer {
 		UniformBuffer(int uboID);
 		~UniformBuffer();
 
-		void  Bind();
-		void  Unbind();
+		void Bind();
+		void Unbind();
+		void Dispose();
 
 		template<typename T>
-		void SetData(T* data, size_t size, int offset = 0)
-		{
-			Bind();
-			glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
-			Unbind();
-		}
+		void SetData(T* data, size_t size, int offset = 0);
 
 		static Shared<UniformBuffer> Create(size_t size, int binding);
+	};
+
+	class ShaderStorageBuffer
+	{
+	private:
+		unsigned int ssboID;
+	public:
+		ShaderStorageBuffer(int ssboID);
+		~ShaderStorageBuffer();
+
+		void  Bind();
+		void  Unbind();
+		void Dispose();
+
+		template<typename T>
+		void SetData(T* data, size_t size, int offset = 0);
+
+		static Shared<ShaderStorageBuffer> Create(size_t size, int binding);
 	};
 
 }

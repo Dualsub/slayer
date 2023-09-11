@@ -31,6 +31,12 @@ namespace Slayer
 						gpuLoadData.shaders.push_back({ sa, record });
 						continue;
 					}
+					case AssetType::SL_ASSET_TYPE_COMPUTE_SHADER:
+					{
+						ComputeShaderAsset sa = assetPack.GetAssetData<ComputeShaderAsset>(id);
+						gpuLoadData.computeShaders.push_back({ sa, record });
+						continue;
+					}
 					case AssetType::SL_ASSET_TYPE_MATERIAL:
 					{
 						MaterialAsset ma = assetPack.GetAssetData<MaterialAsset>(id);
@@ -92,6 +98,12 @@ namespace Slayer
 		for (auto& [sa, record] : gpuLoadData.shaders)
 		{
 			Shared<Shader> shader = Shader::LoadShader(sa.vsSource, sa.fsSource);
+			m_assetStore.AddAsset(record.id, record.name, shader);
+		}
+
+		for (auto& [csa, record] : gpuLoadData.computeShaders)
+		{
+			Shared<ComputeShader> shader = ComputeShader::Create(csa.source);
 			m_assetStore.AddAsset(record.id, record.name, shader);
 		}
 

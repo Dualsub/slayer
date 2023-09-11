@@ -8,6 +8,7 @@
 #include "Resources/AssetStore.h"
 #include "Rendering/Renderer/Texture.h"
 #include "Rendering/Renderer/Shader.h"
+#include "Rendering/Renderer/ComputeShader.h"
 #include "Rendering/Renderer/Material.h"
 #include "Rendering/Renderer/Model.h"
 #include "Rendering/Renderer/SkeletalModel.h"
@@ -23,6 +24,7 @@ namespace Slayer
     {
         Vector<Tuple<TextureAsset, AssetRecord>> textures = {};
         Vector<Tuple<ShaderAsset, AssetRecord>> shaders = {};
+        Vector<Tuple<ComputeShaderAsset, AssetRecord>> computeShaders = {};
         Vector<Tuple<ModelAsset, AssetRecord>> models = {};
         Vector<Tuple<SkeletalModelAsset, AssetRecord>> skeletalModels = {};
         Vector<Tuple<AnimationAsset, AssetRecord>> animations = {};

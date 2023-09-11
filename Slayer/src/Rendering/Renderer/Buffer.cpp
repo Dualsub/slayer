@@ -3,10 +3,10 @@
 
 namespace Slayer {
 
-	VertexBuffer::VertexBuffer(int vboID) : 
+	VertexBuffer::VertexBuffer(int vboID) :
 		vboID(vboID)
 	{
-	
+
 	}
 
 	VertexBuffer::~VertexBuffer()
@@ -47,7 +47,7 @@ namespace Slayer {
 		glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
 		return MakeShared<VertexBuffer>(vboID);
 	}
-	
+
 	Shared<VertexBuffer> VertexBuffer::Create(size_t size)
 	{
 		unsigned int vboID;
@@ -100,6 +100,19 @@ namespace Slayer {
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 
+	void UniformBuffer::Dispose()
+	{
+		glDeleteBuffers(1, &uboID);
+	}
+
+	template<typename T>
+	void UniformBuffer::SetData(T* data, size_t size, int offset)
+	{
+		Bind();
+		glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
+		Unbind();
+	}
+
 	Shared<UniformBuffer> UniformBuffer::Create(size_t size, int binding)
 	{
 		unsigned int uboID;
@@ -109,6 +122,49 @@ namespace Slayer {
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 		glBindBufferBase(GL_UNIFORM_BUFFER, binding, uboID);
 		return MakeShared<UniformBuffer>(uboID);
+	}
+
+	ShaderStorageBuffer::ShaderStorageBuffer(int ssboID) : ssboID(ssboID)
+	{
+	}
+
+	ShaderStorageBuffer::~ShaderStorageBuffer()
+	{
+	}
+
+	void ShaderStorageBuffer::Bind()
+	{
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboID);
+	}
+
+	void ShaderStorageBuffer::Unbind()
+	{
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	}
+
+	void ShaderStorageBuffer::Dispose()
+	{
+		glDeleteBuffers(1, &ssboID);
+	}
+
+	template<typename T>
+	void ShaderStorageBuffer::SetData(T* data, size_t size, int offset)
+	{
+		Bind();
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, offset, size, data);
+		Unbind();
+	}
+
+	Shared<ShaderStorageBuffer> ShaderStorageBuffer::Create(size_t size, int binding)
+	{
+		uint32_t ssbo;
+		glGenBuffers(1, &ssbo);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, size, nullptr, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, ssbo);
+
+		return MakeShared<ShaderStorageBuffer>(ssbo);
 	}
 
 }

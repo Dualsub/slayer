@@ -95,6 +95,13 @@ def load_shader(path: str) -> tuple:
     return vs_src, fs_src
 
 
+def load_compute_shader(path: str) -> tuple:
+    src = ""
+    with open(path, mode="r", encoding="utf8") as f:
+        src = f.read()
+    return src + "\0"
+
+
 def load_material(path: str) -> list:
     textures = []
     # Load material

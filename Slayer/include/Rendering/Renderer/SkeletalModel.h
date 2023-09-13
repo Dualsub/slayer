@@ -5,7 +5,7 @@
 #include "Rendering/Animation/Socket.h"
 
 #define SL_MAX_BONE_WEIGHTS 4
-#define SL_MAX_BONES 100
+#define SL_MAX_BONES 96
 
 namespace Slayer {
 
@@ -44,7 +44,7 @@ namespace Slayer {
 		bool HasSocket(const std::string& name) { return sockets.find(name) != sockets.end(); }
 		Dict<std::string, Socket>& GetSockets() { return sockets; }
 		const Vector<BoneInfo>& GetBones() { return bones; }
-		const BoneInfo& GetBone(const std::string& name) 
+		const BoneInfo& GetBone(const std::string& name)
 		{
 			SL_ASSERT(bonesIds.find(name) != bonesIds.end() && "Cannot find bone.");
 			return bones[bonesIds[name]];

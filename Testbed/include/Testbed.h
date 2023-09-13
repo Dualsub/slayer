@@ -187,6 +187,7 @@ namespace Testbed
             m_renderingSystem.Render(m_renderer, m_store);
 
             //m_renderer.DrawShadows();
+            m_renderer.Skin();
             m_renderer.Draw();
             // m_renderer.DrawLines();
 

@@ -1,4 +1,5 @@
 #include "Rendering/Renderer/Buffer.h"
+
 #include "glad/glad.h"
 
 namespace Slayer {
@@ -105,14 +106,6 @@ namespace Slayer {
 		glDeleteBuffers(1, &uboID);
 	}
 
-	template<typename T>
-	void UniformBuffer::SetData(T* data, size_t size, int offset)
-	{
-		Bind();
-		glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
-		Unbind();
-	}
-
 	Shared<UniformBuffer> UniformBuffer::Create(size_t size, int binding)
 	{
 		unsigned int uboID;
@@ -145,14 +138,6 @@ namespace Slayer {
 	void ShaderStorageBuffer::Dispose()
 	{
 		glDeleteBuffers(1, &ssboID);
-	}
-
-	template<typename T>
-	void ShaderStorageBuffer::SetData(T* data, size_t size, int offset)
-	{
-		Bind();
-		glBufferSubData(GL_SHADER_STORAGE_BUFFER, offset, size, data);
-		Unbind();
 	}
 
 	Shared<ShaderStorageBuffer> ShaderStorageBuffer::Create(size_t size, int binding)

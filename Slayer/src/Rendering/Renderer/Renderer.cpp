@@ -22,15 +22,15 @@ namespace Slayer
 
 	void Renderer::Resize(int width, int height)
 	{
-		camera->SetProjectionMatrix(camera->GetFov(), (float)width, (float)height, 20.0f, 10000.0f);
-		viewportFramebuffer->Resize(width, height);
+		m_camera->SetProjectionMatrix(m_camera->GetFov(), (float)width, (float)height, 20.0f, 10000.0f);
+		m_viewportFramebuffer->Resize(width, height);
 		glViewport(0, 0, width, height);
 	}
 
 	void Renderer::Resize(int x, int y, int width, int height)
 	{
-		camera->SetProjectionMatrix(camera->GetFov(), (float)width, (float)height, 20.0f, 10000.0f);
-		viewportFramebuffer->Resize(width * 2, height * 2);
+		m_camera->SetProjectionMatrix(m_camera->GetFov(), (float)width, (float)height, 20.0f, 10000.0f);
+		m_viewportFramebuffer->Resize(width * 2, height * 2);
 		glViewport(x, y, width, height);
 	}
 
@@ -52,48 +52,56 @@ namespace Slayer
 		// Framebuffers
 		Vector<Attachment> colorAttachments = { { AttachmentTarget::RGBA8 } };
 		Attachment depthAttachment = { AttachmentTarget::DEPTH24STENCIL8 };
-		viewportFramebuffer = Framebuffer::Create(colorAttachments, depthAttachment, width, height);
+		m_viewportFramebuffer = Framebuffer::Create(colorAttachments, depthAttachment, width, height);
 
 
 		// Camera
-		camera = inCamera;
-		camera->SetProjectionMatrix(45.0f, (float)width, (float)height, 20.0f, 10000.0f);
-		cameraBuffer = UniformBuffer::Create(sizeof(CameraData), 0);
+		m_camera = inCamera;
+		m_camera->SetProjectionMatrix(45.0f, (float)width, (float)height, 20.0f, 10000.0f);
+		m_cameraBuffer = UniformBuffer::Create(sizeof(CameraData), 0);
+
+		// Instance
+		m_instanceBuffer = UniformBuffer::Create(SL_MAX_INSTANCES * sizeof(Mat4), 3);
 
 		// Animation
-		instanceBuffer = UniformBuffer::Create(SL_MAX_INSTANCES * (sizeof(Mat4) + sizeof(Batch::InstanceData)), 3);
-		boneBuffer = UniformBuffer::Create(SL_MAX_BONES * (sizeof(Mat4) + 4 * sizeof(int32_t)), 2);
+		m_animationBuffer = UniformBuffer::Create((SL_MAX_INSTANCES * sizeof(AnimationData)) + (SL_MAX_SKELETONS * SL_MAX_BONES * sizeof(int32_t) * 4), 4);
+		m_boneBuffer = UniformBuffer::Create(SL_MAX_BONES * sizeof(Mat4), 2);
+		const size_t vectorsPerBone = 4;
+		const size_t floatsPerVector = 4;
+		m_boneTransformTexture = Texture::CreateBuffer(SL_MAX_INSTANCES, SL_MAX_BONES * vectorsPerBone, floatsPerVector, 0, 12);
 
 		// Lights
-		lightsBuffer = UniformBuffer::Create(sizeof(LightsData), 1);
-		directionalLight = { Vec3(0.0f), Vec3(0.0f) };
-		pointLights = {
+		m_lightsBuffer = UniformBuffer::Create(sizeof(LightsData), 1);
+		m_directionalLight = { Vec3(0.0f), Vec3(0.0f) };
+		m_pointLights = {
 			{{4.0f, 4.0f, -33.0f}, {1.0f, 0.0f, 0.0f}},
 			{{-4.0f, 4.0f, -33.0f}, {0.0f, 1.0f, 0.0f}},
 			{{4.0f, -4.0f, -33.0f}, {0.0f, 0.0f, 1.0f}},
 			{{-4.0f, -4.0f, -33.0f}, {1.0f, 1.0f, 1.0f}} };
 
 		ResourceManager* rm = ResourceManager::Get();
-		shaderStatic = rm->GetAsset<Shader>("PBR_shadows_static");
-		shaderSkeletal = rm->GetAsset<Shader>("PBR_shadows_skeletal");
+		m_shaderStatic = rm->GetAsset<Shader>("PBR_shadows_static");
+		m_shaderSkeletal = rm->GetAsset<Shader>("PBR_shadows_skeletal");
 
-		screenShader = rm->GetAsset<Shader>("ScreenShader");
+		m_screenShader = rm->GetAsset<Shader>("ScreenShader");
+
+		m_animationShader = rm->GetAsset<ComputeShader>("SkeletalCompute");
 
 		// Lines
-		lineVertexArray = VertexArray::Create();
-		lineVertexBuffer = VertexBuffer::Create(MAX_LINES * 2 * 7 * sizeof(float)); // 3 for Vec3 p and 4 for Vec4 color.
-		lineVertexBuffer->SetLayout({ {"position", 3}, {"color", 4} });
-		lineVertexArray->AddVertexBuffer(lineVertexBuffer);
-		lineShader = rm->GetAsset<Shader>("LineShader");
+		m_lineVertexArray = VertexArray::Create();
+		m_lineVertexBuffer = VertexBuffer::Create(MAX_LINES * 2 * 7 * sizeof(float)); // 3 for Vec3 p and 4 for Vec4 color.
+		m_lineVertexBuffer->SetLayout({ {"position", 3}, {"color", 4} });
+		m_lineVertexArray->AddVertexBuffer(m_lineVertexBuffer);
+		m_lineShader = rm->GetAsset<Shader>("LineShader");
 		// PBR
 		auto brdfTexture = rm->GetAsset<Texture>("brdf");
 		auto prefilterShader = rm->GetAsset<Shader>("PrefilterCapture");
 		auto irradianceShader = rm->GetAsset<Shader>("IrradianceConvolution");
 		auto captureShader = rm->GetAsset<Shader>("IrradianceCapture");
 		auto cubemapShader = rm->GetAsset<Shader>("SimpleCubemap");
-		hdrTexture = rm->GetAsset<Texture>("DefaultSkybox");
-		environmentMap = EnvironmentMap::Load(
-			hdrTexture,
+		m_hdrTexture = rm->GetAsset<Texture>("DefaultSkybox");
+		m_environmentMap = EnvironmentMap::Load(
+			m_hdrTexture,
 			cubemapShader,
 			captureShader,
 			irradianceShader,
@@ -104,57 +112,57 @@ namespace Slayer
 		colorAttachments = Vector<Attachment>();
 		depthAttachment = { AttachmentTarget::DEPTHCOMPONENT, TextureTarget::TEXTURE_2D, TextureWrap::CLAMP_TO_BORDER };
 		int shadowMapScale = 8;
-		shadowFramebuffer = Framebuffer::Create(colorAttachments, depthAttachment, shadowMapScale * 512, shadowMapScale * 512);
-		shadowShaderStatic = rm->GetAsset<Shader>("ShadowMap_static");
-		shadowShaderSkeletal = rm->GetAsset<Shader>("ShadowMap_skeletal");
-		lightProjection = glm::ortho(shadowMapScale * -20.0f, shadowMapScale * 20.0f, shadowMapScale * -20.0f, shadowMapScale * 20.0f, 5.0f, shadowMapScale * 200.0f);
+		m_shadowFramebuffer = Framebuffer::Create(colorAttachments, depthAttachment, shadowMapScale * 512, shadowMapScale * 512);
+		m_shadowShaderStatic = rm->GetAsset<Shader>("ShadowMap_static");
+		m_shadowShaderSkeletal = rm->GetAsset<Shader>("ShadowMap_skeletal");
+		m_lightProjection = glm::ortho(shadowMapScale * -20.0f, shadowMapScale * 20.0f, shadowMapScale * -20.0f, shadowMapScale * 20.0f, 5.0f, shadowMapScale * 200.0f);
 
 		Resize(-width / 2, -height / 2, width / 2, height / 2);
 	}
 
 	void Renderer::BeginScene()
 	{
-		BeginScene(lightInfo, shadowInfo);
+		BeginScene(m_lightInfo, m_shadowInfo);
 	}
 
 	void Renderer::Clear()
 	{
-		shadowPass.Clear();
-		mainPass.Clear();
+		m_shadowPass.Clear();
+		m_mainPass.Clear();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
 	void Renderer::BeginScene(const LightInfo& inLightInfo, const ShadowInfo& inShadowInfo)
 	{
-		lightInfo = inLightInfo;
-		shadowInfo = inShadowInfo;
-		CameraData cameraData(camera->GetProjectionMatrix(), camera->GetViewMatrix(), camera->GetPosition());
-		cameraBuffer->SetData((void*)&cameraData, sizeof(CameraData));
+		m_lightInfo = inLightInfo;
+		m_shadowInfo = inShadowInfo;
+		CameraData cameraData(m_camera->GetProjectionMatrix(), m_camera->GetViewMatrix(), m_camera->GetPosition());
+		m_cameraBuffer->SetData((void*)&cameraData, sizeof(CameraData));
 
 		// shadowFramebuffer->Resize((unsigned int)shadowInfo.width, (unsigned int)shadowInfo.height);
-		lightProjection = glm::ortho(-shadowInfo.width / 2, shadowInfo.width / 2, -shadowInfo.height / 2, shadowInfo.height / 2, shadowInfo.near, shadowInfo.far);
-		lightPos = shadowInfo.distance * glm::normalize(Vec3(lightInfo.directionalLight.direction)) + shadowInfo.lightPos;
-		Mat4 lightView = glm::lookAt(lightPos, lightPos + Vec3(lightInfo.directionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
-		lightSpaceMatrix = lightProjection * lightView;
+		m_lightProjection = glm::ortho(-m_shadowInfo.width / 2, m_shadowInfo.width / 2, -m_shadowInfo.height / 2, m_shadowInfo.height / 2, m_shadowInfo.near, m_shadowInfo.far);
+		m_lightPos = m_shadowInfo.distance * glm::normalize(Vec3(m_lightInfo.directionalLight.direction)) + m_shadowInfo.lightPos;
+		Mat4 lightView = glm::lookAt(m_lightPos, m_lightPos + Vec3(m_lightInfo.directionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
+		m_lightSpaceMatrix = m_lightProjection * lightView;
 		Vector<PointLight> pointLights;
-		LightsData lightsData(lightInfo.directionalLight, pointLights, lightSpaceMatrix);
-		lightsBuffer->SetData((void*)&lightsData, sizeof(LightsData));
+		LightsData lightsData(m_lightInfo.directionalLight, pointLights, m_lightSpaceMatrix);
+		m_lightsBuffer->SetData((void*)&lightsData, sizeof(LightsData));
 
-		debugInfo.drawCalls = 0;
+		m_debugInfo.drawCalls = 0;
 	}
 
 	void Renderer::BeginScene(const Vector<PointLight>& inPointLights, const DirectionalLight& inDirectionalLight)
 	{
 		SL_EVENT();
-		CameraData cameraData(camera->GetProjectionMatrix(), camera->GetViewMatrix(), camera->GetPosition());
-		cameraBuffer->SetData((void*)&cameraData, sizeof(CameraData));
-		lightPos = -30.0f * glm::normalize(inDirectionalLight.direction);
-		Mat4 lightView = glm::lookAt(lightPos, lightPos + Vec3(inDirectionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
-		lightSpaceMatrix = lightProjection * lightView;
-		LightsData lightsData(inDirectionalLight, inPointLights, lightSpaceMatrix);
-		lightsBuffer->SetData((void*)&lightsData, sizeof(LightsData));
+		CameraData cameraData(m_camera->GetProjectionMatrix(), m_camera->GetViewMatrix(), m_camera->GetPosition());
+		m_cameraBuffer->SetData((void*)&cameraData, sizeof(CameraData));
+		m_lightPos = -30.0f * glm::normalize(inDirectionalLight.direction);
+		Mat4 lightView = glm::lookAt(m_lightPos, m_lightPos + Vec3(inDirectionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
+		m_lightSpaceMatrix = m_lightProjection * lightView;
+		LightsData lightsData(inDirectionalLight, inPointLights, m_lightSpaceMatrix);
+		m_lightsBuffer->SetData((void*)&lightsData, sizeof(LightsData));
 
-		debugInfo.drawCalls = 0;
+		m_debugInfo.drawCalls = 0;
 	}
 
 	void Renderer::SubmitQuad(Shared<Material> material, const Mat4& transform)
@@ -162,11 +170,11 @@ namespace Slayer
 		RenderJob job = { Mesh::GetQuadVaoID(),
 							Mesh::GetQuadIndexCount(),
 							material,
-							shaderStatic,
+							m_shaderStatic,
 							transform };
 
-		mainPass.Submit(job);
-		shadowPass.Submit(job);
+		m_mainPass.Submit(job);
+		m_shadowPass.Submit(job);
 	}
 
 	void Renderer::Submit(Shared<SkeletalModel> model, const Mat4& transform, AnimationState* animationState)
@@ -176,12 +184,12 @@ namespace Slayer
 			RenderJob job = { mesh->GetVaoID(),
 								mesh->GetIndexCount(),
 								mesh->GetMaterial(),
-								shaderSkeletal,
+								m_shaderSkeletal,
 								transform,
 								animationState };
 
-			mainPass.Submit(job);
-			shadowPass.Submit(job);
+			m_mainPass.Submit(job);
+			m_shadowPass.Submit(job);
 		}
 	}
 
@@ -192,12 +200,12 @@ namespace Slayer
 			RenderJob job = { mesh->GetVaoID(),
 								mesh->GetIndexCount(),
 								material,
-								shaderSkeletal,
+								m_shaderSkeletal,
 								transform,
 								animationState };
 
-			mainPass.Submit(job);
-			shadowPass.Submit(job);
+			m_mainPass.Submit(job);
+			m_shadowPass.Submit(job);
 		}
 	}
 
@@ -208,10 +216,10 @@ namespace Slayer
 			RenderJob job = { mesh->GetVaoID(),
 								mesh->GetIndexCount(),
 								material,
-								shaderStatic,
+								m_shaderStatic,
 								transform };
-			mainPass.Submit(job);
-			shadowPass.Submit(job);
+			m_mainPass.Submit(job);
+			m_shadowPass.Submit(job);
 		}
 	}
 
@@ -222,10 +230,10 @@ namespace Slayer
 			RenderJob job = { mesh->GetVaoID(),
 								mesh->GetIndexCount(),
 								material,
-								shaderStatic,
+								m_shaderStatic,
 								transform };
-			mainPass.Submit(job);
-			shadowPass.Submit(job);
+			m_mainPass.Submit(job);
+			m_shadowPass.Submit(job);
 		}
 	}
 
@@ -234,10 +242,10 @@ namespace Slayer
 		RenderJob job = { mesh->GetVaoID(),
 							mesh->GetIndexCount(),
 							mesh->GetMaterial(),
-							shaderStatic,
+							m_shaderStatic,
 							transform };
-		mainPass.Submit(job);
-		shadowPass.Submit(job);
+		m_mainPass.Submit(job);
+		m_shadowPass.Submit(job);
 	}
 
 	void Renderer::BindMaterial(Shared<Material> material, Shared<Shader> shader)
@@ -292,7 +300,7 @@ namespace Slayer
 		SL_ASSERT(animationState->parents && "Animation state parents were null.");
 
 		// Bind uniforms and buffers.
-		boneBuffer->SetData(animationState->inverseBindPose, SL_MAX_BONES * sizeof(Mat4));
+		m_boneBuffer->SetData(animationState->inverseBindPose, SL_MAX_BONES * sizeof(Mat4));
 		shader->SetUniform("parents", animationState->parents, SL_MAX_BONES);
 		shader->SetUniform("frames", animationState->frames);
 		shader->SetUniform("time", animationState->time);
@@ -304,35 +312,108 @@ namespace Slayer
 
 	void Renderer::SubmitLine(Vec3 p1, Vec3 p2, Vec4 color)
 	{
-		lineBuffer.insert(lineBuffer.end(), { p1.x, p1.y, p1.z });
-		lineBuffer.insert(lineBuffer.end(), { color.r, color.g, color.b, color.a });
-		lineBuffer.insert(lineBuffer.end(), { p2.x, p2.y, p2.z });
-		lineBuffer.insert(lineBuffer.end(), { color.r, color.g, color.b, color.a });
+		m_lineBuffer.insert(m_lineBuffer.end(), { p1.x, p1.y, p1.z });
+		m_lineBuffer.insert(m_lineBuffer.end(), { color.r, color.g, color.b, color.a });
+		m_lineBuffer.insert(m_lineBuffer.end(), { p2.x, p2.y, p2.z });
+		m_lineBuffer.insert(m_lineBuffer.end(), { color.r, color.g, color.b, color.a });
+	}
+
+	void Renderer::Skin()
+	{
+		SL_EVENT("Skinning Pass");
+		AnimationData animationData[SL_MAX_INSTANCES];
+		Dict<int32_t*, int32_t> skeletonIds = {};
+
+		{
+			SL_EVENT("Animation Data Setup");
+
+			std::memset(animationData, 0, sizeof(AnimationData) * SL_MAX_INSTANCES);
+
+			size_t i = 0;
+			for (auto& state : m_mainPass.animationStates)
+			{
+				if (skeletonIds.find(state.parents) == skeletonIds.end())
+				{
+					skeletonIds[state.parents] = int32_t(skeletonIds.size());
+				}
+				int32_t skeletonId = skeletonIds[state.parents];
+				animationData[i] = { state.frames, state.time, skeletonId };
+				i++;
+			}
+		}
+
+		const size_t numParents = SL_MAX_BONES * SL_MAX_SKELETONS * 4;
+		int32_t parents[numParents];
+		const size_t parentsEntrySize = SL_MAX_BONES * sizeof(int32_t);
+
+		{
+			SL_EVENT("Parents Data Setup");
+			std::memset(parents, 0, numParents * sizeof(int32_t));
+			for (auto& [parentPtr, skeletonId] : skeletonIds)
+			{
+				for (size_t i = 0; i < SL_MAX_BONES; i++)
+				{
+					parents[skeletonId * SL_MAX_BONES + i * 4] = parentPtr[i];
+				}
+			}
+		}
+
+		{
+			SL_EVENT("Animation Buffer Setup");
+
+			m_animationShader->Bind();
+
+			m_animationBuffer->Bind();
+			m_animationBuffer->SetSubData(animationData, sizeof(animationData));
+			m_animationBuffer->SetSubData(parents, sizeof(parents), sizeof(animationData));
+		}
+
+		{
+			SL_EVENT("Animation Texture Setup");
+			Texture::BindTexture(m_mainPass.animationStates[0].textureID, 0);
+			m_animationShader->SetUniform("animTex", 0);
+		}
+
+		{
+			SL_EVENT("Bone Transform Texture Setup");
+			m_boneTransformTexture->Bind();
+		}
+
+		{
+			SL_EVENT("Compute Shader Dispatch");
+			m_animationShader->Dispatch(SL_MAX_BONES, SL_MAX_INSTANCES, 1);
+			m_animationShader->MemoryBarrier(MemoryBarrierBits::SL_IMAGE_ACCESS);
+		}
+
+		m_boneTransformTexture->Unbind();
+		m_animationShader->Unbind();
+		m_animationBuffer->Unbind();
 	}
 
 	void Renderer::DrawLines()
 	{
-		if (!lineBuffer.size())
+		if (!m_lineBuffer.size())
 			return;
 
-		assert(lineBuffer.size() % 7 == 0 && "Number of floats in the buffer is wrong."); // Very good error message.
-		lineVertexBuffer->SetSubData(lineBuffer.data(), lineBuffer.size() * sizeof(float));
+		assert(m_lineBuffer.size() % 7 == 0 && "Number of floats in the buffer is wrong."); // Very good error message.
+		m_lineVertexBuffer->SetSubData(m_lineBuffer.data(), m_lineBuffer.size() * sizeof(float));
 
-		lineShader->Bind();
-		lineVertexArray->Bind();
+		m_lineShader->Bind();
+		m_lineVertexArray->Bind();
 
 		glClear(GL_DEPTH_BUFFER_BIT);
-		glDrawArrays(GL_LINES, 0, lineBuffer.size() / 7);
-		debugInfo.drawCalls++;
+		glDrawArrays(GL_LINES, 0, m_lineBuffer.size() / 7);
+		m_debugInfo.drawCalls++;
 
-		lineVertexArray->Unbind();
-		lineShader->Unbind();
+		m_lineVertexArray->Unbind();
+		m_lineShader->Unbind();
 
-		lineBuffer.clear();
+		m_lineBuffer.clear();
 	}
 
 	void Renderer::DrawShadows()
 	{
+		SL_ASSERT(true && "Not implemented.");
 		SL_EVENT("Shadow Pass");
 
 		Shared<Shader> shadowShader = nullptr;
@@ -340,21 +421,21 @@ namespace Slayer
 
 		// Shadow pass
 		glCullFace(GL_BACK);
-		shadowFramebuffer->Bind();
+		m_shadowFramebuffer->Bind();
 
 		glClear(GL_DEPTH_BUFFER_BIT);
 
-		const auto& jobs = mainPass.GetQueue();
+		const auto& jobs = m_mainPass.GetQueue();
 		for (auto& job : jobs)
 		{
-			int32_t wantedShaderID = job.animationState ? shadowShaderSkeletal->GetID() : shadowShaderStatic->GetID();
+			int32_t wantedShaderID = job.animationState ? m_shadowShaderSkeletal->GetID() : m_shadowShaderStatic->GetID();
 			if (shadowShader == nullptr || shadowShader->GetID() != wantedShaderID)
 			{
 				if (shadowShader)
 					shadowShader->Unbind();
-				shadowShader = job.animationState ? shadowShaderSkeletal : shadowShaderStatic;
+				shadowShader = job.animationState ? m_shadowShaderSkeletal : m_shadowShaderStatic;
 				shadowShader->BindWithCheck();
-				shadowShader->SetUniform("lightSpaceMatrix", lightSpaceMatrix);
+				shadowShader->SetUniform("lightSpaceMatrix", m_lightSpaceMatrix);
 			}
 
 			if (currentVao != job.vaoID)
@@ -369,18 +450,18 @@ namespace Slayer
 
 			shadowShader->SetUniform("transformMatrices", &job.transform, 1);
 			glDrawElementsInstanced(GL_TRIANGLES, job.indexCount, GL_UNSIGNED_INT, 0, 1);
-			debugInfo.drawCalls++;
+			m_debugInfo.drawCalls++;
 		}
 
 		shadowShader->Unbind();
-		shadowFramebuffer->Unbind();
+		m_shadowFramebuffer->Unbind();
 	}
 
 	void Renderer::Draw()
 	{
 		SL_EVENT("Main Pass");
 
-		viewportFramebuffer->Bind();
+		m_viewportFramebuffer->Bind();
 
 		// Shared<Shader> currentShader = nullptr;
 		// unsigned int currentVao = 0;
@@ -426,8 +507,7 @@ namespace Slayer
 		// 	debugInfo.drawCalls++;
 		// }
 
-
-		const auto& batches = mainPass.GetBatches();
+		const auto& batches = m_mainPass.GetBatches();
 		for (auto& batch : batches)
 		{
 			Shared<Shader> currentShader = batch.shader;
@@ -438,10 +518,13 @@ namespace Slayer
 				currentShader->SetUniform("ibl.prefilter", 1);
 				currentShader->SetUniform("ibl.brdf", 2);
 				currentShader->SetUniform("shadowMap", 3);
-				Texture::BindTexture(environmentMap->GetIrradianceMapID(), 0, TextureTarget::TEXTURE_CUBE_MAP);
-				Texture::BindTexture(environmentMap->GetPrefilterMapID(), 1, TextureTarget::TEXTURE_CUBE_MAP);
-				Texture::BindTexture(environmentMap->GetBRDFTextureID(), 2, TextureTarget::TEXTURE_2D);
-				Texture::BindTexture(shadowFramebuffer->GetDepthAttachmentID(), 3, TextureTarget::TEXTURE_2D);
+				Texture::BindTexture(m_environmentMap->GetIrradianceMapID(), 0, TextureTarget::TEXTURE_CUBE_MAP);
+				Texture::BindTexture(m_environmentMap->GetPrefilterMapID(), 1, TextureTarget::TEXTURE_CUBE_MAP);
+				Texture::BindTexture(m_environmentMap->GetBRDFTextureID(), 2, TextureTarget::TEXTURE_2D);
+				Texture::BindTexture(m_shadowFramebuffer->GetDepthAttachmentID(), 3, TextureTarget::TEXTURE_2D);
+
+				currentShader->SetUniform("boneTransformTex", 12);
+				m_boneTransformTexture->Bind();
 			}
 
 			{
@@ -455,28 +538,11 @@ namespace Slayer
 				BindMaterial(batch.material, currentShader);
 			}
 
-			if (batch.animationID >= 0)
 			{
-				{
-					SL_GPU_EVENT("Animation Texture");
-					// Bind animation texture.
-					Texture::BindTexture(batch.animationID, 16);
-					currentShader->SetUniform("animTex", 16);
-				}
-
-				{
-					SL_GPU_EVENT("Bone buffer");
-					const size_t inverseBindPoseSize = SL_MAX_BONES * sizeof(Mat4);
-					boneBuffer->SetData(batch.inverseBindPose, inverseBindPoseSize);
-					boneBuffer->SetData(&batch.parents[0], SL_MAX_BONES * sizeof(int32_t) * 4, inverseBindPoseSize);
-				}
-
-				{
-					SL_GPU_EVENT("Instance buffer");
-					const size_t instanceDataSize = SL_MAX_INSTANCES * sizeof(Batch::InstanceData);
-					instanceBuffer->SetData(batch.transforms.data(), batch.transforms.size() * sizeof(Mat4));
-					instanceBuffer->SetData(batch.instances.data(), instanceDataSize, SL_MAX_INSTANCES * sizeof(Mat4));
-				}
+				SL_GPU_EVENT("Instance buffer");
+				const size_t instanceDataSize = SL_MAX_INSTANCES * sizeof(Mat4);
+				m_instanceBuffer->SetData(batch.transforms.data(), batch.transforms.size() * sizeof(Mat4));
+				m_boneBuffer->SetData(batch.inverseBindPose, SL_MAX_BONES * sizeof(Mat4));
 			}
 
 			{
@@ -484,12 +550,12 @@ namespace Slayer
 				glDrawElementsInstanced(GL_TRIANGLES, batch.indexCount, GL_UNSIGNED_INT, 0, (GLsizei)batch.transforms.size());
 			}
 
-			debugInfo.drawCalls++;
+			m_debugInfo.drawCalls++;
 		}
 
-		environmentMap->Draw();
+		m_environmentMap->Draw();
 
-		viewportFramebuffer->Unbind();
+		m_viewportFramebuffer->Unbind();
 	}
 
 	void Renderer::EndScene()
@@ -497,14 +563,14 @@ namespace Slayer
 		SL_EVENT();
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		screenShader->Bind();
-		screenShader->SetUniform("screenTexture", 0);
+		m_screenShader->Bind();
+		m_screenShader->SetUniform("screenTexture", 0);
 		glBindVertexArray(Mesh::GetQuadVaoID());
 		// glDisable(GL_DEPTH_TEST);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, viewportFramebuffer->GetColorAttachmentID(0));
+		glBindTexture(GL_TEXTURE_2D, m_viewportFramebuffer->GetColorAttachmentID(0));
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		screenShader->Unbind();
+		m_screenShader->Unbind();
 	}
 
 	void Renderer::CleanUp()
@@ -513,7 +579,7 @@ namespace Slayer
 
 	void Renderer::SetActiveCamera(Shared<Camera> inCamera, const Vec2& windowSize)
 	{
-		camera = inCamera;
+		m_camera = inCamera;
 		Resize(-windowSize.x / 2, -windowSize.y / 2, windowSize.x / 2, windowSize.y / 2);
 	}
 

@@ -31,13 +31,13 @@ namespace Testbed {
 			fov -= 10.0f * dt;
 		}
 
-		if(IsProjectionDirty)
+		if (IsProjectionDirty)
 		{
 			Slayer::Window& window = Slayer::Application::Get<Testbed::TestbedApplication>()->GetWindow();
 			Slayer::Log::Info("FOV:", fov);
 			SetProjectionMatrix(fov, float(window.GetWidth()), float(window.GetHeight()), nearPlane, farPlane);
 		}
-		
+
 		Slayer::Vec3 dr = Slayer::Vec3(0.0f);
 
 		if (Slayer::Input::IsKeyPressed(Slayer::SlayerKey::KEY_W))
@@ -84,10 +84,10 @@ namespace Testbed {
 
 		if (dr != Slayer::Vec3(0.0))
 			position += (glm::normalize(dr) * velocity * dt);
-		
-		if(Slayer::Input::IsKeyPressed(Slayer::SlayerKey::KEY_F1))
+
+		if (Slayer::Input::IsKeyPressed(Slayer::SlayerKey::KEY_F1))
 			transform = glm::lookAt(position, position + forward, up);
-			
+
 
 		transform = glm::lookAt(position, position + forward, up);
 	}
@@ -109,6 +109,9 @@ namespace Testbed {
 			//Engine::Get()->GetWindow()->SetCursorMode(editMode ? CursorMode::SL_DISABLED : CursorMode::SL_NORMAL);
 			//editMode = !editMode;
 			//firstMouse = true;
+			break;
+		case Slayer::SlayerKey::KEY_C:
+			fov = 90.0f;
 			break;
 		default:
 			break;

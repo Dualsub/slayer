@@ -6,12 +6,14 @@
 #include "Serialization/Serialization.h"
 #include "Rendering/Renderer/Model.h"
 #include "Rendering/Renderer/SkeletalModel.h"
+#include "Rendering/Renderer/ComputeShader.h"
 #include "Rendering/Renderer/Shader.h"
 #include "Rendering/Renderer/Lights.h"
 #include "Rendering/Renderer/Framebuffer.h"
 #include "Rendering/Animation/AnimationState.h"
 
-#define SL_MAX_INSTANCES 300
+#define SL_MAX_INSTANCES 512
+#define SL_MAX_SKELETONS 4
 
 namespace Slayer {
 
@@ -65,20 +67,23 @@ namespace Slayer {
 
 	using SortingFunction = std::function<bool(const RenderJob&, const RenderJob&)>;
 
+	struct AnimationData
+	{
+		Vec2i frames = Vec2(0);
+		float time = 0.0;
+		int32_t skeletonId = 0;
+
+		AnimationData() = default;
+		~AnimationData() = default;
+
+		AnimationData(const Vec2i& frames, float time, int32_t skeletonId = -1)
+			: frames(frames), time(time), skeletonId(skeletonId)
+		{
+		}
+	};
+
 	struct Batch
 	{
-		struct InstanceData
-		{
-			Vec2i frames;
-			float time;
-			float padding = 0.0;
-
-			InstanceData(const Vec2i& frames, float time)
-				: frames(frames), time(time)
-			{
-			}
-		};
-
 		unsigned int vaoID;
 		unsigned int indexCount;
 		unsigned int animationID;
@@ -87,7 +92,6 @@ namespace Slayer {
 		int32_t parents[SL_MAX_BONES * 4];
 		Mat4* inverseBindPose;
 		Vector<Mat4> transforms = {};
-		Vector<InstanceData> instances = {};
 
 		Batch(const RenderJob& job)
 			: vaoID(job.vaoID), indexCount(job.indexCount), animationID(job.animationState->textureID), material(job.material), shader(job.shader), inverseBindPose(job.animationState->inverseBindPose)
@@ -97,10 +101,8 @@ namespace Slayer {
 				parents[i * 4] = job.animationState->parents[i];
 			}
 			transforms.reserve(SL_MAX_INSTANCES);
-			instances.reserve(SL_MAX_INSTANCES);
 
 			std::memset(transforms.data(), 0, sizeof(Mat4) * SL_MAX_INSTANCES);
-			std::memset(instances.data(), 0, sizeof(InstanceData) * SL_MAX_INSTANCES);
 
 			Add(job);
 		}
@@ -108,7 +110,6 @@ namespace Slayer {
 		void Add(const RenderJob& job)
 		{
 			transforms.push_back(job.transform);
-			instances.push_back(InstanceData(job.animationState->frames, job.animationState->time));
 		}
 
 		// Generate batch hash without external functions
@@ -131,6 +132,7 @@ namespace Slayer {
 		Vector<RenderJob> queue;
 		Dict<size_t, size_t> batchIndices;
 		Vector<Batch> batches;
+		Vector<AnimationState> animationStates;
 		Shared<Framebuffer> framebuffer;
 		SortingFunction sortingFunction;
 
@@ -139,10 +141,11 @@ namespace Slayer {
 
 		void Submit(const RenderJob& job)
 		{
-			if (job.animationState == nullptr)
-				return;
+			if (job.animationState != nullptr)
+			{
+				animationStates.push_back(*job.animationState);
+			}
 
-			// queue.push_back(job);
 			size_t hash = Batch::GetHash(job);
 			if (batchIndices.find(hash) == batchIndices.end())
 			{
@@ -175,6 +178,11 @@ namespace Slayer {
 			if (batchIndices.size() > 0)
 			{
 				batchIndices.clear();
+			}
+
+			if (animationStates.size() > 0)
+			{
+				animationStates.clear();
 			}
 		}
 
@@ -225,42 +233,48 @@ namespace Slayer {
 	private:
 		const int MAX_LINES = 10000;
 
-		Shared<Shader> screenShader;
-		Shared<Framebuffer> viewportFramebuffer;
-		Shared<Camera> camera;
-		Shared<UniformBuffer> cameraBuffer;
-		Shared<UniformBuffer> boneBuffer;
-		Shared<UniformBuffer> instanceBuffer;
-		Shared<UniformBuffer> lightsBuffer;
+		Shared<Shader> m_screenShader;
+		Shared<Framebuffer> m_viewportFramebuffer;
+		Shared<Camera> m_camera;
+		Shared<UniformBuffer> m_cameraBuffer;
+		Shared<UniformBuffer> m_boneBuffer;
+		Shared<UniformBuffer> m_instanceBuffer;
+		Shared<UniformBuffer> m_lightsBuffer;
 
 		// Lines
-		Shared<VertexArray> lineVertexArray;
-		Shared<VertexBuffer> lineVertexBuffer;
-		Shared<Shader> lineShader;
-		Vector<float> lineBuffer;
+		Shared<VertexArray> m_lineVertexArray;
+		Shared<VertexBuffer> m_lineVertexBuffer;
+		Shared<Shader> m_lineShader;
+		Vector<float> m_lineBuffer;
 
-		Shared<Framebuffer> shadowFramebuffer;
-		Shared<Shader> shadowShaderStatic;
-		Shared<Shader> shadowShaderSkeletal;
+		Shared<Framebuffer> m_shadowFramebuffer;
+		Shared<Shader> m_shadowShaderStatic;
+		Shared<Shader> m_shadowShaderSkeletal;
+
+		// Animation
+		Shared<ComputeShader> m_animationShader;
+		Shared<UniformBuffer> m_animationBuffer;
+		Shared<Texture> m_boneTransformTexture;
+
 
 		// Lights
-		Mat4 lightProjection;
-		Mat4 lightSpaceMatrix;
-		Vec3 lightPos;
+		Mat4 m_lightProjection;
+		Mat4 m_lightSpaceMatrix;
+		Vec3 m_lightPos;
 
 		// PBR
-		Shared<Texture> hdrTexture;
-		Shared<EnvironmentMap> environmentMap;
-		Shared<Shader> shaderStatic;
-		Shared<Shader> shaderSkeletal;
+		Shared<Texture> m_hdrTexture;
+		Shared<EnvironmentMap> m_environmentMap;
+		Shared<Shader> m_shaderStatic;
+		Shared<Shader> m_shaderSkeletal;
 
-		DirectionalLight directionalLight;
-		Vector<PointLight> pointLights;
-		LightInfo lightInfo;
-		ShadowInfo shadowInfo;
-		RenderPass shadowPass;
-		RenderPass mainPass;
-		DebugInfo debugInfo;
+		DirectionalLight m_directionalLight;
+		Vector<PointLight> m_pointLights;
+		LightInfo m_lightInfo;
+		ShadowInfo m_shadowInfo;
+		RenderPass m_shadowPass;
+		RenderPass m_mainPass;
+		DebugInfo m_debugInfo;
 
 		void BindMaterial(Shared<Material> material, Shared<Shader> shader);
 		void BindAnimation(AnimationState* animationState, Shared<Shader> shader);
@@ -280,6 +294,7 @@ namespace Slayer {
 		void Submit(Shared<Mesh> mesh, const Mat4& transform);
 		void SubmitQuad(Shared<Material> material, const Mat4& transform);
 		void SubmitLine(Vec3 p1, Vec3 p2, Vec4 color);
+		void Skin();
 		void DrawShadows();
 		void DrawLines();
 		void Draw();
@@ -287,7 +302,7 @@ namespace Slayer {
 		void CleanUp();
 
 		// Debug
-		DebugInfo& GetDebugInfo() { return debugInfo; }
+		DebugInfo& GetDebugInfo() { return m_debugInfo; }
 	};
 
 }

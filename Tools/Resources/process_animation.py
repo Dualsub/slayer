@@ -1,6 +1,7 @@
 import numpy as np
+import json
 from common import compose_transform_matrix as transform_compose, decompose_transform_matrix as transform_decompose
-from slayer_bindings.glm import transform_compose, transform_decompose
+# from slayer_bindings.glm import transform_compose, transform_decompose
 
 
 def process_animation(channels, bone_data: dict, inv_transform: np.ndarray):
@@ -60,17 +61,19 @@ def compute_node(channel, node_name, bone, inv_transform, parent_transforms=None
     for pos_key, rot_key, scale_key in zip(channel["position_keys"], channel["rotation_keys"], channel["scale_keys"]):
         assert pos_key[0] == rot_key[0] == scale_key[0]
         t = pos_key[0]
+        t_key = str(round(t, 6))
         pos = np.array(pos_key[1:])
-        rot = np.array(rot_key[1:])
+        # rot yzwx
+        rot = np.array([rot_key[2], rot_key[3], rot_key[4], rot_key[1]])
         scale = np.array(scale_key[1:])
 
-        parent = parent_transforms[t] if parent_transforms is not None else np.identity(
+        parent = parent_transforms[t_key] if parent_transforms is not None else np.identity(
             4)
 
         local_transform = transform_compose(pos, rot, scale)
-        model_transform = parent @ local_transform
-        matrices[t] = model_transform
-        new_bone_mat = inv_transform @ model_transform
+        model_transform = inv_transform @ parent @ local_transform
+        matrices[t_key] = model_transform
+        new_bone_mat = model_transform
 
         new_pos, new_rot, new_scale = transform_decompose(new_bone_mat)
 

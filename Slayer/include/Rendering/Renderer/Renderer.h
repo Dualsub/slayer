@@ -14,6 +14,7 @@
 
 #define SL_MAX_INSTANCES 512
 #define SL_MAX_SKELETONS 4
+#define MAX_ANIMATIONS 16
 
 namespace Slayer {
 
@@ -72,12 +73,14 @@ namespace Slayer {
 		Vec2i frames = Vec2(0);
 		float time = 0.0;
 		int32_t skeletonId = 0;
+		int32_t animationTextureId = 0;
+		int32_t padding[3] = { 0 }; // 12 bytes of padding to make the struct 32 bytes
 
 		AnimationData() = default;
 		~AnimationData() = default;
 
-		AnimationData(const Vec2i& frames, float time, int32_t skeletonId = -1)
-			: frames(frames), time(time), skeletonId(skeletonId)
+		AnimationData(const Vec2i& frames, float time, int32_t animationTextureId, int32_t skeletonId = -1)
+			: frames(frames), time(time), animationTextureId(animationTextureId), skeletonId(skeletonId)
 		{
 		}
 	};
@@ -86,37 +89,38 @@ namespace Slayer {
 	{
 		unsigned int vaoID;
 		unsigned int indexCount;
-		unsigned int animationID;
+
 		Shared<Material> material;
 		Shared<Shader> shader;
-		int32_t parents[SL_MAX_BONES * 4];
+
+		unsigned int animationID;
 		Mat4* inverseBindPose;
-		Vector<Mat4> transforms = {};
+		FixedVector<int32_t, SL_MAX_INSTANCES> animInstanceIds = {};
 
-		Batch(const RenderJob& job)
-			: vaoID(job.vaoID), indexCount(job.indexCount), animationID(job.animationState->textureID), material(job.material), shader(job.shader), inverseBindPose(job.animationState->inverseBindPose)
+		FixedVector<Mat4, SL_MAX_INSTANCES> transforms = {};
+
+		Batch(int32_t vaoID, int32_t indexCount, Shared<Material> material, Shared<Shader> shader, int32_t animationID, Mat4* inverseBindPose)
+			: vaoID(vaoID), indexCount(indexCount), material(material), shader(shader), animationID(animationID), inverseBindPose(inverseBindPose)
 		{
-			for (int i = 0; i < SL_MAX_BONES; i++)
-			{
-				parents[i * 4] = job.animationState->parents[i];
-			}
-			transforms.reserve(SL_MAX_INSTANCES);
+			std::memset(transforms.Data(), 0, sizeof(Mat4) * SL_MAX_BONES);
+			std::memset(animInstanceIds.Data(), -1, sizeof(int32_t) * SL_MAX_INSTANCES);
+		}
 
-			std::memset(transforms.data(), 0, sizeof(Mat4) * SL_MAX_INSTANCES);
-
-			Add(job);
+		void Add(const int32_t animInstanceId, const RenderJob& job)
+		{
+			transforms.PushBack(job.transform);
+			animInstanceIds.PushBack(animInstanceId);
 		}
 
 		void Add(const RenderJob& job)
 		{
-			transforms.push_back(job.transform);
+			transforms.PushBack(job.transform);
 		}
 
-		// Generate batch hash without external functions
 		static size_t GetHash(const RenderJob& job)
 		{
 			size_t hash = 0;
-			const size_t prime = 31; // A common prime number used for hash calculations
+			const size_t prime = 31;
 
 			hash = (hash * prime) ^ job.vaoID;
 			hash = (hash * prime) ^ job.animationState->textureID;
@@ -141,20 +145,29 @@ namespace Slayer {
 
 		void Submit(const RenderJob& job)
 		{
-			if (job.animationState != nullptr)
-			{
-				animationStates.push_back(*job.animationState);
-			}
-
+			Batch* batch = nullptr;
 			size_t hash = Batch::GetHash(job);
+			// Create a new batch if it doesn't exist
 			if (batchIndices.find(hash) == batchIndices.end())
 			{
 				batchIndices[hash] = batches.size();
-				batches.push_back(Batch(job));
+				Batch newBatch(job.vaoID, job.indexCount, job.material, job.shader, job.animationState->textureID, job.animationState->inverseBindPose);
+				batches.push_back(newBatch);
+				batch = &batches.back();
 			}
 			else
 			{
-				batches[batchIndices[hash]].Add(job);
+				batch = &batches[batchIndices[hash]];
+			}
+
+			if (job.animationState != nullptr)
+			{
+				animationStates.push_back(*job.animationState);
+				batch->Add(animationStates.size() - 1, job);
+			}
+			else
+			{
+				batch->Add(job);
 			}
 		}
 

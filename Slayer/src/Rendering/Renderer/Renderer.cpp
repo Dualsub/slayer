@@ -61,7 +61,7 @@ namespace Slayer
 		m_cameraBuffer = UniformBuffer::Create(sizeof(CameraData), 0);
 
 		// Instance
-		m_instanceBuffer = UniformBuffer::Create(SL_MAX_INSTANCES * sizeof(Mat4), 3);
+		m_instanceBuffer = UniformBuffer::Create(SL_MAX_INSTANCES * (sizeof(Mat4) + 4 * sizeof(int32_t)), 3);
 
 		// Animation
 		m_animationBuffer = UniformBuffer::Create((SL_MAX_INSTANCES * sizeof(AnimationData)) + (SL_MAX_SKELETONS * SL_MAX_BONES * sizeof(int32_t) * 4), 4);
@@ -321,8 +321,15 @@ namespace Slayer
 	void Renderer::Skin()
 	{
 		SL_EVENT("Skinning Pass");
+
+		if (m_mainPass.animationStates.size() == 0)
+		{
+			return;
+		}
+
 		AnimationData animationData[SL_MAX_INSTANCES];
 		Dict<int32_t*, int32_t> skeletonIds = {};
+		FixedVector<int32_t, MAX_ANIMATIONS> animationTextures = {};
 
 		{
 			SL_EVENT("Animation Data Setup");
@@ -337,7 +344,15 @@ namespace Slayer
 					skeletonIds[state.parents] = int32_t(skeletonIds.size());
 				}
 				int32_t skeletonId = skeletonIds[state.parents];
-				animationData[i] = { state.frames, state.time, skeletonId };
+
+				int32_t animationId = (int32_t)animationTextures.FindIndexOf(state.textureID);
+				if (animationId == -1)
+				{
+					animationTextures.PushBack(state.textureID);
+					animationId = animationTextures.Size() - 1;
+				}
+
+				animationData[i] = { state.frames, state.time, animationId, skeletonId };
 				i++;
 			}
 		}
@@ -353,7 +368,7 @@ namespace Slayer
 			{
 				for (size_t i = 0; i < SL_MAX_BONES; i++)
 				{
-					parents[skeletonId * SL_MAX_BONES + i * 4] = parentPtr[i];
+					parents[skeletonId * SL_MAX_BONES * 4 + i * 4] = parentPtr[i];
 				}
 			}
 		}
@@ -370,8 +385,11 @@ namespace Slayer
 
 		{
 			SL_EVENT("Animation Texture Setup");
-			Texture::BindTexture(m_mainPass.animationStates[0].textureID, 0);
-			m_animationShader->SetUniform("animTex", 0);
+			for (size_t i = 0; i < animationTextures.Size(); i++)
+			{
+				Texture::BindTexture(animationTextures[i], i);
+				m_animationShader->SetUniform("animTextures[" + std::to_string(i) + "]", i);
+			}
 		}
 
 		{
@@ -463,49 +481,8 @@ namespace Slayer
 
 		m_viewportFramebuffer->Bind();
 
-		// Shared<Shader> currentShader = nullptr;
-		// unsigned int currentVao = 0;
-
 		glCullFace(GL_BACK);
-
-		// Main pass
-
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		// const auto& jobs = mainPass.GetQueue();
-		// for (auto& job : jobs)
-		// {
-		// 	if (currentShader == nullptr || currentShader->GetID() != job.shader->GetID())
-		// 	{
-		// 		if (currentShader)
-		// 			currentShader->Unbind();
-		// 		currentShader = job.shader;
-		// 		currentShader->BindWithCheck();
-		// 		currentShader->SetUniform("ibl.irradiance", 0);
-		// 		currentShader->SetUniform("ibl.prefilter", 1);
-		// 		currentShader->SetUniform("ibl.brdf", 2);
-		// 		currentShader->SetUniform("shadowMap", 3);
-		// 		Texture::BindTexture(environmentMap->GetIrradianceMapID(), 0, TextureTarget::TEXTURE_CUBE_MAP);
-		// 		Texture::BindTexture(environmentMap->GetPrefilterMapID(), 1, TextureTarget::TEXTURE_CUBE_MAP);
-		// 		Texture::BindTexture(environmentMap->GetBRDFTextureID(), 2, TextureTarget::TEXTURE_2D);
-		// 		Texture::BindTexture(shadowFramebuffer->GetDepthAttachmentID(), 3, TextureTarget::TEXTURE_2D);
-		// 	}
-		// 	if (currentVao != job.vaoID)
-		// 	{
-		// 		VertexArray::Unbind();
-		// 		VertexArray::Bind(job.vaoID);
-		// 		currentVao = job.vaoID;
-		// 	}
-
-		// 	BindMaterial(job.material, currentShader);
-
-		// 	if (job.animationState)
-		// 		BindAnimation(job.animationState, currentShader);
-
-		// 	currentShader->SetUniform("transformMatrices", &job.transform, 1);
-		// 	glDrawElementsInstanced(GL_TRIANGLES, job.indexCount, GL_UNSIGNED_INT, 0, 1);
-		// 	debugInfo.drawCalls++;
-		// }
 
 		const auto& batches = m_mainPass.GetBatches();
 		for (auto& batch : batches)
@@ -540,14 +517,27 @@ namespace Slayer
 
 			{
 				SL_GPU_EVENT("Instance buffer");
-				const size_t instanceDataSize = SL_MAX_INSTANCES * sizeof(Mat4);
-				m_instanceBuffer->SetData(batch.transforms.data(), batch.transforms.size() * sizeof(Mat4));
+
+				const size_t transformsSize = SL_MAX_INSTANCES * sizeof(Mat4);
+				m_instanceBuffer->Bind();
+				m_instanceBuffer->SetSubData(batch.transforms.Data(), transformsSize);
+
+				int32_t animInstanceIds[SL_MAX_INSTANCES * 4]; // We create the array with 12 bytes of padding per instance. :/
+				std::memset(animInstanceIds, -1, sizeof(int32_t) * SL_MAX_INSTANCES * 4);
+				for (size_t i = 0; i < batch.animInstanceIds.Size(); i++)
+				{
+					animInstanceIds[i * 4] = batch.animInstanceIds[i];
+				}
+
+				m_instanceBuffer->SetSubData(animInstanceIds, sizeof(int32_t) * SL_MAX_INSTANCES * 4, transformsSize);
+				m_instanceBuffer->Unbind();
+
 				m_boneBuffer->SetData(batch.inverseBindPose, SL_MAX_BONES * sizeof(Mat4));
 			}
 
 			{
 				SL_GPU_EVENT("Draw call");
-				glDrawElementsInstanced(GL_TRIANGLES, batch.indexCount, GL_UNSIGNED_INT, 0, (GLsizei)batch.transforms.size());
+				glDrawElementsInstanced(GL_TRIANGLES, batch.indexCount, GL_UNSIGNED_INT, 0, (GLsizei)batch.transforms.Size());
 			}
 
 			m_debugInfo.drawCalls++;

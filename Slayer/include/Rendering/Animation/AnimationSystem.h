@@ -25,18 +25,12 @@ namespace Slayer {
 
 		void Update(float dt, ComponentStore& store)
 		{
-			store.ForEach< Transform, SkeletalRenderer>([&](Entity entity, Transform* transform, SkeletalRenderer* renderer)
+			store.ForEach<Transform, SkeletalRenderer, AnimationPlayer>([&](Entity entity, Transform* transform, SkeletalRenderer* renderer, AnimationPlayer* player)
 				{
 					Shared<SkeletalModel> model = ResourceManager::Get()->GetAsset<SkeletalModel>(renderer->modelID);
-					Shared<Animation> animation = ResourceManager::Get()->GetAsset<Animation>(9414454467584602516);
+					Shared<Animation> animation = ResourceManager::Get()->GetAsset<Animation>(player->animationID);
 
-					// Rotate random bone
-					static Dict<Entity, float> timeDict;
-					if (timeDict.find(entity) == timeDict.end())
-					{
-						timeDict[entity] = (float)rand() / RAND_MAX * animation->GetDuration();
-					}
-					float& time = timeDict[entity];
+					float& time = player->time;
 					time = fmod(time + dt, animation->GetDuration());
 
 					AnimationState* state = &renderer->state;
@@ -63,6 +57,9 @@ namespace Slayer {
 				});
 		}
 
-		void Render(Renderer& renderer, ComponentStore& store) {}
+		void Render(Renderer& renderer, ComponentStore& store)
+		{
+			renderer.Skin();
+		}
 	};
 }

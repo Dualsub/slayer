@@ -22,6 +22,7 @@ namespace Slayer
         }
 
         int32_t location = glGetUniformLocation(m_id, name.c_str());
+        SL_ASSERT(location >= 0 && "Uniform does not exist!");
         m_uniformCache[location] = name;
         return location;
     }

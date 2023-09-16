@@ -12,7 +12,8 @@
     Slayer::ModelRenderer, \
     Slayer::SkeletalRenderer, \
     Slayer::SkeletalSockets, \
-    Slayer::SocketAttacher
+    Slayer::SocketAttacher, \
+    Slayer::AnimationPlayer
 
 namespace Slayer {
 
@@ -164,23 +165,22 @@ namespace Slayer {
 
     struct AnimationPlayer
     {
-        struct AnimationClip
+        AssetID animationID;
+        float time = 0.0f;
+
+        AnimationPlayer() = default;
+        AnimationPlayer(const AssetID& animationID, float time = 0.0f) :
+            animationID(animationID), time(time)
         {
-            AssetID id;
-            float time = 0.0f;
-            float speed = 1.0f;
-            bool loop = true;
-            float weight = 1.0f;
-        };
+        }
+        ~AnimationPlayer() = default;
 
-        Vector<AnimationClip> clips;
-        Vector<AnimationClip> additiveClips;
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(animationID);
+        }
     };
-
-    void ForEachComponentType(auto&& f)
-    {
-        ForEachComponentTypeImpl<ENGINE_COMPONENTS, GAME_COMPONENTS>(f);
-    }
 
     template<typename... Components>
     void ForEachComponentTypeImpl(auto&& f)
@@ -189,6 +189,10 @@ namespace Slayer {
         (f.template operator() < Components > (), ...);
     }
 
+    void ForEachComponentType(auto&& f)
+    {
+        ForEachComponentTypeImpl<ENGINE_COMPONENTS, GAME_COMPONENTS>(f);
+    }
 }
 
 

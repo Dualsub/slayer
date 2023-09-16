@@ -407,9 +407,9 @@ def pack_file(file_tuple: tuple, old_data: dict = {}, skeletons={}, texture_ids=
 
         if len(scene.animations) > 0:
             duration, ticks_per_second, channels = load_animation(scene)
+            assert "skeleton" in meta, "No skeleton specified in meta file."
             bone_data = skeletons[meta["skeleton"]]["bone_data"]
             inv_transform = skeletons[meta["skeleton"]]["inv_transform"]
-            # channels = process_animation(channels, bone_data, inv_transform)
             return serialize_animation_texture(name, duration, ticks_per_second, channels, bone_data, meta)
 
         is_skeletal = all(len(mesh.bones) > 0 for mesh in scene.meshes)

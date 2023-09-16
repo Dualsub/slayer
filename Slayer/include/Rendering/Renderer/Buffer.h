@@ -102,6 +102,12 @@ namespace Slayer {
 		void Dispose();
 
 		template<typename T>
+		inline void SetSubData(T* data, size_t size, int offset = 0)
+		{
+			glBufferSubData(GL_SHADER_STORAGE_BUFFER, offset, size, data);
+		}
+
+		template<typename T>
 		void SetData(T* data, size_t size, int offset = 0)
 		{
 			Bind();
@@ -111,5 +117,4 @@ namespace Slayer {
 
 		static Shared<ShaderStorageBuffer> Create(size_t size, int binding);
 	};
-
 }

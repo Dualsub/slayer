@@ -32,7 +32,9 @@ namespace Slayer {
         void Render(Renderer& renderer, ComponentStore& store)
         {
             SL_EVENT();
+
             ResourceManager* rm = ResourceManager::Get();
+
             store.ForEach<Transform, SkeletalRenderer>([&](Entity entity, Transform* transform, SkeletalRenderer* modelRenderer)
                 {
                     Shared<SkeletalModel> model = rm->GetAsset<SkeletalModel>(modelRenderer->modelID);

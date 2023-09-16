@@ -53,6 +53,11 @@ namespace Slayer {
         case Slayer::KEY_R:
             if (Input::IsKeyPressed(SlayerKey::KEY_LEFT_CONTROL))
             {
+            }
+            break;
+        case Slayer::KEY_F:
+            if (Input::IsKeyPressed(SlayerKey::KEY_LEFT_CONTROL))
+            {
 
             }
             break;

@@ -15,6 +15,8 @@ namespace Testbed {
 		forward = glm::vec3(0.0f, 0.0f, -1.0f);
 		right = glm::cross(forward, up);
 		velocity = glm::vec3(0.0f);
+		fov = 72.0f;
+		IsProjectionDirty = true;
 	}
 
 	void SandboxCamera::Update(float dt)

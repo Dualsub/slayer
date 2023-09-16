@@ -13,16 +13,23 @@
 
 namespace py = pybind11;
 
-void PrintHeirarchy(aiNode* node, unsigned int level = 0)
+void PrintHeirarchy(aiNode* node, py::dict& bones, unsigned int level = 0)
 {
     for (unsigned int i = 0; i < level; i++)
         std::cout << " ";
 
-    std::string name = node->mName.C_Str();
-    std::cout << level << " " << name << std::endl;
+    std::string name(node->mName.C_Str());
+    if (bones.contains(py::str(name)))
+    {
+        std::cout << name << ": ";
+        std::cout << bones[py::str(name)].cast<py::tuple>()[0].cast<int>();
+        std::cout << ", parent: " << bones[py::str(name)].cast<py::tuple>()[1].cast<int>();
+        std::cout << std::endl;
+    }
+
 
     for (unsigned int i = 0; i < node->mNumChildren; i++)
-        PrintHeirarchy(node->mChildren[i], level + 1);
+        PrintHeirarchy(node->mChildren[i], bones, level + 1);
 }
 
 void ReadParents(aiNode* node, py::dict& bones)
@@ -37,6 +44,7 @@ void ReadParents(aiNode* node, py::dict& bones)
             py::tuple parent_tuple = bones[py::str(parentName)];
             bones[py::str(boneName)] = py::make_tuple(bone_tuple[0], parent_tuple[0], bone_tuple[2]);
         }
+
     }
 
     for (unsigned int i = 0; i < node->mNumChildren; i++)

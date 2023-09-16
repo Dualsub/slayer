@@ -12,4 +12,4 @@ target_link_libraries(slayer_bindings PRIVATE assimp Slayer)
 add_custom_command(TARGET slayer_bindings POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
     $<TARGET_FILE:slayer_bindings>
-    ${CMAKE_SOURCE_DIR}/../slayer_bindings.pyd)
+    ${CMAKE_SOURCE_DIR}/Tools/slayer_bindings.pyd)

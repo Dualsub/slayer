@@ -21,7 +21,7 @@ namespace Slayer {
 	class Event
 	{
 	public:
-		virtual const std::string& GetType() { return nullptr; };
+		virtual const std::string& GetType() { return ""; };
 
 		template <typename T>
 		static bool Dispatch(Event& e, std::function<bool(T&)> func)

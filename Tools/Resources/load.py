@@ -48,7 +48,7 @@ def load_hdr_texture(path: str) -> tuple:
     assert image.dtype.itemsize == 4, "Only 32-bit RGB textures are supported"
 
     image = image[:, :, [2, 1, 0]]
-    # image = np.power(image, 1.0/2.2)
+    image = np.power(image, 1.0/2.2)
     image = np.flip(image, 0)
 
     # cv.imshow("image", image)

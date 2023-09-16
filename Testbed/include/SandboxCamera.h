@@ -6,7 +6,7 @@
 
 namespace Testbed {
 
-	class SandboxCamera: public Slayer::Camera
+	class SandboxCamera : public Slayer::Camera
 	{
 	public:
 		SandboxCamera(float movementSpeed);
@@ -18,7 +18,7 @@ namespace Testbed {
 		float pitch = 0.0f;
 		float lastX = 0.0f;
 		float lastY = 0.0f;
-		float fov = 90.0f;
+		float fov = 72.0f;
 		bool firstMouse = true;
 		bool editMode = false;
 		float movementSpeed;

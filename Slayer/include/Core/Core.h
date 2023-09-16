@@ -1,6 +1,8 @@
 #pragma once
+
 #undef NDEBUG
 #undef NRELEASE
+
 #include <iostream>
 #include <vector>
 #include <memory>

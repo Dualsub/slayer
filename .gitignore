@@ -6,6 +6,7 @@ out/
 CmakeSettings.json
 
 **/assets/*
+!**/assets/Shaders/
 
 .editorconfig
 *.log

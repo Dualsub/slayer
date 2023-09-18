@@ -164,6 +164,7 @@ namespace Testbed
             {
                 m_camera->Update(ts);
                 m_animationSystem.Update(ts, m_store);
+                m_animationSystem.Render(m_renderer, m_store);
                 m_transformSystem.Update(ts, m_store);
                 m_renderingSystem.Update(ts, m_store);
                 break;
@@ -187,7 +188,6 @@ namespace Testbed
             m_renderingSystem.Render(m_renderer, m_store);
 
             //m_renderer.DrawShadows();
-            m_renderer.Skin();
             m_renderer.Draw();
             // m_renderer.DrawLines();
 

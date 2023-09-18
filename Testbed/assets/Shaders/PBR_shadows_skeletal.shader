@@ -1,0 +1,1 @@
+{"name": "PBR_shadows_skeletal", "vs": "PBR_shadows_skeletal_blend.vs", "fs": "PBR_shadows_skeletal.fs"}

@@ -12,7 +12,7 @@
 #include "Rendering/Renderer/Framebuffer.h"
 #include "Rendering/Animation/AnimationState.h"
 
-#define SL_MAX_INSTANCES 512
+#define SL_MAX_INSTANCES 128
 #define SL_MAX_SKELETONS 4
 #define SL_MAX_ANIMATIONS 16
 

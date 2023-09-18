@@ -1,0 +1,106 @@
+#version 450 core
+
+#define MAX_SKELETONS 4
+#define MAX_INSTANCES 128
+#define MAX_BONES 96
+#define MAX_ANIMATIONS 16
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+struct AnimationState {
+    int skeletonID;
+    ivec2 animationIDs;
+    vec2 weights;
+    vec2 times; 
+    ivec4 frames;
+}; 
+
+layout(std140, binding = 4) uniform AnimationData {
+    AnimationState states[MAX_INSTANCES];
+    int parents[MAX_SKELETONS * MAX_BONES];
+};
+
+uniform sampler2D animTextures[MAX_ANIMATIONS];
+
+layout(rgba32f, binding = 0) uniform image2D boneTransformTex;
+
+vec4 mulQ(vec4 q1, vec4 q2) {
+    return vec4(
+        q1.w * q2.xyz + q2.w * q1.xyz + cross(q1.xyz, q2.xyz),
+        q1.w * q2.w - dot(q1.xyz, q2.xyz)
+    );
+}
+
+vec3 QMulV(vec4 q, vec3 v) {
+    return q.xyz * 2.0f * dot(q.xyz, v) +
+           v * (q.w * q.w - dot(q.xyz, q.xyz)) +
+           cross(q.xyz, v) * 2.0f * q.w;
+}
+
+mat4 GetBoneMatrix(uint boneID, uint animationID, float time, ivec2 frames, uint parentOffset)
+{
+    uint x_now = frames.x;
+    uint x_next = frames.y;
+
+    mat4 boneMat = mat4(1.0);
+    uint currJoint = boneID;
+
+    for (int i = 0; i < MAX_BONES; i++)
+    {
+        uint y_pos = currJoint * 3;
+        vec4 pos0 = texelFetch(animTextures[animationID], ivec2(x_now, y_pos + 0), 0);
+        vec4 rot0 = texelFetch(animTextures[animationID], ivec2(x_now, y_pos + 1), 0).yzwx;
+        vec4 scl0 = texelFetch(animTextures[animationID], ivec2(x_now, y_pos + 2), 0);
+
+        vec4 pos1 = texelFetch(animTextures[animationID], ivec2(x_next, y_pos + 0), 0);
+        vec4 rot1 = texelFetch(animTextures[animationID], ivec2(x_next, y_pos + 1), 0).yzwx;
+        vec4 scl1 = texelFetch(animTextures[animationID], ivec2(x_next, y_pos + 2), 0);
+
+        if (dot(rot0, rot1) < 0.0) { rot1 *= -1.0; }
+
+        vec4 position = mix(pos0, pos1, time);
+        vec4 rotation = normalize(mix(rot0, rot1, time));
+        vec4 scale = mix(scl0, scl1, time);
+
+        vec3 xBasis = QMulV(rotation, vec3(scale.x, 0, 0));
+        vec3 yBasis = QMulV(rotation, vec3(0, scale.y, 0));
+        vec3 zBasis = QMulV(rotation, vec3(0, 0, scale.z));
+
+        mat4 localBoneMat = mat4(
+            xBasis.x, xBasis.y, xBasis.z, 0.0,
+            yBasis.x, yBasis.y, yBasis.z, 0.0,
+            zBasis.x, zBasis.y, zBasis.z, 0.0,
+            position.x, position.y, position.z, 1.0
+        );
+
+        boneMat = localBoneMat * boneMat;
+
+        int parent = parents[parentOffset + currJoint];
+
+        if (parent == -1)
+        {
+            break;
+        }
+
+        currJoint = parent;
+    }
+
+    return boneMat;
+}
+        
+
+void main() 
+{
+    uint boneID = gl_GlobalInvocationID.x;
+    uint instanceID = gl_GlobalInvocationID.y;
+
+    uint parentOffset = states[instanceID].skeletonID * MAX_BONES;
+    
+    mat4 boneMat = (states[instanceID].weights.x * GetBoneMatrix(boneID, states[instanceID].animationIDs.x, states[instanceID].times.x, states[instanceID].frames.xy, parentOffset))  + (states[instanceID].weights.y * GetBoneMatrix(boneID, states[instanceID].animationIDs.y, states[instanceID].times.y, states[instanceID].frames.zw, parentOffset));
+
+    // Write to image
+    imageStore(boneTransformTex, ivec2(instanceID, 4 * boneID + 0), boneMat[0]);
+    imageStore(boneTransformTex, ivec2(instanceID, 4 * boneID + 1), boneMat[1]);
+    imageStore(boneTransformTex, ivec2(instanceID, 4 * boneID + 2), boneMat[2]);
+    imageStore(boneTransformTex, ivec2(instanceID, 4 * boneID + 3), boneMat[3]);
+}

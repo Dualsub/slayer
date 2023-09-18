@@ -177,6 +177,8 @@ namespace Slayer {
             {
             }
 
+            ~AnimationClip() = default;
+
             template<typename Serializer>
             void Transfer(Serializer& serializer)
             {
@@ -190,6 +192,11 @@ namespace Slayer {
         AnimationPlayer() = default;
         AnimationPlayer(const AssetID& animationID, float time = 0.0f) :
             animationClips({ AnimationClip(animationID, time) })
+        {
+        }
+
+        AnimationPlayer(const std::initializer_list<AnimationClip> animations) :
+            animationClips(animations)
         {
         }
 

@@ -1,0 +1,1 @@
+{"name": "BRDFCapture", "vs": "BRDFCapture.vs", "fs": "BRDFCapture.fs"}

@@ -29,6 +29,22 @@ namespace Testbed
 
         Slayer::YamlDeserializer deserializer;
         deserializer.Deserialize(m_store, assetPath + "scene.yml");
+
+        const int32_t numEntities = SL_MAX_INSTANCES;
+        const int32_t side = (int32_t)std::sqrt(numEntities);
+        for (int32_t i = 0; i < side; i++)
+        {
+            for (int32_t j = 0; j < side; j++)
+            {
+                float x = (i - side / 2.0f) * 115.0f;
+                float z = (j - side / 2.0f) * 115.0f;
+                Slayer::Entity entity = m_store.CreateEntity();
+                m_store.AddComponent(entity, Slayer::Transform(Slayer::Vec3(x, 0, z), Slayer::Quat(Slayer::Vec3(-glm::pi<float>() / 2, 0, 0)), Slayer::Vec3(1.0f)));
+                m_store.AddComponent(entity, Slayer::SkeletalRenderer(17529307428130246956, 5244792205592968665));
+                m_store.AddComponent(entity, Slayer::AnimationPlayer({ Slayer::AnimationPlayer::AnimationClip(2688833756906273549, 0.0f, 0.5f), Slayer::AnimationPlayer::AnimationClip(85354664630225812, 0.0f, 0.5f) }));
+            }
+        }
+
     }
 
     void TestbedApplication::InitializeRendering()

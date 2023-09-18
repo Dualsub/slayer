@@ -3,6 +3,7 @@ import impasse as assimp
 import hashlib
 import numpy as np
 import numpy.linalg as LA
+import json
 
 TEXTURE_2D_TARGET = 0x0DE1
 TEXTURE_CUBE_MAP_TARGET = 0x8513
@@ -50,9 +51,30 @@ def format_bytes(num_bytes):
     return f"{num_bytes:.1f} YB"
 
 
+def gen_hash(text):
+    return hashlib.sha256(text).hexdigest()
+
+
 def hash_file(filename):
-    with open(filename, 'rb', buffering=0) as f:
-        return hashlib.sha256(f.read()).hexdigest()
+    try:
+        if (filename.lower().endswith(".shader")):
+            with open(filename, "r") as f:
+                shader_info = json.load(f)
+                # Combine vs and fs hashes to get shader hash
+                vs_file = open(shader_info["vs"], "rb", buffering=0)
+                fs_file = open(shader_info["fs"], "rb", buffering=0)
+
+                vs_hash = gen_hash(vs_file.read())
+                fs_hash = gen_hash(fs_file.read())
+
+                vs_file.close()
+                fs_file.close()
+
+                return gen_hash(vs_hash + fs_hash)
+    except Exception:
+        pass
+    with open(filename, "rb", buffering=0) as f:
+        return gen_hash(f.read())
 
 
 def decompose_transform_matrix(transform_matrix):

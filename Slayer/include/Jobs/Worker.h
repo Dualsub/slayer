@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Slayer.h"
+#include "Core/Core.h"
 #include "Jobs/Job.h"
 #include "Jobs/JobQueue.h"
 #include "Jobs/JobPool.h"

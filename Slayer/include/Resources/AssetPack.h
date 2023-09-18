@@ -1,7 +1,9 @@
 #pragma once
 
-#include "Slayer.h"
-#include "Asset.h"
+#include "Core/Core.h"
+#include "Core/Containers.h"
+#include "Core/Math.h"
+#include "Resources/Asset.h"
 #include "Serialization/BinarySerializer.h"
 
 #include <fstream>

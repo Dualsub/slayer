@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Core.h"
+#include "Core/Containers.h"
 #include "Rendering/Renderer/Texture.h"
 
 namespace Slayer {
@@ -37,7 +38,7 @@ namespace Slayer {
 			textureTarget = TextureTarget::TEXTURE_2D;
 			textureWrap = TextureWrap::CLAMP_TO_EDGE;
 		}
-		
+
 		Attachment(AttachmentTarget attachmentTarget, TextureTarget textureTarget, TextureWrap textureWrap)
 			: attachmentTarget(attachmentTarget), textureTarget(textureTarget), textureWrap(textureWrap)
 		{
@@ -58,7 +59,7 @@ namespace Slayer {
 		Vector<Attachment> colorAttachments;
 		Attachment depthAttachment;
 	public:
-		Framebuffer(unsigned int fboID, 
+		Framebuffer(unsigned int fboID,
 			Vector<Attachment> colorAttachments,
 			Attachment depthAttachment,
 			unsigned int width,

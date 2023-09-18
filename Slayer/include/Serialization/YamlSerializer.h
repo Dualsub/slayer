@@ -400,8 +400,9 @@ namespace Slayer {
         template<typename T>
         void TransferVector(Vector<T>& values, const std::string& name)
         {
-            auto node = nodeStack.top();
-            if (node[name] && node[name].IsSequence())
+            auto parentNode = nodeStack.top();
+            auto node = parentNode[name];
+            if (node && node.IsSequence())
             {
                 values.resize(node.size());
                 for (int i = 0; i < node.size(); i++)
@@ -411,7 +412,6 @@ namespace Slayer {
                     nodeStack.pop();
                 }
             }
-
         }
 
         template<>

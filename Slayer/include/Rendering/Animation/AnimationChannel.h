@@ -1,6 +1,8 @@
 #pragma once 
 
-#include "Slayer.h"
+#include "Core/Core.h"
+#include "Core/Containers.h"
+#include "Core/Math.h"
 
 namespace Slayer {
 #pragma pack(push, 1)

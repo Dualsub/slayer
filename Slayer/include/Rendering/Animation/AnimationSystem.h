@@ -28,32 +28,35 @@ namespace Slayer {
 			store.ForEach<Transform, SkeletalRenderer, AnimationPlayer>([&](Entity entity, Transform* transform, SkeletalRenderer* renderer, AnimationPlayer* player)
 				{
 					Shared<SkeletalModel> model = ResourceManager::Get()->GetAsset<SkeletalModel>(renderer->modelID);
-					Shared<Animation> animation = ResourceManager::Get()->GetAsset<Animation>(player->animationID);
-
-					float& time = player->time;
-					time = fmod(time + dt, animation->GetDuration());
-
 					AnimationState* state = &renderer->state;
 
-					uint32_t frameNow = 0;
-					uint32_t frameNext = 0;
-					float timeFraction = 0.0f;
-
-					const Vector<float>& times = animation->GetTimes();
-					for (uint32_t i = 0; i < times.size(); i++)
+					for (uint32_t i = 0; i < player->animationClips.size(); i++)
 					{
-						if (time < times[i])
-						{
-							frameNow = i - 1;
-							frameNext = i;
-							timeFraction = (time - times[i - 1]) / (times[i] - times[i - 1]);
-							break;
-						}
-					}
+						auto& clip = player->animationClips[i];
+						Shared<Animation> animation = ResourceManager::Get()->GetAsset<Animation>(clip.animationID);
 
-					state->frames = { frameNow, frameNext };
-					state->time = timeFraction;
-					state->textureID = animation->GetTextureID();
+						float& time = clip.time;
+						time = fmod(time + dt, animation->GetDuration());
+						float weight = clip.weight;
+
+						uint32_t frameNow = 0;
+						uint32_t frameNext = 0;
+						float timeFraction = 0.0f;
+
+						const Vector<float>& times = animation->GetTimes();
+						for (uint32_t j = 0; j < times.size(); j++)
+						{
+							if (time < times[j])
+							{
+								frameNow = j - 1;
+								frameNext = j;
+								timeFraction = (time - times[j - 1]) / (times[j] - times[j - 1]);
+								break;
+							}
+						}
+
+						state->SetAnimation(i, animation->GetTextureID(), timeFraction, { frameNow, frameNext }, weight);
+					}
 				});
 		}
 

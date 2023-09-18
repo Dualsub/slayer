@@ -64,7 +64,7 @@ namespace Slayer
 		m_instanceBuffer = UniformBuffer::Create(SL_MAX_INSTANCES * (sizeof(Mat4) + 4 * sizeof(int32_t)), 3);
 
 		// Animation
-		m_animationBuffer = UniformBuffer::Create((SL_MAX_INSTANCES * sizeof(AnimationData)) + (SL_MAX_SKELETONS * SL_MAX_BONES * sizeof(int32_t) * 4), 4);
+		m_animationBuffer = UniformBuffer::Create((SL_MAX_INSTANCES * sizeof(AnimationBuffer)) + (SL_MAX_SKELETONS * SL_MAX_BONES * sizeof(int32_t) * 4), 4);
 		m_boneBuffer = UniformBuffer::Create(SL_MAX_BONES * sizeof(Mat4), 2);
 		const size_t vectorsPerBone = 4;
 		const size_t floatsPerVector = 4;
@@ -288,28 +288,6 @@ namespace Slayer
 		}
 	}
 
-	void Renderer::BindAnimation(AnimationState* animationState, Shared<Shader> shader)
-	{
-		const int animTexSlot = 16;
-
-		SL_ASSERT(shader && "Shader was null.");
-		SL_WARN_ASSERT(shader->HasUniform("frames"), "Shader does not have uniform 'frames'.");
-		SL_WARN_ASSERT(shader->HasUniform("time"), "Shader does not have uniform 'time'.");
-		SL_ASSERT(animationState && "Animation state was null.");
-		SL_ASSERT(animationState->inverseBindPose && "Animation state frames were null.");
-		SL_ASSERT(animationState->parents && "Animation state parents were null.");
-
-		// Bind uniforms and buffers.
-		m_boneBuffer->SetData(animationState->inverseBindPose, SL_MAX_BONES * sizeof(Mat4));
-		shader->SetUniform("parents", animationState->parents, SL_MAX_BONES);
-		shader->SetUniform("frames", animationState->frames);
-		shader->SetUniform("time", animationState->time);
-
-		// Bind animation texture.
-		Texture::BindTexture(animationState->textureID, animTexSlot);
-		shader->SetUniform("animTex", animTexSlot);
-	}
-
 	void Renderer::SubmitLine(Vec3 p1, Vec3 p2, Vec4 color)
 	{
 		m_lineBuffer.insert(m_lineBuffer.end(), { p1.x, p1.y, p1.z });
@@ -327,14 +305,14 @@ namespace Slayer
 			return;
 		}
 
-		AnimationData animationData[SL_MAX_INSTANCES];
+		AnimationBuffer animationBuffer[SL_MAX_INSTANCES];
 		Dict<int32_t*, int32_t> skeletonIds = {};
-		FixedVector<int32_t, MAX_ANIMATIONS> animationTextures = {};
+		FixedVector<int32_t, SL_MAX_ANIMATIONS> animationTextures = {};
 
 		{
 			SL_EVENT("Animation Data Setup");
 
-			std::memset(animationData, 0, sizeof(AnimationData) * SL_MAX_INSTANCES);
+			std::memset(animationBuffer, 0, sizeof(AnimationBuffer) * SL_MAX_INSTANCES);
 
 			size_t i = 0;
 			for (auto& state : m_mainPass.animationStates)
@@ -344,22 +322,27 @@ namespace Slayer
 					skeletonIds[state.parents] = int32_t(skeletonIds.size());
 				}
 				int32_t skeletonId = skeletonIds[state.parents];
-
-				int32_t animationId = (int32_t)animationTextures.FindIndexOf(state.textureID);
-				if (animationId == -1)
+				int32_t animationIds[SL_MAX_BLEND_ANIMATIONS] = { -1 };
+				for (auto j = 0; j < SL_MAX_BLEND_ANIMATIONS; j++)
 				{
-					animationTextures.PushBack(state.textureID);
-					animationId = animationTextures.Size() - 1;
+					if (state.textureIDs[j] == -1)
+						continue;
+
+					animationIds[j] = (int32_t)animationTextures.FindIndexOf(state.textureIDs[j]);
+					if (animationIds[j] == -1)
+					{
+						animationTextures.PushBack(state.textureIDs[j]);
+						animationIds[j] = animationTextures.Size() - 1;
+					}
 				}
 
-				animationData[i] = { state.frames, state.time, animationId, skeletonId };
+				animationBuffer[i] = AnimationBuffer(skeletonId, animationIds, state.weights, state.times, state.frames);
 				i++;
 			}
 		}
 
 		const size_t numParents = SL_MAX_BONES * SL_MAX_SKELETONS * 4;
 		int32_t parents[numParents];
-		const size_t parentsEntrySize = SL_MAX_BONES * sizeof(int32_t);
 
 		{
 			SL_EVENT("Parents Data Setup");
@@ -379,8 +362,8 @@ namespace Slayer
 			m_animationShader->Bind();
 
 			m_animationBuffer->Bind();
-			m_animationBuffer->SetSubData(animationData, sizeof(animationData));
-			m_animationBuffer->SetSubData(parents, sizeof(parents), sizeof(animationData));
+			m_animationBuffer->SetSubData(animationBuffer, sizeof(animationBuffer));
+			m_animationBuffer->SetSubData(parents, sizeof(parents), sizeof(animationBuffer));
 		}
 
 		{
@@ -442,34 +425,6 @@ namespace Slayer
 		m_shadowFramebuffer->Bind();
 
 		glClear(GL_DEPTH_BUFFER_BIT);
-
-		const auto& jobs = m_mainPass.GetQueue();
-		for (auto& job : jobs)
-		{
-			int32_t wantedShaderID = job.animationState ? m_shadowShaderSkeletal->GetID() : m_shadowShaderStatic->GetID();
-			if (shadowShader == nullptr || shadowShader->GetID() != wantedShaderID)
-			{
-				if (shadowShader)
-					shadowShader->Unbind();
-				shadowShader = job.animationState ? m_shadowShaderSkeletal : m_shadowShaderStatic;
-				shadowShader->BindWithCheck();
-				shadowShader->SetUniform("lightSpaceMatrix", m_lightSpaceMatrix);
-			}
-
-			if (currentVao != job.vaoID)
-			{
-				VertexArray::Unbind();
-				VertexArray::Bind(job.vaoID);
-				currentVao = job.vaoID;
-			}
-
-			if (job.animationState)
-				BindAnimation(job.animationState, shadowShader);
-
-			shadowShader->SetUniform("transformMatrices", &job.transform, 1);
-			glDrawElementsInstanced(GL_TRIANGLES, job.indexCount, GL_UNSIGNED_INT, 0, 1);
-			m_debugInfo.drawCalls++;
-		}
 
 		shadowShader->Unbind();
 		m_shadowFramebuffer->Unbind();

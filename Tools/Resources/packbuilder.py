@@ -352,7 +352,7 @@ def serialize_pack(data, num_assets, f: BufferedWriter):
     return len(MAGIC) + UINT32_SIZE * 2 + len(data)
 
 
-def pack_file(file_tuple: tuple, old_data: dict = {}, skeletons={}, texture_ids={}, force_rebuild=True) -> tuple:
+def pack_file(file_tuple: tuple, old_data: dict = {}, skeletons={}, texture_ids={}, force_rebuild=False) -> tuple:
     file, path = file_tuple
     # Get file name
     name = os.path.splitext(os.path.basename(file))[0]

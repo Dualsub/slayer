@@ -1,7 +1,10 @@
 #pragma once
 
-#include "Slayer.h"
+#include "Core/Core.h"
+
 #include <random>
+
+#define SL_INVALID_ASSET_ID -1
 
 namespace Slayer
 {

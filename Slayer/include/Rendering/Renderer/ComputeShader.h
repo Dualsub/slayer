@@ -15,7 +15,7 @@ namespace Slayer
     {
     private:
         uint32_t m_id = 0;
-        std::array<std::string, 10> m_uniformCache = {};
+        std::array<std::string, 20> m_uniformCache = {};
     public:
         ComputeShader(const int32_t id) : m_id(id) {};
         ComputeShader() = default;

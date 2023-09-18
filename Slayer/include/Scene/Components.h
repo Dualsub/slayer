@@ -165,20 +165,40 @@ namespace Slayer {
 
     struct AnimationPlayer
     {
-        AssetID animationID;
-        float time = 0.0f;
+        struct AnimationClip
+        {
+            AssetID animationID;
+            float time = 0.0f;
+            float weight = 1.0f;
+
+            AnimationClip() = default;
+            AnimationClip(const AssetID& animationID, float time = 0.0f, float weight = 1.0f) :
+                animationID(animationID), time(time), weight(weight)
+            {
+            }
+
+            template<typename Serializer>
+            void Transfer(Serializer& serializer)
+            {
+                SL_TRANSFER_VAR(animationID);
+                SL_TRANSFER_VAR(weight);
+            }
+        };
+
+        Vector<AnimationClip> animationClips;
 
         AnimationPlayer() = default;
         AnimationPlayer(const AssetID& animationID, float time = 0.0f) :
-            animationID(animationID), time(time)
+            animationClips({ AnimationClip(animationID, time) })
         {
         }
+
         ~AnimationPlayer() = default;
 
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
-            SL_TRANSFER_VAR(animationID);
+            SL_TRANSFER_VEC(animationClips);
         }
     };
 

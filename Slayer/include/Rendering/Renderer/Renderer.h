@@ -14,7 +14,7 @@
 
 #define SL_MAX_INSTANCES 512
 #define SL_MAX_SKELETONS 4
-#define MAX_ANIMATIONS 16
+#define SL_MAX_ANIMATIONS 16
 
 namespace Slayer {
 
@@ -68,21 +68,29 @@ namespace Slayer {
 
 	using SortingFunction = std::function<bool(const RenderJob&, const RenderJob&)>;
 
-	struct AnimationData
+	struct AnimationBuffer
 	{
-		Vec2i frames = Vec2(0);
-		float time = 0.0;
 		int32_t skeletonId = 0;
-		int32_t animationTextureId = 0;
-		int32_t padding[3] = { 0 }; // 12 bytes of padding to make the struct 32 bytes
+		int32_t padding[1] = { 0 };
+		int32_t animationIds[SL_MAX_BLEND_ANIMATIONS] = { 0 };
+		float weights[SL_MAX_BLEND_ANIMATIONS] = { 0.0f };
+		float times[SL_MAX_BLEND_ANIMATIONS] = { 0.0f };
+		Vec2i frames[SL_MAX_BLEND_ANIMATIONS] = { {0, 0} };
 
-		AnimationData() = default;
-		~AnimationData() = default;
 
-		AnimationData(const Vec2i& frames, float time, int32_t animationTextureId, int32_t skeletonId = -1)
-			: frames(frames), time(time), animationTextureId(animationTextureId), skeletonId(skeletonId)
+		AnimationBuffer() = default;
+		~AnimationBuffer() = default;
+
+		// Constructor for all values in the arrays
+		AnimationBuffer(int32_t skeletonId, const int32_t* animationIds, const float* weights, const float* times, const Vec2i* frames)
+			: skeletonId(skeletonId)
 		{
+			Copy(animationIds, this->animationIds, SL_MAX_BLEND_ANIMATIONS * sizeof(int32_t));
+			Copy(weights, this->weights, SL_MAX_BLEND_ANIMATIONS * sizeof(float));
+			Copy(times, this->times, SL_MAX_BLEND_ANIMATIONS * sizeof(float));
+			Copy(frames, this->frames, SL_MAX_BLEND_ANIMATIONS * sizeof(Vec2i));
 		}
+
 	};
 
 	struct Batch
@@ -93,14 +101,13 @@ namespace Slayer {
 		Shared<Material> material;
 		Shared<Shader> shader;
 
-		unsigned int animationID;
 		Mat4* inverseBindPose;
 		FixedVector<int32_t, SL_MAX_INSTANCES> animInstanceIds = {};
 
 		FixedVector<Mat4, SL_MAX_INSTANCES> transforms = {};
 
-		Batch(int32_t vaoID, int32_t indexCount, Shared<Material> material, Shared<Shader> shader, int32_t animationID, Mat4* inverseBindPose)
-			: vaoID(vaoID), indexCount(indexCount), material(material), shader(shader), animationID(animationID), inverseBindPose(inverseBindPose)
+		Batch(int32_t vaoID, int32_t indexCount, Shared<Material> material, Shared<Shader> shader, Mat4* inverseBindPose)
+			: vaoID(vaoID), indexCount(indexCount), material(material), shader(shader), inverseBindPose(inverseBindPose)
 		{
 			std::memset(transforms.Data(), 0, sizeof(Mat4) * SL_MAX_BONES);
 			std::memset(animInstanceIds.Data(), -1, sizeof(int32_t) * SL_MAX_INSTANCES);
@@ -123,7 +130,6 @@ namespace Slayer {
 			const size_t prime = 31;
 
 			hash = (hash * prime) ^ job.vaoID;
-			hash = (hash * prime) ^ job.animationState->textureID;
 			hash = (hash * prime) ^ job.shader->GetID();
 			hash = (hash * prime) ^ job.material->assetID;
 
@@ -151,7 +157,7 @@ namespace Slayer {
 			if (batchIndices.find(hash) == batchIndices.end())
 			{
 				batchIndices[hash] = batches.size();
-				Batch newBatch(job.vaoID, job.indexCount, job.material, job.shader, job.animationState->textureID, job.animationState->inverseBindPose);
+				Batch newBatch(job.vaoID, job.indexCount, job.material, job.shader, job.animationState->inverseBindPose);
 				batches.push_back(newBatch);
 				batch = &batches.back();
 			}
@@ -290,7 +296,6 @@ namespace Slayer {
 		DebugInfo m_debugInfo;
 
 		void BindMaterial(Shared<Material> material, Shared<Shader> shader);
-		void BindAnimation(AnimationState* animationState, Shared<Shader> shader);
 	public:
 		void SetActiveCamera(Shared<Camera> inCamera, const Vec2& windowSize);
 		void Initialize(Shared<Camera> inCamera, int width, int height);

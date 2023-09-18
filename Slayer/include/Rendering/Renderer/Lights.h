@@ -1,9 +1,10 @@
 #pragma once
 
 #include "Core/Core.h"
-#include "Serialization/Serialization.h"
+#include "Core/Containers.h"
 #include "Core/Math.h"
 #include "Resources/Asset.h"
+#include "Serialization/Serialization.h"
 
 #define MAX_POINT_LIGHTS 64
 
@@ -44,7 +45,7 @@ namespace Slayer {
 		PointLight pointLights[MAX_POINT_LIGHTS];
 		Mat4 lightSpaceMatrix;
 		int numLights;
-		LightsData(const DirectionalLight& directionalLight, const Vector<PointLight>& inPointLights, const Mat4& lightSpaceMatrix) 
+		LightsData(const DirectionalLight& directionalLight, const Vector<PointLight>& inPointLights, const Mat4& lightSpaceMatrix)
 			: directionalLight(directionalLight), lightSpaceMatrix(lightSpaceMatrix)
 		{
 			std::copy(inPointLights.begin(), inPointLights.end(), pointLights);

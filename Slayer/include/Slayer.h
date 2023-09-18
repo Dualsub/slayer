@@ -7,3 +7,5 @@
 #include "Core/Event.h"
 #include "Core/Application.h"
 #include "Core/Layer.h"
+
+#include "Resources/Asset.h"

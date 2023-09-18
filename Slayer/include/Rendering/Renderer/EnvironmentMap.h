@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Core.h"
+#include "Core/Math.h"
 #include "Rendering/Renderer/Shader.h"
 #include "Rendering/Renderer/Texture.h"
 #include "Rendering/Renderer/VertexArray.h"

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Slayer.h"
+#include "Core/Core.h"
 #include "Jobs/Job.h"
 #include <atomic>
 
@@ -14,15 +14,15 @@ namespace Slayer
         JobQueue();
         ~JobQueue() = default;
 
-        void Push(Job *job);
-        Job *Pop();
-        Job *Steal();
+        void Push(Job* job);
+        Job* Pop();
+        Job* Steal();
         void Clear() { m_bottom = m_top = 0; }
         size_t Size() const { return m_bottom - m_top; }
 
     private:
         std::atomic_int m_bottom;
         std::atomic_int m_top;
-        Vector<Job *> m_jobs;
+        Vector<Job*> m_jobs;
     };
 }

@@ -40,7 +40,6 @@ namespace Slayer
         if (compileSuccess == GL_FALSE)
         {
             Log::Error("Shader compilation failed: " + std::string(infoLog));
-            std::cout << "Source:\n" << source << std::endl;
             SL_ASSERT(false);
         }
         return shaderID;

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Core/Core.h"
+#include "Core/Containers.h"
+#include "Core/Math.h"
 #include "Resources/Asset.h"
 
 #define LOG_VERBOSE 1

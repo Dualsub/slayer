@@ -43,6 +43,8 @@ namespace Slayer {
 
 		static Shared<VertexBuffer> Create(void* vertcies, size_t size);
 		static Shared<VertexBuffer> Create(size_t size);
+
+		void Dispose();
 	};
 
 	class IndexBuffer
@@ -58,6 +60,8 @@ namespace Slayer {
 		void  Unbind();
 
 		static Shared<IndexBuffer> Create(unsigned int* indices, int size);
+
+		void Dispose();
 	};
 
 	class UniformBuffer

@@ -14,7 +14,7 @@ namespace Slayer {
 	unsigned int EnvironmentMap::CreateEnvironmentMap(unsigned int fboID, unsigned int rboID, Shared<Texture> hdrTexture, Shared<Shader> captureShader, const Mat4& captureProjection, const Mat4 captureViews[6])
 	{
 		unsigned int envCubemapID;
-		unsigned int width  = 512 * 2;
+		unsigned int width = 512 * 2;
 		unsigned int height = 512 * 2;
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fboID);
@@ -117,7 +117,7 @@ namespace Slayer {
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		
+
 		glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
 		prefilterShader->Bind();
@@ -154,7 +154,7 @@ namespace Slayer {
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		prefilterShader->Unbind();
-		
+
 		return prefilterMapID;
 	}
 
@@ -212,20 +212,20 @@ namespace Slayer {
 				 1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
 				 1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
 				 1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
-				// bottom face
-				-1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-				 1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
-				 1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-				 1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-				-1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-				-1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-				// top face
-				-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-				 1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-				 1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
-				 1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-				-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-				-1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
+				 // bottom face
+				 -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+				  1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
+				  1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+				  1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+				 -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+				 -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+				 // top face
+				 -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+				  1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+				  1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
+				  1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+				 -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+				 -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
 			};
 			auto cubeVBO = VertexBuffer::Create(cubeVertices, sizeof(cubeVertices));
 			cubeVBO->SetLayout({ {"position", 3}, {"normal", 3}, {"texcoord", 2} });
@@ -268,7 +268,7 @@ namespace Slayer {
 
 		unsigned int envCubemapID;
 		envCubemapID = EnvironmentMap::CreateEnvironmentMap(fboID, rboID, hdrTexture, captureShader, captureProjection, captureViews);
-		
+
 		unsigned int irradianceMapID;
 		irradianceMapID = EnvironmentMap::CreateIrradianceMap(fboID, rboID, envCubemapID, irradianceShader, captureProjection, captureViews);
 
@@ -297,8 +297,16 @@ namespace Slayer {
 		cubeVAO->Bind();
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		cubeVAO->Unbind();
-		
+
 		cubemapShader->Unbind();
 		glCullFace(GL_BACK);
+	}
+
+	void EnvironmentMap::Dispose()
+	{
+		glDeleteTextures(1, &envCubemapID);
+		glDeleteTextures(1, &irradianceMapID);
+		glDeleteTextures(1, &prefilterMapID);
+		glDeleteTextures(1, &brdfTextureID);
 	}
 }

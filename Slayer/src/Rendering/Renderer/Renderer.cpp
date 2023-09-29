@@ -120,11 +120,6 @@ namespace Slayer
 		Resize(-width / 2, -height / 2, width / 2, height / 2);
 	}
 
-	void Renderer::BeginScene()
-	{
-		BeginScene(m_lightInfo, m_shadowInfo);
-	}
-
 	void Renderer::Clear()
 	{
 		m_shadowPass.Clear();
@@ -136,22 +131,10 @@ namespace Slayer
 	{
 		m_lightInfo = inLightInfo;
 		m_shadowInfo = inShadowInfo;
-		CameraData cameraData(m_camera->GetProjectionMatrix(), m_camera->GetViewMatrix(), m_camera->GetPosition());
-		m_cameraBuffer->SetData((void*)&cameraData, sizeof(CameraData));
-
-		// shadowFramebuffer->Resize((unsigned int)shadowInfo.width, (unsigned int)shadowInfo.height);
-		m_lightProjection = glm::ortho(-m_shadowInfo.width / 2, m_shadowInfo.width / 2, -m_shadowInfo.height / 2, m_shadowInfo.height / 2, m_shadowInfo.near, m_shadowInfo.far);
-		m_lightPos = m_shadowInfo.distance * glm::normalize(Vec3(m_lightInfo.directionalLight.direction)) + m_shadowInfo.lightPos;
-		Mat4 lightView = glm::lookAt(m_lightPos, m_lightPos + Vec3(m_lightInfo.directionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
-		m_lightSpaceMatrix = m_lightProjection * lightView;
-		Vector<PointLight> pointLights;
-		LightsData lightsData(m_lightInfo.directionalLight, pointLights, m_lightSpaceMatrix);
-		m_lightsBuffer->SetData((void*)&lightsData, sizeof(LightsData));
-
-		m_debugInfo.drawCalls = 0;
+		BeginScene();
 	}
 
-	void Renderer::BeginScene(const Vector<PointLight>& inPointLights, const DirectionalLight& inDirectionalLight)
+	void Renderer::BeginScene(const Vector<PointLightData>& inPointLights, const DirectionalLightData& inDirectionalLight)
 	{
 		SL_EVENT();
 		CameraData cameraData(m_camera->GetProjectionMatrix(), m_camera->GetViewMatrix(), m_camera->GetPosition());
@@ -160,6 +143,20 @@ namespace Slayer
 		Mat4 lightView = glm::lookAt(m_lightPos, m_lightPos + Vec3(inDirectionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
 		m_lightSpaceMatrix = m_lightProjection * lightView;
 		LightsData lightsData(inDirectionalLight, inPointLights, m_lightSpaceMatrix);
+		m_lightsBuffer->SetData((void*)&lightsData, sizeof(LightsData));
+
+		m_debugInfo.drawCalls = 0;
+	}
+
+	void Renderer::BeginScene()
+	{
+		SL_EVENT();
+		CameraData cameraData(m_camera->GetProjectionMatrix(), m_camera->GetViewMatrix(), m_camera->GetPosition());
+		m_cameraBuffer->SetData((void*)&cameraData, sizeof(CameraData));
+		m_lightPos = -30.0f * glm::normalize(m_directionalLight.direction);
+		Mat4 lightView = glm::lookAt(m_lightPos, m_lightPos + Vec3(m_directionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
+		m_lightSpaceMatrix = m_lightProjection * lightView;
+		LightsData lightsData(m_directionalLight, {}, m_lightSpaceMatrix);
 		m_lightsBuffer->SetData((void*)&lightsData, sizeof(LightsData));
 
 		m_debugInfo.drawCalls = 0;
@@ -520,12 +517,43 @@ namespace Slayer
 
 	void Renderer::CleanUp()
 	{
+		m_screenShader->Dispose();
+		m_viewportFramebuffer->Dispose();
+		m_cameraBuffer->Dispose();
+		m_boneBuffer->Dispose();
+		m_instanceBuffer->Dispose();
+		m_lightsBuffer->Dispose();
+		m_lineVertexArray->Dispose();
+		m_lineVertexBuffer->Dispose();
+		m_lineShader->Dispose();
+		m_shadowFramebuffer->Dispose();
+		m_shadowShaderStatic->Dispose();
+		m_shadowShaderSkeletal->Dispose();
+		m_animationShader->Dispose();
+		m_animationBuffer->Dispose();
+		m_boneTransformTexture->Dispose();
+		m_hdrTexture->Dispose();
+		m_environmentMap->Dispose();
+		m_shaderStatic->Dispose();
+		m_shaderSkeletal->Dispose();
 	}
 
 	void Renderer::SetActiveCamera(Shared<Camera> inCamera, const Vec2& windowSize)
 	{
 		m_camera = inCamera;
 		Resize(-windowSize.x / 2, -windowSize.y / 2, windowSize.x / 2, windowSize.y / 2);
+	}
+
+	void Renderer::SetCameraData(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position)
+	{
+		m_cameraData.Set(projectionMatrix, viewMatrix, position);
+	}
+
+	void Renderer::SetDirectionalLight(const Vec3& orientation, const Vec3& color)
+	{
+		Vec3 direction = Vec3(0.0f, -1.0f, 0.0f);
+		direction = glm::mat3_cast(Quat(glm::radians(orientation))) * direction;
+		m_directionalLight = { direction, color };
 	}
 
 	RenderJob::RenderJob(unsigned int vaoID, unsigned int indexCount, Shared<Material> material, Shared<Shader> shader, const Mat4& transform) : vaoID(vaoID), indexCount(indexCount), material(material), shader(shader), transform(transform)

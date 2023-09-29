@@ -1,5 +1,8 @@
 add_executable(Testbed
     src/Editor/EditorLayer.cpp
+    src/Editor/PropertySerializer.cpp
+    src/Editor/EditorActions.cpp
+
     src/Testbed.cpp
     src/SandboxCamera.cpp
 )

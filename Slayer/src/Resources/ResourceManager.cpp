@@ -4,7 +4,6 @@ namespace Slayer
 {
 	ResourceManager* ResourceManager::instance = nullptr;
 
-
 	std::future<GPULoadData> ResourceManager::LoadAssetsAsync(const std::string& assetPackPath)
 	{
 		return std::async(std::launch::async, [this, assetPackPath]()
@@ -45,7 +44,7 @@ namespace Slayer
 						{
 							material->SetTextures((TextureType)texture.type, texture.textureId);
 						}
-						m_assetStore.AddAsset(id, record.name, material);
+						m_assetStore.AddAsset(record, material);
 						continue;
 					}
 					case AssetType::SL_ASSET_TYPE_MODEL:
@@ -82,12 +81,12 @@ namespace Slayer
 			if (ta.target == uint32_t(0x8513)) // HDR
 			{
 				Shared<Texture> texture = Texture::LoadTextureHDR((const float*)ta.data.data(), ta.width, ta.height, ta.channels);
-				m_assetStore.AddAsset(record.id, record.name, texture);
+				m_assetStore.AddAsset(record, texture);
 			}
 			else if (ta.target == uint32_t(0x0DE1)) // 2D
 			{
 				Shared<Texture> texture = Texture::LoadTexture(ta.data.data(), ta.width, ta.height, ta.channels, (TextureTarget)ta.target);
-				m_assetStore.AddAsset(record.id, record.name, texture);
+				m_assetStore.AddAsset(record, texture);
 			}
 			else
 			{
@@ -98,13 +97,13 @@ namespace Slayer
 		for (auto& [sa, record] : gpuLoadData.shaders)
 		{
 			Shared<Shader> shader = Shader::LoadShader(sa.vsSource, sa.fsSource);
-			m_assetStore.AddAsset(record.id, record.name, shader);
+			m_assetStore.AddAsset(record, shader);
 		}
 
 		for (auto& [csa, record] : gpuLoadData.computeShaders)
 		{
 			Shared<ComputeShader> shader = ComputeShader::Create(csa.source);
-			m_assetStore.AddAsset(record.id, record.name, shader);
+			m_assetStore.AddAsset(record, shader);
 		}
 
 		for (auto& [ma, record] : gpuLoadData.models)
@@ -115,7 +114,7 @@ namespace Slayer
 				Shared<Mesh> mesh = Mesh::Create((float*)meshDesc.vertices.data(), (uint32_t)meshDesc.vertices.size() * sizeof(float), (uint32_t*)meshDesc.indices.data(), (uint32_t)meshDesc.indices.size());
 				model->AddMesh(mesh);
 			}
-			m_assetStore.AddAsset(record.id, record.name, model);
+			m_assetStore.AddAsset(record, model);
 		}
 
 		for (auto& [sma, record] : gpuLoadData.skeletalModels)
@@ -134,13 +133,13 @@ namespace Slayer
 
 			Shared<SkeletalModel> skeletalModel = SkeletalModel::Create(vertices, mesh.indices, bones, mesh.globalInverseTransform);
 			skeletalModel->AddSockets(sma.sockets);
-			m_assetStore.AddAsset(record.id, record.name, skeletalModel);
+			m_assetStore.AddAsset(record, skeletalModel);
 		}
 
 		for (auto& [aa, record] : gpuLoadData.animations)
 		{
 			Shared<Animation> animation = Animation::Create(aa.data, aa.times, aa.duration);
-			m_assetStore.AddAsset(record.id, record.name, animation);
+			m_assetStore.AddAsset(record, animation);
 		}
 	}
 

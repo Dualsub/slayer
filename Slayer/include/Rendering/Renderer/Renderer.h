@@ -24,8 +24,8 @@ namespace Slayer {
 
 	struct LightInfo
 	{
-		//Vector<PointLight> pointLights;
-		DirectionalLight directionalLight = DirectionalLight(Vec3(-1.0f), Vec3(1.0f));
+		//Vector<PointLightData> pointLights;
+		DirectionalLightData directionalLight = DirectionalLightData(Vec3(-1.0f), Vec3(1.0f));
 		template<typename Serializer>
 		void Transfer(Serializer& serializer)
 		{
@@ -240,10 +240,35 @@ namespace Slayer {
 		Mat4 projectionMatrix;
 		Mat4 viewMatrix;
 		Vec3 position;
-		float padding;
+		float padding = 0.0f;
 		CameraData(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position)
 			: projectionMatrix(projectionMatrix), viewMatrix(viewMatrix), position(position)
 		{
+		}
+
+		CameraData() = default;
+		~CameraData() = default;
+
+		void SetProjectionMatrix(const Mat4& projectionMatrix)
+		{
+			this->projectionMatrix = projectionMatrix;
+		}
+
+		void SetViewMatrix(const Mat4& viewMatrix)
+		{
+			this->viewMatrix = viewMatrix;
+		}
+
+		void SetPosition(const Vec3& position)
+		{
+			this->position = position;
+		}
+
+		void Set(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position)
+		{
+			this->projectionMatrix = projectionMatrix;
+			this->viewMatrix = viewMatrix;
+			this->position = position;
 		}
 	};
 
@@ -255,6 +280,7 @@ namespace Slayer {
 		Shared<Shader> m_screenShader;
 		Shared<Framebuffer> m_viewportFramebuffer;
 		Shared<Camera> m_camera;
+		CameraData m_cameraData;
 		Shared<UniformBuffer> m_cameraBuffer;
 		Shared<UniformBuffer> m_boneBuffer;
 		Shared<UniformBuffer> m_instanceBuffer;
@@ -287,8 +313,8 @@ namespace Slayer {
 		Shared<Shader> m_shaderStatic;
 		Shared<Shader> m_shaderSkeletal;
 
-		DirectionalLight m_directionalLight;
-		Vector<PointLight> m_pointLights;
+		DirectionalLightData m_directionalLight;
+		Vector<PointLightData> m_pointLights;
 		LightInfo m_lightInfo;
 		ShadowInfo m_shadowInfo;
 		RenderPass m_shadowPass;
@@ -298,13 +324,15 @@ namespace Slayer {
 		void BindMaterial(Shared<Material> material, Shared<Shader> shader);
 	public:
 		void SetActiveCamera(Shared<Camera> inCamera, const Vec2& windowSize);
+		void SetCameraData(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position);
+		void SetDirectionalLight(const Vec3& direction, const Vec3& color);
 		void Initialize(Shared<Camera> inCamera, int width, int height);
 		void Resize(int width, int height);
 		void Resize(int x, int y, int width, int height);
 		void Clear();
 		void BeginScene();
 		void BeginScene(const LightInfo& lightInfo, const ShadowInfo& shadowSettings);
-		void BeginScene(const Vector<PointLight>& inPointLights, const DirectionalLight& inDirectionalLight);
+		void BeginScene(const Vector<PointLightData>& inPointLights, const DirectionalLightData& inDirectionalLight);
 		void Submit(Shared<SkeletalModel> model, const Mat4& transform, AnimationState* animationState);
 		void Submit(Shared<SkeletalModel> model, AnimationState* animationState, Shared<Material> material, const Mat4& transform);
 		void Submit(Shared<Model> model, Shared<Material> material, const Mat4& transform);

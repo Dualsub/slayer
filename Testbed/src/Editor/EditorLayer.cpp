@@ -3,12 +3,175 @@
 #include "Core/Application.h"
 #include "Core/Events.h"
 #include "Input/Input.h"
+#include "Scene/World.h"
+#include "Editor/EditorActions.h"
+#include "Serialization/YamlSerializer.h"
 
 #include "imgui.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "backends/imgui_impl_glfw.h"
 
-namespace Slayer {
+namespace Slayer::Editor {
+
+    namespace Panels {
+
+        void RenderMenuBar(auto&& saveScene = []() {}, auto&& loadScene = []() {})
+        {
+            if (ImGui::BeginMenuBar())
+            {
+                if (ImGui::BeginMenu("File"))
+                {
+                    if (ImGui::MenuItem("New", "Ctrl+N"))
+                    {
+
+                    }
+
+                    if (ImGui::MenuItem("Open", "Ctrl+O"))
+                    {
+                        loadScene();
+                    }
+
+                    if (ImGui::MenuItem("Save", "Ctrl+S"))
+                    {
+                        saveScene();
+                    }
+
+                    if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
+                    {
+
+                    }
+
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenuBar();
+            }
+        }
+
+        void RenderScenePanel(Entity& selectedEntity)
+        {
+            const auto treeNodeFlags = ImGuiTreeNodeFlags_Leaf;
+            auto& store = World::GetWorldStore();
+            auto entities = store.GetAllEntities();
+
+            // List of entities in the scene
+            if (!ImGui::Begin("Scene Tree"))
+            {
+                ImGui::End();
+                return;
+            }
+
+            // Create entity button
+            if (ImGui::Button("Create Entity"))
+            {
+                selectedEntity = store.CreateEntity();
+            }
+
+            for (auto& entity : entities)
+            {
+                ImGui::PushID(entity);
+
+                std::string name = "Entity " + std::to_string(entity);
+                if (ImGui::TreeNodeEx(name.c_str(), treeNodeFlags))
+                {
+                    if (ImGui::IsItemClicked())
+                    {
+                        selectedEntity = entity;
+                    }
+
+                    ImGui::TreePop();
+                }
+
+                ImGui::PopID();
+            }
+
+            ImGui::End();
+        }
+
+        void RenderInspectorPanel(PropertySerializer& serializer, Entity& selectedEntity)
+        {
+            auto& store = World::GetWorldStore();
+
+            // Scene tree view panel, with ImGui tree
+            ImGui::Begin("Entity Inspector");
+
+            Entity entity = selectedEntity;
+
+            if (entity == SL_INVALID_ENTITY)
+            {
+                ImGui::Text("No entity selected");
+                ImGui::End();
+                return;
+            }
+
+            if (ImGui::BeginPopupContextItem("Add Component"))
+            {
+                ForEachComponentType([&store, &selectedEntity]<typename T>() {
+                    if (store.HasComponent<T>(selectedEntity))
+                        return;
+
+                    std::string typeName = GetSanitizedTypeName<T>();
+                    if (ImGui::MenuItem(typeName.c_str()))
+                    {
+                        store.AddComponent(selectedEntity, T());
+                    }
+                });
+
+                ImGui::EndPopup();
+            }
+
+            // Add component button
+            if (ImGui::Button("Add Component"))
+            {
+                ImGui::OpenPopup("Add Component");
+            }
+
+            ForEachComponentType([entity, &store, &serializer]<typename T>()
+            {
+                if (!store.HasComponent<T>(entity))
+                    return;
+
+                std::string typeName = GetSanitizedTypeName<T>();
+                ImGui::PushID(typeName.c_str());
+                T* component = store.GetComponent<T>(entity);
+                serializer.Transfer(component, typeName);
+                ImGui::PopID();
+            });
+
+            ImGui::End();
+
+            selectedEntity = entity;
+        }
+
+        void RenderNewScenePopup(bool& open)
+        {
+            if (!open)
+                return;
+
+            ImGui::OpenPopup("New Scene");
+
+            if (ImGui::BeginPopupModal("New Scene", &open, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                ImGui::Text("Are you sure you want to create a new scene?");
+                ImGui::Separator();
+
+                if (ImGui::Button("Yes", ImVec2(120, 0)))
+                {
+                    ImGui::CloseCurrentPopup();
+                }
+
+                ImGui::SetItemDefaultFocus();
+                ImGui::SameLine();
+
+                if (ImGui::Button("No", ImVec2(120, 0)))
+                {
+                    ImGui::CloseCurrentPopup();
+                }
+
+                ImGui::EndPopup();
+            }
+        }
+    }
+
 
     EditorLayer::EditorLayer()
     {
@@ -20,7 +183,18 @@ namespace Slayer {
 
     void EditorLayer::OnAttach()
     {
+        auto& store = m_loadSceneStore;
+        ForEachComponentType([&store]<typename T>() {
+            store.RegisterComponent<T>();
+        });
+
         InitializeGUI();
+        LoadSettings();
+        // File exists
+        if (std::filesystem::exists(m_settings.lastScenePath))
+        {
+            LoadScene(m_settings.lastScenePath);
+        }
     }
 
     void EditorLayer::OnDetach()
@@ -31,6 +205,22 @@ namespace Slayer {
     void EditorLayer::OnUpdate(Timespan ts)
     {
         m_deltaTime = ts;
+
+        if (!m_loadingScene)
+            return;
+
+        if (m_loadSceneFuture.valid() && m_loadSceneFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+        {
+            m_loadSceneFuture.get();
+            auto* world = World::Get();
+            world->SetStore(m_loadSceneStore);
+            m_loadSceneStore = ComponentStore();
+            auto& store = m_loadSceneStore;
+            ForEachComponentType([&store]<typename T>() {
+                store.RegisterComponent<T>();
+            });
+            m_loadingScene = false;
+        }
     }
 
     void EditorLayer::OnRender()
@@ -40,7 +230,8 @@ namespace Slayer {
 
     void EditorLayer::OnEvent(Event& e)
     {
-        SL_EVENT_DISPATCH(Slayer::KeyPressEvent, Slayer::EditorLayer::OnKeyPress);
+        SL_EVENT_DISPATCH(Slayer::KeyPressEvent, Slayer::Editor::EditorLayer::OnKeyPress);
+        SL_EVENT_DISPATCH(Slayer::MouseMoveEvent, Slayer::Editor::EditorLayer::OnMouseMove);
     }
 
     bool EditorLayer::OnKeyPress(KeyPressEvent& e)
@@ -50,22 +241,41 @@ namespace Slayer {
         case SlayerKey::KEY_ESCAPE:
             Application::Get()->Stop();
             break;
-        case Slayer::KEY_R:
-            if (Input::IsKeyPressed(SlayerKey::KEY_LEFT_CONTROL))
+        case Slayer::KEY_TAB:
+            if (Input::IsKeyPressed(SlayerKey::KEY_LEFT_SHIFT))
+            {
+                ToggleEditMode();
+            }
+            break;
+        case Slayer::KEY_P:
+
+            break;
+        case Slayer::KEY_S:
+            if (Input::IsKeyPressed(SlayerKey::KEY_LEFT_CONTROL) && m_editMode)
             {
             }
             break;
-        case Slayer::KEY_F:
+        case Slayer::KEY_O:
+            if (Input::IsKeyPressed(SlayerKey::KEY_LEFT_CONTROL) && m_editMode)
+            {
+            }
+            break;
+        case Slayer::KEY_N:
             if (Input::IsKeyPressed(SlayerKey::KEY_LEFT_CONTROL))
             {
-
+                NewScene();
             }
             break;
         default:
             break;
         }
 
-        return true;
+        return m_editMode;
+    }
+
+    bool EditorLayer::OnMouseMove(MouseMoveEvent& e)
+    {
+        return m_editMode; // Capture mouse movement only when in edit mode
     }
 
     void EditorLayer::InitializeGUI()
@@ -73,6 +283,7 @@ namespace Slayer {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         (void)io;
         ImGui::StyleColorsDark();
         void* nativeWindow = Application::Get()->GetWindow().GetNativeWindow();
@@ -95,9 +306,7 @@ namespace Slayer {
         static auto lastTick = std::chrono::high_resolution_clock::now();
         static std::string text;
         static auto totalFrames = 0;
-        static auto totalSeconds = 0.0f;
         totalFrames++;
-        totalSeconds += m_deltaTime;
         auto now = std::chrono::high_resolution_clock::now();
         if (now - lastTick > std::chrono::milliseconds(250))
         {
@@ -109,10 +318,38 @@ namespace Slayer {
             text = stream.str();
             lastTick = now;
             totalFrames = 0;
-            totalSeconds = 0.0f;
         }
         ImGui::Text(text.c_str());
         ImGui::End();
+
+        static bool open = true;
+        const auto windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse;
+
+        if (m_editMode)
+        {
+            if (!ImGui::Begin("Editor", &open, windowFlags))
+            {
+                ImGui::End();
+                return;
+            }
+
+            ImGui::DockSpace(ImGui::GetID("EditorDockSpace"));
+
+            auto saveScene = [this]() {
+                SaveScene(World::GetWorldStore(), "C:/dev/repos/Slayer/Testbed/assets/scene.yml");
+                };
+
+            auto loadScene = [this]() {
+                LoadScene("C:/dev/repos/Slayer/Testbed/assets/scene.yml");
+                };
+
+            Panels::RenderMenuBar(saveScene, loadScene);
+            Panels::RenderScenePanel(m_selectedEntity);
+            Panels::RenderInspectorPanel(m_propertySerializer, m_selectedEntity);
+            ImGui::ShowDemoWindow();
+
+            ImGui::End();
+        }
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -124,4 +361,53 @@ namespace Slayer {
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
     }
+
+    void EditorLayer::ToggleEditMode()
+    {
+        m_editMode = !m_editMode;
+        auto& window = Application::Get()->GetWindow();
+        window.SetCursorEnabled(m_editMode);
+    }
+
+    void EditorLayer::SaveScene(ComponentStore& store, const std::string& path)
+    {
+        Editor::Actions::SaveScene(store, path);
+    }
+
+    void EditorLayer::LoadScene(const std::string& path)
+    {
+        m_loadingScene = true;
+        m_loadSceneFuture = Editor::Actions::LoadScene(m_loadSceneStore, path);
+        m_settings.lastScenePath = path;
+        SaveSettings();
+    }
+
+    void EditorLayer::NewScene()
+    {
+        auto* world = World::Get();
+        auto newStore = ComponentStore();
+        ForEachComponentType([&newStore]<typename T>() {
+            newStore.RegisterComponent<T>();
+        });
+        world->SetStore(newStore);
+    }
+
+
+    void EditorLayer::LoadSettings()
+    {
+        constexpr std::string settingsPath = "settings.yml";
+        if (!std::filesystem::exists(settingsPath))
+            return;
+
+        YamlDeserializer deserializer;
+        deserializer.Deserialize(m_settings, settingsPath);
+    }
+
+    void EditorLayer::SaveSettings()
+    {
+        constexpr std::string settingsPath = "settings.yml";
+        YamlSerializer serializer;
+        serializer.Serialize(m_settings, settingsPath);
+    }
+
 }

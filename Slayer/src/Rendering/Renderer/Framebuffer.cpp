@@ -7,10 +7,10 @@ namespace Slayer {
 		Vector<Attachment> colorAttachments,
 		Attachment depthAttachment,
 		unsigned int width,
-		unsigned int height):
-		fboID(fboID), 
-		colorAttachments(colorAttachments), 
-		depthAttachment(depthAttachment), 
+		unsigned int height) :
+		fboID(fboID),
+		colorAttachments(colorAttachments),
+		depthAttachment(depthAttachment),
 		width(width), height(height)
 
 	{
@@ -45,7 +45,7 @@ namespace Slayer {
 	void Framebuffer::Resize(unsigned int inWidth, unsigned int inHeight)
 	{
 		glDeleteFramebuffers(1, &fboID);
-		for(auto& attachment : colorAttachments)
+		for (auto& attachment : colorAttachments)
 			glDeleteTextures(1, &attachment.attachmentID);
 		glDeleteTextures(1, &depthAttachment.attachmentID);
 
@@ -147,7 +147,7 @@ namespace Slayer {
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, attachment.attachmentID, 0);
 			break;
 		case TextureTarget::TYPE_NONE:
-			
+
 			break;
 		}
 	}
@@ -163,6 +163,14 @@ namespace Slayer {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, attachment.textureWrap);
 
 		glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentType, GL_TEXTURE_2D, attachment.attachmentID, 0);
+	}
+
+	void Framebuffer::Dispose()
+	{
+		glDeleteFramebuffers(1, &fboID);
+		for (auto& attachment : colorAttachments)
+			glDeleteTextures(1, &attachment.attachmentID);
+		glDeleteTextures(1, &depthAttachment.attachmentID);
 	}
 
 	Shared<Framebuffer> Framebuffer::Create(Vector<Attachment>& colorAttachments, Attachment& depthAttachment, unsigned int width, unsigned int height)

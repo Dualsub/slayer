@@ -79,6 +79,7 @@ namespace Slayer {
 		void Resize(unsigned int width, unsigned int height);
 		static void AttachColorTexture(const Attachment& attachment, GLenum internalFormat, GLenum format, unsigned int width, unsigned int height, int index);
 		static void AttachDepthTexture(const Attachment& attachment, GLenum format, GLenum attachmentType, unsigned int width, unsigned int height);
+		void Dispose();
 		static Shared<Framebuffer> Create(Vector<Attachment>& colorAttachments, Attachment& depthAttachment, unsigned int width, unsigned int height);
 	};
 

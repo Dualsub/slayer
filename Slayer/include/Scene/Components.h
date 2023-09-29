@@ -13,7 +13,8 @@
     Slayer::SkeletalRenderer, \
     Slayer::SkeletalSockets, \
     Slayer::SocketAttacher, \
-    Slayer::AnimationPlayer
+    Slayer::AnimationPlayer, \
+    Slayer::DirectionalLight
 
 namespace Slayer {
 
@@ -31,18 +32,38 @@ namespace Slayer {
         }
     };
 
+    struct TagComponent
+    {
+        std::string tag;
+
+        TagComponent() = default;
+        TagComponent(const std::string& tag) :
+            tag(tag)
+        {
+        }
+        ~TagComponent() = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(tag);
+        }
+    };
+
     struct Transform
     {
         AssetID parentId;
         Mat4 worldTransform = Mat4(1.0f);
         Vec3 position = Vec3(0.0f);
         Quat rotation = Quat(0.0f, 0.0f, 0.0f, 1.0f);
+        Vec3 eulerProxy = Vec3(0.0f);
         Vec3 scale = Vec3(1.0f);
 
         Transform() = default;
         Transform(const Vec3& position, const Quat& rotation, const Vec3& scale) :
             position(position), rotation(rotation), scale(scale)
         {
+            eulerProxy = glm::eulerAngles(rotation) * 180.0f / glm::pi<float>();
         }
         ~Transform() = default;
 
@@ -66,6 +87,7 @@ namespace Slayer {
             {
                 Vec3 euler;
                 serializer.Transfer(euler, "rotation");
+                eulerProxy = euler;
                 euler *= glm::pi<float>() / 180.0f;
                 rotation = Quat(euler);
             }
@@ -74,6 +96,11 @@ namespace Slayer {
                 Vec3 euler = glm::eulerAngles(rotation);
                 euler *= 180.0f / glm::pi<float>();
                 serializer.Transfer(euler, "rotation");
+            }
+            else if (serializer.GetFlags() == SerializationFlags::ReadWrite)
+            {
+                rotation = Quat(eulerProxy * glm::pi<float>() / 180.0f);
+                serializer.Transfer(eulerProxy, "rotation");
             }
         }
     };
@@ -93,8 +120,8 @@ namespace Slayer {
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
-            SL_TRANSFER_VAR(modelID);
-            SL_TRANSFER_VAR(materialID);
+            SL_TRANSFER_ASSET(modelID, AssetType::SL_ASSET_TYPE_MODEL);
+            SL_TRANSFER_ASSET(materialID, AssetType::SL_ASSET_TYPE_MATERIAL);
         }
     };
 
@@ -114,8 +141,8 @@ namespace Slayer {
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
-            SL_TRANSFER_VAR(modelID);
-            SL_TRANSFER_VAR(materialID);
+            SL_TRANSFER_ASSET(modelID, AssetType::SL_ASSET_TYPE_SKELETAL_MODEL);
+            SL_TRANSFER_ASSET(materialID, AssetType::SL_ASSET_TYPE_MATERIAL);
         }
     };
 
@@ -182,7 +209,7 @@ namespace Slayer {
             template<typename Serializer>
             void Transfer(Serializer& serializer)
             {
-                SL_TRANSFER_VAR(animationID);
+                SL_TRANSFER_ASSET(animationID, AssetType::SL_ASSET_TYPE_ANIMATION);
                 SL_TRANSFER_VAR(weight);
             }
         };
@@ -206,6 +233,28 @@ namespace Slayer {
         void Transfer(Serializer& serializer)
         {
             SL_TRANSFER_VEC(animationClips);
+        }
+    };
+
+    struct DirectionalLight
+    {
+        Vec3 orientation = Vec3(0.0f); // Euler angles
+        Vec3 color = Vec3(1.0f);
+
+        DirectionalLight() = default;
+        DirectionalLight(const Vec3& orientation, const Vec3& color) :
+            orientation(orientation), color(color)
+        {
+
+        }
+
+        ~DirectionalLight() = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(orientation);
+            SL_TRANSFER_VAR(color);
         }
     };
 

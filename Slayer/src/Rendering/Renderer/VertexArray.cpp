@@ -15,7 +15,7 @@ namespace Slayer {
 		glGenVertexArrays(1, &vaoID);
 		return std::make_shared<VertexArray>(vaoID);
 	}
-	
+
 	Unique<VertexArray> VertexArray::CreateUnique()
 	{
 		unsigned int vaoID;
@@ -47,7 +47,7 @@ namespace Slayer {
 		{
 			switch (element.type)
 			{
-			case AttribType::SL_ATTRIB_FLOAT: 
+			case AttribType::SL_ATTRIB_FLOAT:
 				stride += element.count * sizeof(float);
 				break;
 			case AttribType::SL_ATTRIB_INT:
@@ -92,6 +92,11 @@ namespace Slayer {
 		Bind();
 		buffer->Bind();
 		indexBuffer = buffer;
+	}
+
+	void VertexArray::Dispose()
+	{
+		glDeleteVertexArrays(1, &vaoID);
 	}
 
 }

@@ -15,6 +15,7 @@ set(SLAYER_SRC
     src/Core/Log.cpp
     src/Core/CmdArgs.cpp
     src/Core/Window.cpp
+    src/Core/Singleton.cpp
 
     src/Rendering/RenderingManager.cpp
     src/Rendering/Renderer/Texture.cpp
@@ -36,6 +37,8 @@ set(SLAYER_SRC
 
     src/Resources/AssetPack.cpp
     src/Resources/ResourceManager.cpp
+
+    src/Scene/World.cpp
 
     src/Input/Input.cpp
 )

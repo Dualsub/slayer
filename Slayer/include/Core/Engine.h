@@ -3,21 +3,19 @@
 #include "Core/Log.h"
 #include "Core/Application.h"
 
-namespace Slayer 
+namespace Slayer
 {
     class Engine
     {
     private:
         bool Initialize();
-        void Update();
-        void Render();
         void Shutdown();
 
         template<typename Manager_t, typename ...VArgs>
         bool InitializeManager(VArgs... args)
         {
             Manager_t* m = new Manager_t();
-            if(!m || !m->Initialize())
+            if (!m || !m->Initialize())
             {
                 Log::Critical("Failed to initialize", typeid(Manager_t).name());
                 delete m;
@@ -31,7 +29,7 @@ namespace Slayer
         void ShutdownManager()
         {
             Manager_t* m = Manager_t::Get();
-            if(m)
+            if (m)
             {
                 m->Shutdown();
             }

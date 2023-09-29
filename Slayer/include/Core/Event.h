@@ -20,7 +20,10 @@ namespace Slayer {
 
 	class Event
 	{
+	private:
+		bool m_handled = false;
 	public:
+		bool IsHandled() { return m_handled; }
 		virtual const std::string& GetType() { return ""; };
 
 		template <typename T>
@@ -28,7 +31,9 @@ namespace Slayer {
 		{
 			if (e.GetType() == T::GetClassType())
 			{
-				return func(*(T*)&e);
+				bool success = func(*(T*)&e);
+				e.m_handled = success;
+				return success;
 			}
 			return false;
 		}

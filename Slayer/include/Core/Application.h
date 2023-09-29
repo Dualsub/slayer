@@ -25,9 +25,9 @@ namespace Slayer
         std::chrono::steady_clock::time_point m_lastFrameTime = std::chrono::high_resolution_clock::now();
         Timespan m_deltaTime = 0.0f;
 
-        Window m_window;      
+        Window m_window;
     public:
-    
+
         static Application* Get() { return s_instance; }
         template <typename T>
         static T* Get() { return static_cast<T*>(s_instance); }
@@ -48,7 +48,7 @@ namespace Slayer
         void Render();
         void Shutdown();
         void HandleEvent(Event& e);
-        
+
         virtual void OnPreInitialize() = 0;
         virtual void OnInitialize() = 0;
         virtual void OnUpdate(Timespan ts) = 0;

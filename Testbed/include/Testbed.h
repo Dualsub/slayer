@@ -16,6 +16,7 @@
 #include "Scene/TransformSystem.h"
 #include "Scene/Components.h"
 #include "Scene/ComponentStore.h"
+#include "Scene/World.h"
 #include "Resources/AssetPack.h"
 #include "Resources/ResourceManager.h"
 #include "Serialization/SceneSerializer.h"
@@ -79,7 +80,7 @@ namespace Testbed
         std::future<Slayer::GPULoadData> m_levelLoadFuture;
         Slayer::AssetPack m_assetPack;
 
-        Slayer::ComponentStore m_store;
+        Slayer::World m_world;
 
         Slayer::Shared<SandboxCamera> m_camera;
         Slayer::Renderer m_renderer;
@@ -163,10 +164,11 @@ namespace Testbed
                 // Update game
             {
                 m_camera->Update(ts);
-                m_animationSystem.Update(ts, m_store);
-                m_animationSystem.Render(m_renderer, m_store);
-                m_transformSystem.Update(ts, m_store);
-                m_renderingSystem.Update(ts, m_store);
+                auto& store = m_world.GetStore();
+                m_animationSystem.Update(ts, store);
+                m_animationSystem.Render(m_renderer, store);
+                m_transformSystem.Update(ts, store);
+                m_renderingSystem.Update(ts, store);
                 break;
             }
             case AS_Quitting:
@@ -185,7 +187,7 @@ namespace Testbed
 
             m_renderer.BeginScene({}, Slayer::DirectionalLight(Slayer::Vec3(-1.0f), Slayer::Vec3(1.0f)));
 
-            m_renderingSystem.Render(m_renderer, m_store);
+            m_renderingSystem.Render(m_renderer, m_world.GetStore());
 
             //m_renderer.DrawShadows();
             m_renderer.Draw();
@@ -200,7 +202,7 @@ namespace Testbed
             m_window.Shutdown();
         }
 
-        void OnEvent(Slayer::Event& e)
+        void OnEvent(Slayer::Event& e) override
         {
             if (m_camera)
                 m_camera->OnEvent(e);

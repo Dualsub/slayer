@@ -93,13 +93,13 @@ namespace Slayer
         }
     };
 
-    class Singleton
+    class SingletonComponent
     {
     public:
-        Singleton() = default;
-        virtual ~Singleton() = default;
-        Singleton(const Singleton&) = delete;
-        Singleton& operator=(const Singleton&) = delete;
+        SingletonComponent() = default;
+        virtual ~SingletonComponent() = default;
+        SingletonComponent(const SingletonComponent&) = delete;
+        SingletonComponent& operator=(const SingletonComponent&) = delete;
     };
 
     class ComponentStore
@@ -114,7 +114,7 @@ namespace Slayer
         };
 
         using ComponentDict = DictHash<ComponentType, ComponentRecord, std::hash<ComponentType>>;
-        using SingletonDict = DictHash<ComponentType, Shared<Singleton>, std::hash<ComponentType>>;
+        using SingletonDict = DictHash<ComponentType, Shared<SingletonComponent>, std::hash<ComponentType>>;
     private:
         Entity entityIndex = 0;
 

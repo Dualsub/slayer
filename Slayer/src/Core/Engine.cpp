@@ -17,14 +17,6 @@ namespace Slayer
         return true;
     }
 
-    void Engine::Update()
-    {
-    }
-
-    void Engine::Render()
-    {
-    }
-
     void Engine::Shutdown()
     {
         ShutdownManager<RenderingManager>();
@@ -42,9 +34,7 @@ namespace Slayer
         {
             SL_FRAME("MainThread");
             app->Update();
-            Update();
             app->Render();
-            Render();
         }
 
         app->Shutdown();

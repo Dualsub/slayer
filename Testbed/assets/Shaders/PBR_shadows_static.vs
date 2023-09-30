@@ -1,5 +1,7 @@
 #version 450 core
 
+#define MAX_INSTANCES 128
+
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec2 aTexCoord;
 layout (location = 2) in vec3 aNormal;
@@ -13,7 +15,11 @@ out VertexOutput
 
 out vec3 viewPos;
 
-uniform mat4 transformMatrix;
+layout(std140, binding = 3) uniform Instance {
+    mat4 transformMatrices[MAX_INSTANCES];
+    int animInstanceIDs[MAX_INSTANCES];
+};
+
 
 layout(std140, binding = 0) uniform Camera { 
     mat4 projectionMatrix;
@@ -23,6 +29,7 @@ layout(std140, binding = 0) uniform Camera {
 
 void main()
 {
+    mat4 transformMatrix = transformMatrices[gl_InstanceID];
 	vs_Output.TexCoord = aTexCoord;
 	vs_Output.Normal = mat3(transformMatrix) * aNormal;
     vs_Output.WorldPosition = vec3(transformMatrix * vec4(aPos, 1.0));

@@ -157,7 +157,7 @@ namespace Slayer {
 			if (batchIndices.find(hash) == batchIndices.end())
 			{
 				batchIndices[hash] = batches.size();
-				Batch newBatch(job.vaoID, job.indexCount, job.material, job.shader, job.animationState->inverseBindPose);
+				Batch newBatch(job.vaoID, job.indexCount, job.material, job.shader, job.animationState ? job.animationState->inverseBindPose : nullptr);
 				batches.push_back(newBatch);
 				batch = &batches.back();
 			}

@@ -26,9 +26,10 @@ def load_texture(path: str) -> tuple:
 
     width, height = image.shape[1], image.shape[0]
     # Get image channels
-    channels = image.shape[2]
+    channels = image.shape[2] if len(image.shape) == 3 else 1
     bytes_per_channel = image.dtype.itemsize
-    assert image.dtype.itemsize == 1, "Only 8-bit RGB textures are supported"
+    assert image.dtype.itemsize == 1, "Only 8-bit RGB textures are supported: " + \
+        path + " " + str(image.dtype.itemsize)
     # Flip image vertically
     # image = np.flip(image, 0)
     # Get image data

@@ -260,6 +260,10 @@ def serialize_material(name, textures: list, texture_ids: list, meta: dict = {})
 
     texture_data = b""
     for texture in textures:
+        if texture["name"] not in texture_ids:
+            print(colored("[ERROR]", "red"),
+                  f"Texture {texture['name']} not found.")
+            raise Exception("Texture not found.")
         assetId = texture_ids[texture["name"]]
         # Textures consist of a uint8 for the type and a uint64 for assetId
         texture_data += struct.pack("<B", texture["type"])

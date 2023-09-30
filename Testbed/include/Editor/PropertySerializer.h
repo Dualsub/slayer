@@ -8,6 +8,7 @@
 #include "Serialization/Serialization.h"
 
 #include "imgui.h"
+#include "misc/cpp/imgui_stdlib.h"
 
 namespace Slayer::Editor {
 
@@ -80,7 +81,7 @@ namespace Slayer::Editor {
         template<>
         void Transfer(std::string& value, const std::string& name)
         {
-            ImGui::InputText(name.c_str(), value.data(), value.size());
+            ImGui::InputText(name.c_str(), &value);
         }
 
         template<typename T>

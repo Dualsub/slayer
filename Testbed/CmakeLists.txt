@@ -1,6 +1,7 @@
 add_executable(Testbed
     src/Editor/EditorLayer.cpp
     src/Editor/PropertySerializer.cpp
+    include/Editor/PropertySerializer.h
     src/Editor/EditorActions.cpp
 
     src/Testbed.cpp

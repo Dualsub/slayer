@@ -70,7 +70,8 @@ namespace Slayer::Editor {
             {
                 ImGui::PushID(entity);
 
-                std::string name = "Entity " + std::to_string(entity);
+                std::string name = store.HasComponent<TagComponent>(entity) ? store.GetComponent<TagComponent>(entity)->tag : "Entity " + std::to_string(entity);
+
                 if (ImGui::TreeNodeEx(name.c_str(), treeNodeFlags))
                 {
                     if (ImGui::IsItemClicked())

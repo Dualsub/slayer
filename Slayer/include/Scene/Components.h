@@ -8,6 +8,7 @@
 
 #define ENGINE_COMPONENTS \
     Slayer::EntityID, \
+    Slayer::TagComponent, \
     Slayer::Transform, \
     Slayer::ModelRenderer, \
     Slayer::SkeletalRenderer, \

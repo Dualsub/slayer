@@ -52,6 +52,7 @@ namespace Slayer::Editor {
             const auto treeNodeFlags = ImGuiTreeNodeFlags_Leaf;
             auto& store = World::GetWorldStore();
             auto entities = store.GetAllEntities();
+            Entity enitityToDelete = SL_INVALID_ENTITY;
 
             // List of entities in the scene
             if (!ImGui::Begin("Scene Tree"))
@@ -79,6 +80,18 @@ namespace Slayer::Editor {
                         selectedEntity = entity;
                     }
 
+                    if (ImGui::BeginPopupContextItem("Entity Context Menu"))
+                    {
+                        if (ImGui::MenuItem("Delete Entity"))
+                        {
+                            enitityToDelete = entity;
+                            if (entity == selectedEntity)
+                                selectedEntity = SL_INVALID_ENTITY;
+                        }
+
+                        ImGui::EndPopup();
+                    }
+
                     ImGui::TreePop();
                 }
 
@@ -86,11 +99,17 @@ namespace Slayer::Editor {
             }
 
             ImGui::End();
+
+            if (enitityToDelete != SL_INVALID_ENTITY)
+            {
+                store.DestroyEntity(enitityToDelete);
+            }
         }
 
         void RenderInspectorPanel(PropertySerializer& serializer, Entity& selectedEntity)
         {
             auto& store = World::GetWorldStore();
+            const auto treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen;
 
             // Scene tree view panel, with ImGui tree
             ImGui::Begin("Entity Inspector");
@@ -133,43 +152,31 @@ namespace Slayer::Editor {
 
                 std::string typeName = GetSanitizedTypeName<T>();
                 ImGui::PushID(typeName.c_str());
+
                 T* component = store.GetComponent<T>(entity);
-                serializer.Transfer(component, typeName);
+
+                if (ImGui::TreeNodeEx(typeName.c_str(), treeNodeFlags))
+                {
+                    if (ImGui::BeginPopupContextItem("Component Context Menu"))
+                    {
+                        if (ImGui::MenuItem("Remove Component"))
+                        {
+                            store.RemoveComponent<T>(entity);
+                        }
+
+                        ImGui::EndPopup();
+                    }
+
+                    component->Transfer(serializer);
+
+                    ImGui::TreePop();
+                }
                 ImGui::PopID();
             });
 
             ImGui::End();
 
             selectedEntity = entity;
-        }
-
-        void RenderNewScenePopup(bool& open)
-        {
-            if (!open)
-                return;
-
-            ImGui::OpenPopup("New Scene");
-
-            if (ImGui::BeginPopupModal("New Scene", &open, ImGuiWindowFlags_AlwaysAutoResize))
-            {
-                ImGui::Text("Are you sure you want to create a new scene?");
-                ImGui::Separator();
-
-                if (ImGui::Button("Yes", ImVec2(120, 0)))
-                {
-                    ImGui::CloseCurrentPopup();
-                }
-
-                ImGui::SetItemDefaultFocus();
-                ImGui::SameLine();
-
-                if (ImGui::Button("No", ImVec2(120, 0)))
-                {
-                    ImGui::CloseCurrentPopup();
-                }
-
-                ImGui::EndPopup();
-            }
         }
     }
 

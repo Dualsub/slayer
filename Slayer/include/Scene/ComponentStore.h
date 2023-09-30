@@ -183,7 +183,9 @@ namespace Slayer
                 componentRecord.componentArray->RemoveEntity(entity);
             }
 
+            m_archetypeEntityMap[m_entityComponentIndexMap[entity]].erase(entity);
             m_entityComponentIndexMap.erase(entity);
+            m_entityIdMap.erase(entity);
         }
 
         bool IsValid(Entity entity)

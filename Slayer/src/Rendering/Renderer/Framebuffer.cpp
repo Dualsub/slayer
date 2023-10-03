@@ -72,6 +72,9 @@ namespace Slayer {
 				case AttachmentTarget::RG16F:
 					AttachColorTexture(colorAttachments[i], GL_RG16F, GL_RG, width, height, i);
 					break;
+				case AttachmentTarget::RGBA16F:
+					AttachColorTexture(colorAttachments[i], GL_RGBA16F, GL_RGBA, width, height, i);
+					break;
 				}
 			}
 		}
@@ -187,6 +190,9 @@ namespace Slayer {
 					break;
 				case AttachmentTarget::RG16F:
 					AttachColorTexture(colorAttachments[i], GL_RG16F, GL_RG, width, height, i);
+					break;
+				case AttachmentTarget::RGBA16F:
+					AttachColorTexture(colorAttachments[i], GL_RGBA16F, GL_RGBA, width, height, i);
 					break;
 				}
 			}

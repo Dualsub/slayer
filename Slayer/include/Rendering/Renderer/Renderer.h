@@ -254,8 +254,10 @@ namespace Slayer {
 
 		Shared<Shader> m_screenShader;
 		Shared<Framebuffer> m_viewportFramebuffer;
+		float m_exposure = 1.0f;
 		Shared<Camera> m_camera;
 		Shared<UniformBuffer> m_cameraBuffer;
+		
 		Shared<UniformBuffer> m_boneBuffer;
 		Shared<UniformBuffer> m_instanceBuffer;
 		Shared<UniformBuffer> m_lightsBuffer;
@@ -298,6 +300,7 @@ namespace Slayer {
 		void BindMaterial(Shared<Material> material, Shared<Shader> shader);
 	public:
 		void SetActiveCamera(Shared<Camera> inCamera, const Vec2& windowSize);
+		void SetExposure(float exposure) { m_exposure = exposure; }
 		void Initialize(Shared<Camera> inCamera, int width, int height);
 		void Resize(int width, int height);
 		void Resize(int x, int y, int width, int height);

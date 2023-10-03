@@ -50,7 +50,7 @@ namespace Slayer
 		Log::Info("Max uniform locations:", result);
 
 		// Framebuffers
-		Vector<Attachment> colorAttachments = { { AttachmentTarget::RGBA8 } };
+		Vector<Attachment> colorAttachments = { { AttachmentTarget::RGBA16F } };
 		Attachment depthAttachment = { AttachmentTarget::DEPTH24STENCIL8 };
 		m_viewportFramebuffer = Framebuffer::Create(colorAttachments, depthAttachment, width, height);
 
@@ -509,6 +509,7 @@ namespace Slayer
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		m_screenShader->Bind();
+		m_screenShader->SetUniform("exposure", m_exposure);
 		m_screenShader->SetUniform("screenTexture", 0);
 		glBindVertexArray(Mesh::GetQuadVaoID());
 		// glDisable(GL_DEPTH_TEST);

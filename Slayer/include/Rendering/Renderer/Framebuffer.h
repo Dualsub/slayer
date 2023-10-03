@@ -10,6 +10,7 @@ namespace Slayer {
 	{
 		TARGET_NONE,
 		RGB16F,
+		RGBA16F,
 		RG16F,
 		RGBA8,
 		DEPTHCOMPONENT,

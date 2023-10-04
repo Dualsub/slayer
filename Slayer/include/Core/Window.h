@@ -17,6 +17,25 @@ namespace Slayer
     {
     public:
         using WindowResizeCallback = std::function<void(uint32_t, uint32_t)>;
+    private:
+        void SetSize(uint32_t width, uint32_t height)
+        {
+            m_width = width;
+            m_height = height;
+        }
+
+        GLFWwindow* m_nativeHandle;
+        bool m_vsync = false;
+        bool m_fullscreen = false;
+        uint32_t m_width, m_height;
+
+        EventCallback m_eventCallback;
+
+        WindowResizeCallback m_windowResizeCallback;
+
+        KeyMap<uint32_t> m_keyMap;
+
+    public:
 
         Window()
         {
@@ -148,7 +167,9 @@ namespace Slayer
         void Close() { glfwSetWindowShouldClose(m_nativeHandle, true); }
 
         void SetVSync(bool enabled);
-        bool IsVSync() const { return m_VSync; }
+        bool IsVSync() const { return m_vsync; }
+        void SetFullscreen(bool enabled);
+        bool IsFullscreen() const { return m_fullscreen; }
 
         void SetTitle(const char* title) { glfwSetWindowTitle(m_nativeHandle, title); }
         void SetCursorEnabled(bool enabled) { glfwSetInputMode(m_nativeHandle, GLFW_CURSOR, enabled ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED); }
@@ -180,23 +201,6 @@ namespace Slayer
         {
             return m_keyMap.From(key);
         }
-
-    private:
-        void SetSize(uint32_t width, uint32_t height)
-        {
-            m_width = width;
-            m_height = height;
-        }
-
-        GLFWwindow* m_nativeHandle;
-        bool m_VSync;
-        uint32_t m_width, m_height;
-
-        EventCallback m_eventCallback;
-
-        WindowResizeCallback m_windowResizeCallback;
-
-        KeyMap<uint32_t> m_keyMap;
     };
 
 }

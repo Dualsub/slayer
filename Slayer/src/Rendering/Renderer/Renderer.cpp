@@ -111,7 +111,7 @@ namespace Slayer
 
 		colorAttachments = Vector<Attachment>();
 		depthAttachment = { AttachmentTarget::DEPTHCOMPONENT, TextureTarget::TEXTURE_2D, TextureWrap::CLAMP_TO_BORDER };
-		int shadowMapScale = 8;
+		int shadowMapScale = 16;
 		m_shadowFramebuffer = Framebuffer::Create(colorAttachments, depthAttachment, shadowMapScale * 512, shadowMapScale * 512);
 		m_shadowShaderStatic = rm->GetAsset<Shader>("ShadowMap_static");
 		m_shadowShaderSkeletal = rm->GetAsset<Shader>("ShadowMap_skeletal");
@@ -153,7 +153,7 @@ namespace Slayer
 		SL_EVENT();
 		CameraData cameraData(m_camera->GetProjectionMatrix(), m_camera->GetViewMatrix(), m_camera->GetPosition());
 		m_cameraBuffer->SetData((void*)&cameraData, sizeof(CameraData));
-		m_lightPos = -30.0f * glm::normalize(m_directionalLight.direction);
+		m_lightPos = -600.0f * glm::normalize(m_directionalLight.direction);
 		Mat4 lightView = glm::lookAt(m_lightPos, m_lightPos + Vec3(m_directionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
 		m_lightSpaceMatrix = m_lightProjection * lightView;
 		LightsData lightsData(m_directionalLight, {}, m_lightSpaceMatrix);
@@ -409,21 +409,69 @@ namespace Slayer
 		m_lineBuffer.clear();
 	}
 
+	void Renderer::BindInstanceBuffer(const FixedVector<int32_t, SL_MAX_INSTANCES>& animInstanceIds, const FixedVector<Mat4, SL_MAX_INSTANCES>& transforms)
+	{
+		const size_t transformsSize = SL_MAX_INSTANCES * sizeof(Mat4);
+		m_instanceBuffer->Bind();
+		m_instanceBuffer->SetSubData(transforms.Data(), transformsSize);
+
+		int32_t animInstanceIdsArray[SL_MAX_INSTANCES * 4]; // We create the array with 12 bytes of padding per instance. :/
+		std::memset(animInstanceIdsArray, -1, sizeof(int32_t) * SL_MAX_INSTANCES * 4);
+		for (size_t i = 0; i < animInstanceIds.Size(); i++)
+		{
+			animInstanceIdsArray[i * 4] = animInstanceIds[i];
+		}
+
+		m_instanceBuffer->SetSubData(animInstanceIdsArray, sizeof(int32_t) * SL_MAX_INSTANCES * 4, transformsSize);
+		m_instanceBuffer->Unbind();
+	}
+
 	void Renderer::DrawShadows()
 	{
 		SL_ASSERT(true && "Not implemented.");
 		SL_EVENT("Shadow Pass");
 
-		Shared<Shader> shadowShader = nullptr;
-		unsigned int currentVao = 0;
-
 		// Shadow pass
-		glCullFace(GL_BACK);
+		glCullFace(GL_FRONT);
 		m_shadowFramebuffer->Bind();
 
 		glClear(GL_DEPTH_BUFFER_BIT);
 
-		shadowShader->Unbind();
+		const auto& batches = m_mainPass.GetBatches();
+		for (auto& batch : batches)
+		{
+			Shared<Shader> currentShader = batch.inverseBindPose ? m_shadowShaderSkeletal : m_shadowShaderStatic;
+			{
+				SL_GPU_EVENT("Shader Setup");
+				currentShader->Bind();
+
+				currentShader->SetUniform("boneTransformTex", 12);
+				m_boneTransformTexture->Bind();
+
+				currentShader->SetUniform("lightSpaceMatrix", m_lightSpaceMatrix);
+			}
+
+			{
+				SL_GPU_EVENT("VAO Bind");
+				VertexArray::Unbind();
+				VertexArray::Bind(batch.vaoID);
+			}
+
+			{
+				SL_GPU_EVENT("Instance buffer");
+				BindInstanceBuffer(batch.animInstanceIds, batch.transforms);
+				if (batch.inverseBindPose)
+					m_boneBuffer->SetData(batch.inverseBindPose, SL_MAX_BONES * sizeof(Mat4));
+			}
+
+			{
+				SL_GPU_EVENT("Draw call");
+				glDrawElementsInstanced(GL_TRIANGLES, batch.indexCount, GL_UNSIGNED_INT, 0, (GLsizei)batch.transforms.Size());
+			}
+
+			m_debugInfo.drawCalls++;
+		}
+
 		m_shadowFramebuffer->Unbind();
 	}
 
@@ -469,22 +517,9 @@ namespace Slayer
 
 			{
 				SL_GPU_EVENT("Instance buffer");
-
-				const size_t transformsSize = SL_MAX_INSTANCES * sizeof(Mat4);
-				m_instanceBuffer->Bind();
-				m_instanceBuffer->SetSubData(batch.transforms.Data(), transformsSize);
-
-				int32_t animInstanceIds[SL_MAX_INSTANCES * 4]; // We create the array with 12 bytes of padding per instance. :/
-				std::memset(animInstanceIds, -1, sizeof(int32_t) * SL_MAX_INSTANCES * 4);
-				for (size_t i = 0; i < batch.animInstanceIds.Size(); i++)
-				{
-					animInstanceIds[i * 4] = batch.animInstanceIds[i];
-				}
-
-				m_instanceBuffer->SetSubData(animInstanceIds, sizeof(int32_t) * SL_MAX_INSTANCES * 4, transformsSize);
-				m_instanceBuffer->Unbind();
-
-				m_boneBuffer->SetData(batch.inverseBindPose, SL_MAX_BONES * sizeof(Mat4));
+				BindInstanceBuffer(batch.animInstanceIds, batch.transforms);
+				if (batch.inverseBindPose)
+					m_boneBuffer->SetData(batch.inverseBindPose, SL_MAX_BONES * sizeof(Mat4));
 			}
 
 			{
@@ -507,6 +542,7 @@ namespace Slayer
 
 		m_screenShader->Bind();
 		m_screenShader->SetUniform("exposure", m_exposure);
+		m_screenShader->SetUniform("gamma", m_gamma);
 		m_screenShader->SetUniform("screenTexture", 0);
 		glBindVertexArray(Mesh::GetQuadVaoID());
 		// glDisable(GL_DEPTH_TEST);

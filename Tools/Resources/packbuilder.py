@@ -293,6 +293,7 @@ def serialize_asset(name, asset_data, type_str: str, meta: dict = {}):
     print(colored(f"[{'ADDED' if has_new_id else 'UPDATED'}]", "green" if has_new_id else "blue"),
           f"name: {name}, type: {type_str}, id: {asset_id}")
 
+    meta["asset_id"] = int(asset_id)
     save_meta(meta)
 
     return asset_id, name, data

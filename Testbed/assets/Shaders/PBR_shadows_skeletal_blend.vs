@@ -6,7 +6,6 @@
 #define MAX_BONES 96
 
 #define MAX_WEIGHTS 4
-#define MAX_ANIMATIONS 8
 
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec2 aTexCoord;
@@ -39,17 +38,9 @@ layout(std140, binding = 3) uniform Instance {
     int animInstanceIDs[MAX_INSTANCES];
 };
 
-uniform sampler2D animTex;
-
 layout(std140, binding = 2) uniform Bones { 
     mat4 invBindPose[MAX_BONES];
 };
-
-vec3 QMulV(vec4 q, vec3 v) {
-    return q.xyz * 2.0f * dot(q.xyz, v) +
-           v * (q.w * q.w - dot(q.xyz, q.xyz)) +
-           cross(q.xyz, v) * 2.0f * q.w;
-}
 
 uniform sampler2D boneTransformTex;
 

@@ -241,10 +241,13 @@ namespace Slayer {
     {
         Vec3 orientation = Vec3(0.0f); // Euler angles
         Vec3 color = Vec3(1.0f);
+        float intensity = 1.0f;
+        float exposure = 1.0f;
+        float gamma = 2.2f;
 
         DirectionalLight() = default;
-        DirectionalLight(const Vec3& orientation, const Vec3& color) :
-            orientation(orientation), color(color)
+        DirectionalLight(const Vec3& orientation, const Vec3& color, float intensity = 1.0f, float exposure = 1.0f, float gamma = 2.2f) :
+            orientation(orientation), color(color), intensity(intensity), exposure(exposure), gamma(gamma)
         {
 
         }
@@ -256,6 +259,9 @@ namespace Slayer {
         {
             SL_TRANSFER_VAR(orientation);
             SL_TRANSFER_VAR(color);
+            SL_TRANSFER_VAR(intensity);
+            SL_TRANSFER_VAR(exposure);
+            SL_TRANSFER_VAR(gamma);
         }
     };
 

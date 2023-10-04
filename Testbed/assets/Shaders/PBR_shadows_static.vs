@@ -20,7 +20,6 @@ layout(std140, binding = 3) uniform Instance {
     int animInstanceIDs[MAX_INSTANCES];
 };
 
-
 layout(std140, binding = 0) uniform Camera { 
     mat4 projectionMatrix;
     mat4 viewMatrix;

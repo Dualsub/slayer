@@ -49,6 +49,10 @@ namespace Slayer {
 		m_width = width;
 		m_height = height;
 
+		// MSAA
+		glfwWindowHint(GLFW_SAMPLES, 4);
+		glEnable(GL_MULTISAMPLE);
+
 		SetVSync(false);
 
 		glfwSetWindowUserPointer(m_nativeHandle, this);
@@ -153,7 +157,22 @@ namespace Slayer {
 		else
 			glfwSwapInterval(0);
 
-		m_VSync = enabled;
+		m_vsync = enabled;
+	}
+
+	void Window::SetFullscreen(bool enabled)
+	{
+		if (enabled)
+		{
+			GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+			const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+			glfwSetWindowMonitor(m_nativeHandle, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+		}
+		else
+		{
+			glfwSetWindowMonitor(m_nativeHandle, nullptr, 0, 0, m_width, m_height, 0);
+		}
+		m_fullscreen = enabled;
 	}
 
 }

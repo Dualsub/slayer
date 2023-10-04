@@ -58,7 +58,7 @@ namespace Slayer
 
     public:
 
-        virtual void RemoveEntity(Entity entity)
+        virtual void RemoveEntity(Entity entity) override
         {
             if (m_entityToIndexMap.find(entity) != m_entityToIndexMap.end())
             {
@@ -186,6 +186,23 @@ namespace Slayer
             m_archetypeEntityMap[m_entityComponentIndexMap[entity]].erase(entity);
             m_entityComponentIndexMap.erase(entity);
             m_entityIdMap.erase(entity);
+        }
+
+        // TODO: Optimize to add components directly to the new entity
+        Entity DuplicateEntity(Entity entity)
+        {
+            Entity newEntity = CreateEntity();
+
+            ForEachComponentType([this, entity, newEntity]<typename T>()
+            {
+                if (!HasComponent<T>(entity) || HashType<T>() == HashType<EntityID>() || HashType<T>() == HashType<TagComponent>())
+                    return;
+
+                T* component = GetComponent<T>(entity);
+                AddComponent<T>(newEntity, *component);
+            });
+
+            return newEntity;
         }
 
         bool IsValid(Entity entity)

@@ -35,7 +35,9 @@ namespace Slayer {
 
             store.ForEach<DirectionalLight>([&](Entity entity, DirectionalLight* light)
                 {
-                    renderer.SetDirectionalLight(light->orientation, light->color);
+                    renderer.SetDirectionalLight(light->orientation, light->intensity * light->color);
+                    renderer.SetExposure(light->exposure);
+                    renderer.SetGamma(light->gamma);
                 });
 
             ResourceManager* rm = ResourceManager::Get();

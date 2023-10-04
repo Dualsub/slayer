@@ -184,15 +184,13 @@ namespace Testbed
                 return;
 
             m_renderer.Clear();
-
             m_renderer.BeginScene();
 
             m_renderingSystem.Render(m_renderer, m_world.GetStore());
 
-            //m_renderer.DrawShadows();
+            m_renderer.DrawShadows();
             m_renderer.Draw();
             // m_renderer.DrawLines();
-
             m_renderer.EndScene();
         }
 

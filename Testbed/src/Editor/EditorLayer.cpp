@@ -49,7 +49,6 @@ namespace Slayer::Editor {
 
         void RenderScenePanel(Entity& selectedEntity)
         {
-            const auto treeNodeFlags = ImGuiTreeNodeFlags_Leaf;
             auto& store = World::GetWorldStore();
             auto entities = store.GetAllEntities();
             Entity enitityToDelete = SL_INVALID_ENTITY;
@@ -71,6 +70,7 @@ namespace Slayer::Editor {
             {
                 ImGui::PushID(entity);
 
+                const auto treeNodeFlags = ImGuiTreeNodeFlags_Leaf | (selectedEntity == entity ? ImGuiTreeNodeFlags_Selected : 0);
                 std::string name = store.HasComponent<TagComponent>(entity) ? store.GetComponent<TagComponent>(entity)->tag : "Entity " + std::to_string(entity);
 
                 if (ImGui::TreeNodeEx(name.c_str(), treeNodeFlags))
@@ -87,6 +87,11 @@ namespace Slayer::Editor {
                             enitityToDelete = entity;
                             if (entity == selectedEntity)
                                 selectedEntity = SL_INVALID_ENTITY;
+                        }
+
+                        if (ImGui::MenuItem("Duplicate Entity"))
+                        {
+                            selectedEntity = store.DuplicateEntity(entity);
                         }
 
                         ImGui::EndPopup();
@@ -249,6 +254,18 @@ namespace Slayer::Editor {
         case SlayerKey::KEY_ESCAPE:
             Application::Get()->Stop();
             break;
+        case Slayer::KEY_F12:
+        {
+            auto& window = Application::Get()->GetWindow();
+            window.SetFullscreen(!window.IsFullscreen());
+        }
+        break;
+        // case Slayer::KEY_F11:
+        // {
+        //     auto& window = Application::Get()->GetWindow();
+        //     window.SetVSync(!window.IsVSync());
+        // }
+        // break;
         case Slayer::KEY_TAB:
             if (Input::IsKeyPressed(SlayerKey::KEY_LEFT_SHIFT))
             {
@@ -344,11 +361,11 @@ namespace Slayer::Editor {
             ImGui::DockSpace(ImGui::GetID("EditorDockSpace"));
 
             auto saveScene = [this]() {
-                SaveScene(World::GetWorldStore(), "C:/dev/repos/Slayer/Testbed/assets/scene.yml");
+                SaveScene(World::GetWorldStore(), "C:/dev/repos/Slayer/Testbed/assets/sponza.yml");
                 };
 
             auto loadScene = [this]() {
-                LoadScene("C:/dev/repos/Slayer/Testbed/assets/scene.yml");
+                LoadScene("C:/dev/repos/Slayer/Testbed/assets/sponza.yml");
                 };
 
             Panels::RenderMenuBar(saveScene, loadScene);

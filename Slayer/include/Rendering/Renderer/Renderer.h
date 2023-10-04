@@ -280,10 +280,11 @@ namespace Slayer {
 		Shared<Shader> m_screenShader;
 		Shared<Framebuffer> m_viewportFramebuffer;
 		float m_exposure = 1.0f;
+		float m_gamma = 2.2f;
 		Shared<Camera> m_camera;
 		CameraData m_cameraData;
 		Shared<UniformBuffer> m_cameraBuffer;
-		
+
 		Shared<UniformBuffer> m_boneBuffer;
 		Shared<UniformBuffer> m_instanceBuffer;
 		Shared<UniformBuffer> m_lightsBuffer;
@@ -324,11 +325,13 @@ namespace Slayer {
 		DebugInfo m_debugInfo;
 
 		void BindMaterial(Shared<Material> material, Shared<Shader> shader);
+		void BindInstanceBuffer(const FixedVector<int32_t, SL_MAX_INSTANCES>& animInstanceIds, const FixedVector<Mat4, SL_MAX_INSTANCES>& transforms);
 	public:
 		void SetActiveCamera(Shared<Camera> inCamera, const Vec2& windowSize);
 		void SetCameraData(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position);
 		void SetDirectionalLight(const Vec3& direction, const Vec3& color);
 		void SetExposure(float exposure) { m_exposure = exposure; }
+		void SetGamma(float gamma) { m_gamma = gamma; }
 		void Initialize(Shared<Camera> inCamera, int width, int height);
 		void Resize(int width, int height);
 		void Resize(int x, int y, int width, int height);

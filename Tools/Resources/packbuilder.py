@@ -230,6 +230,11 @@ def serialize_animation_texture(name, duration, ticks_per_second, channels, bone
     for frame in range(len(timestamps)):
         for channel in channels:
             bone_name = channel["node_name"]
+            if bone_name not in bone_data:
+                print(colored("[WARNING]", "yellow"),
+                      f"Bone {bone_name} not found for animation {name}.")
+                continue
+
             bone_id = bone_data[bone_name]["id"]
             texture[frame, bone_id * 3 + 0,
                     :3] = np.array(channel["position_keys"])[frame][1:]

@@ -4,6 +4,7 @@
 #include "Core/Events.h"
 #include "Scene/ComponentStore.h"
 #include "Editor/PropertySerializer.h"
+#include "Editor/EditorCamera.h"
 
 namespace Slayer::Editor {
 
@@ -18,16 +19,44 @@ namespace Slayer::Editor {
         }
     };
 
+    struct SelectionContext
+    {
+        Entity entity = SL_INVALID_ENTITY;
+        ComponentType singleton = 0;
+
+        SelectionContext() = default;
+        SelectionContext(Entity entity, ComponentType singleton) :
+            entity(entity), singleton(singleton)
+        {
+        }
+        ~SelectionContext() = default;
+
+        void SelectEntity(Entity entity)
+        {
+            this->entity = entity;
+            singleton = 0;
+        }
+
+        void SelectSingleton(ComponentType singleton)
+        {
+            entity = SL_INVALID_ENTITY;
+            this->singleton = singleton;
+        }
+    };
+
     class EditorLayer : public Layer
     {
     private:
         // Settings
         EditorSettings m_settings;
 
+        // Camera
+        EditorCamera m_camera;
+
         // Runtime state
         bool m_editMode = false;
         Timespan m_deltaTime;
-        Entity m_selectedEntity = SL_INVALID_ENTITY;
+        SelectionContext m_selection;
         PropertySerializer m_propertySerializer;
 
         // Loading
@@ -60,6 +89,7 @@ namespace Slayer::Editor {
 
         bool OnKeyPress(KeyPressEvent& e);
         bool OnMouseMove(MouseMoveEvent& e);
+        bool OnWindowResize(WindowResizeEvent& e);
     };
 
 }

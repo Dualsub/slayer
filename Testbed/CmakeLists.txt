@@ -3,6 +3,7 @@ add_executable(Testbed
     src/Editor/PropertySerializer.cpp
     include/Editor/PropertySerializer.h
     src/Editor/EditorActions.cpp
+    src/Editor/EditorCamera.cpp
 
     src/Testbed.cpp
     src/SandboxCamera.cpp

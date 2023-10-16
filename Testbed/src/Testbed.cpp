@@ -43,7 +43,7 @@ namespace Testbed
 
     void TestbedApplication::InitializeWindow()
     {
-        m_window.Initialize("Testbed", 1600, 900);
+        m_window.Initialize("Testbed", 1920, 1080);
         m_window.SetEventCallback(SL_EVENT_BIND(Application::HandleEvent));
 
         Slayer::Input::Initialize(&m_window);

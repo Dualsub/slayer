@@ -33,7 +33,7 @@ namespace Slayer {
         {
             SL_EVENT();
 
-            store.ForEach<DirectionalLight>([&](Entity entity, DirectionalLight* light)
+            store.WithSingleton<DirectionalLight>([&](DirectionalLight* light)
                 {
                     renderer.SetDirectionalLight(light->orientation, light->intensity * light->color);
                     renderer.SetExposure(light->exposure);

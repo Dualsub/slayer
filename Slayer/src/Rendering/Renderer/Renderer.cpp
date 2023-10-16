@@ -22,14 +22,12 @@ namespace Slayer
 
 	void Renderer::Resize(int width, int height)
 	{
-		m_camera->SetProjectionMatrix(m_camera->GetFov(), (float)width, (float)height, 20.0f, 10000.0f);
 		m_viewportFramebuffer->Resize(width, height);
 		glViewport(0, 0, width, height);
 	}
 
 	void Renderer::Resize(int x, int y, int width, int height)
 	{
-		m_camera->SetProjectionMatrix(m_camera->GetFov(), (float)width, (float)height, 20.0f, 10000.0f);
 		m_viewportFramebuffer->Resize(width * 2, height * 2);
 		glViewport(x, y, width, height);
 	}
@@ -56,8 +54,6 @@ namespace Slayer
 
 
 		// Camera
-		m_camera = inCamera;
-		m_camera->SetProjectionMatrix(45.0f, (float)width, (float)height, 20.0f, 10000.0f);
 		m_cameraBuffer = UniformBuffer::Create(sizeof(CameraData), 0);
 
 		// Instance
@@ -134,25 +130,10 @@ namespace Slayer
 		BeginScene();
 	}
 
-	void Renderer::BeginScene(const Vector<PointLightData>& inPointLights, const DirectionalLightData& inDirectionalLight)
-	{
-		SL_EVENT();
-		CameraData cameraData(m_camera->GetProjectionMatrix(), m_camera->GetViewMatrix(), m_camera->GetPosition());
-		m_cameraBuffer->SetData((void*)&cameraData, sizeof(CameraData));
-		m_lightPos = -30.0f * glm::normalize(inDirectionalLight.direction);
-		Mat4 lightView = glm::lookAt(m_lightPos, m_lightPos + Vec3(inDirectionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
-		m_lightSpaceMatrix = m_lightProjection * lightView;
-		LightsData lightsData(inDirectionalLight, inPointLights, m_lightSpaceMatrix);
-		m_lightsBuffer->SetData((void*)&lightsData, sizeof(LightsData));
-
-		m_debugInfo.drawCalls = 0;
-	}
-
 	void Renderer::BeginScene()
 	{
 		SL_EVENT();
-		CameraData cameraData(m_camera->GetProjectionMatrix(), m_camera->GetViewMatrix(), m_camera->GetPosition());
-		m_cameraBuffer->SetData((void*)&cameraData, sizeof(CameraData));
+		m_cameraBuffer->SetData((void*)&m_cameraData, sizeof(CameraData));
 		m_lightPos = -600.0f * glm::normalize(m_directionalLight.direction);
 		Mat4 lightView = glm::lookAt(m_lightPos, m_lightPos + Vec3(m_directionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
 		m_lightSpaceMatrix = m_lightProjection * lightView;
@@ -573,12 +554,6 @@ namespace Slayer
 		m_environmentMap->Dispose();
 		m_shaderStatic->Dispose();
 		m_shaderSkeletal->Dispose();
-	}
-
-	void Renderer::SetActiveCamera(Shared<Camera> inCamera, const Vec2& windowSize)
-	{
-		m_camera = inCamera;
-		Resize(-windowSize.x / 2, -windowSize.y / 2, windowSize.x / 2, windowSize.y / 2);
 	}
 
 	void Renderer::SetCameraData(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Core.h"
+#include "Core/Log.h"
 #include "Serialization/Serialization.h"
 
 #include <fstream>
@@ -122,7 +123,7 @@ namespace Slayer {
         }
 
         template<typename T>
-        void TransferVector(Vector<T>& values, const std::string& name)
+        void TransferVector(Vector<T>& values, const std::string& name, const int32_t& maxCount = -1)
         {
 
         }
@@ -293,7 +294,7 @@ namespace Slayer {
         }
 
         template<typename T>
-        void TransferVector(Vector<T>& values, const std::string& name)
+        void TransferVector(Vector<T>& values, const std::string& name, const int32_t& maxCount = -1)
         {
             uint32_t size = 0;
             Copy(m_current, &size, sizeof(uint32_t));
@@ -316,7 +317,7 @@ namespace Slayer {
             m_current += sizeof(uint32_t);
 
             if (!(m_current + size * sizeof(T) <= m_data + m_size))
-                Slayer::Log::Error(name, "Out of bounds size:", size, "sizeof(T):", sizeof(T), "m_size:", m_size);
+                Log::Error(name, "Out of bounds size:", size, "sizeof(T):", sizeof(T), "m_size:", m_size);
             SL_ASSERT((m_current + size * sizeof(T) <= m_data + m_size) && "Out of bounds.");
 
             values.resize(size);

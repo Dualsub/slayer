@@ -36,6 +36,11 @@ namespace Slayer {
 					{
 						auto& clip = player->animationClips[i];
 						Shared<Animation> animation = ResourceManager::Get()->GetAsset<Animation>(clip.animationID);
+						if (!animation)
+						{
+							state->SetAnimation(i, 0, 0.0f, { 0, 0 }, 0.0f);
+							continue;
+						}
 
 						float& time = clip.time;
 						time = fmod(time + dt, animation->GetDuration());

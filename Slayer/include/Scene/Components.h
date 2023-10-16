@@ -5,6 +5,7 @@
 #include "Resources/Asset.h"
 #include "Rendering/Renderer/SkeletalModel.h"
 #include "Rendering/Animation/AnimationState.h"
+#include "Scene/SingletonComponent.h"
 
 #define ENGINE_COMPONENTS \
     Slayer::EntityID, \
@@ -14,7 +15,9 @@
     Slayer::SkeletalRenderer, \
     Slayer::SkeletalSockets, \
     Slayer::SocketAttacher, \
-    Slayer::AnimationPlayer, \
+    Slayer::AnimationPlayer
+
+#define ENGINE_SINGLETONS \
     Slayer::DirectionalLight
 
 namespace Slayer {
@@ -233,11 +236,11 @@ namespace Slayer {
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
-            SL_TRANSFER_VEC(animationClips);
+            SL_TRANSFER_VEC_FIXED(animationClips, SL_MAX_BLEND_ANIMATIONS);
         }
     };
 
-    struct DirectionalLight
+    struct DirectionalLight : public SingletonComponent
     {
         Vec3 orientation = Vec3(0.0f); // Euler angles
         Vec3 color = Vec3(1.0f);
@@ -246,13 +249,10 @@ namespace Slayer {
         float gamma = 2.2f;
 
         DirectionalLight() = default;
-        DirectionalLight(const Vec3& orientation, const Vec3& color, float intensity = 1.0f, float exposure = 1.0f, float gamma = 2.2f) :
-            orientation(orientation), color(color), intensity(intensity), exposure(exposure), gamma(gamma)
-        {
+        virtual ~DirectionalLight() = default;
 
-        }
-
-        ~DirectionalLight() = default;
+        DirectionalLight(const DirectionalLight& other) = default;
+        DirectionalLight& operator=(const DirectionalLight& other) = default;
 
         template<typename Serializer>
         void Transfer(Serializer& serializer)
@@ -266,7 +266,7 @@ namespace Slayer {
     };
 
     template<typename... Components>
-    void ForEachComponentTypeImpl(auto&& f)
+    void ForEachType(auto&& f)
     {
         // Call the templated lambda with each component as a template parameter
         (f.template operator() < Components > (), ...);
@@ -274,7 +274,12 @@ namespace Slayer {
 
     void ForEachComponentType(auto&& f)
     {
-        ForEachComponentTypeImpl<ENGINE_COMPONENTS, GAME_COMPONENTS>(f);
+        ForEachType<ENGINE_COMPONENTS, GAME_COMPONENTS>(f);
+    }
+
+    void ForEachSingletonType(auto&& f)
+    {
+        ForEachType<ENGINE_SINGLETONS, GAME_SINGLETONS>(f);
     }
 }
 

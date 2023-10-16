@@ -158,7 +158,7 @@ namespace Slayer {
         }
 
         template<typename T>
-        void TransferVector(Vector<T>& values, const std::string& name)
+        void TransferVector(Vector<T>& values, const std::string& name, const int32_t& maxCount = -1)
         {
             out << YAML::Key << name;
             out << YAML::Value;
@@ -408,7 +408,7 @@ namespace Slayer {
         }
 
         template<typename T>
-        void TransferVector(Vector<T>& values, const std::string& name)
+        void TransferVector(Vector<T>& values, const std::string& name, const int32_t& maxCount = -1)
         {
             auto parentNode = nodeStack.top();
             auto node = parentNode[name];

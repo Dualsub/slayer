@@ -85,18 +85,46 @@ namespace Slayer::Editor {
         }
 
         template<typename T>
-        void TransferVector(Vector<T>& values, const std::string& name)
+        void TransferVector(Vector<T>& values, const std::string& name, const int32_t& maxCount = -1)
         {
+            int indexToRemove = -1;
             if (ImGui::TreeNode(name.c_str()))
             {
-                for (auto& value : values)
+                for (uint32_t i = 0; i < values.size(); i++)
                 {
-                    ImGui::PushID(&value);
-                    value.Transfer(*this);
+                    ImGui::PushID(i);
+
+                    values[i].Transfer(*this);
+
+                    // Begin context menu
+                    if (ImGui::BeginPopupContextItem())
+                    {
+                        if (ImGui::Button("Remove"))
+                        {
+                            indexToRemove = i;
+                        }
+
+                        ImGui::EndPopup();
+                    }
+
                     ImGui::PopID();
                 }
 
+                if (maxCount == -1 || values.size() < maxCount)
+                {
+                    // Add new value
+                    if (ImGui::Button("Add"))
+                    {
+                        values.push_back(T());
+                    }
+                }
+
                 ImGui::TreePop();
+            }
+
+            if (indexToRemove != -1)
+            {
+                values.erase(values.begin() + indexToRemove);
             }
         }
 

@@ -6,6 +6,7 @@
 #include "Scene/World.h"
 #include "Editor/EditorActions.h"
 #include "Serialization/YamlSerializer.h"
+#include "Rendering/Renderer/Renderer.h"
 
 #include "imgui.h"
 #include "backends/imgui_impl_opengl3.h"
@@ -47,7 +48,7 @@ namespace Slayer::Editor {
             }
         }
 
-        void RenderScenePanel(Entity& selectedEntity)
+        void RenderScenePanel(SelectionContext& selection)
         {
             auto& store = World::GetWorldStore();
             auto entities = store.GetAllEntities();
@@ -60,24 +61,28 @@ namespace Slayer::Editor {
                 return;
             }
 
+            //// ENTITIES ////
+
             // Create entity button
             if (ImGui::Button("Create Entity"))
             {
-                selectedEntity = store.CreateEntity();
+                selection.SelectEntity(store.CreateEntity());
             }
+
+            ImGui::Spacing();
 
             for (auto& entity : entities)
             {
                 ImGui::PushID(entity);
 
-                const auto treeNodeFlags = ImGuiTreeNodeFlags_Leaf | (selectedEntity == entity ? ImGuiTreeNodeFlags_Selected : 0);
+                const auto treeNodeFlags = ImGuiTreeNodeFlags_Leaf | (selection.entity == entity ? ImGuiTreeNodeFlags_Selected : 0);
                 std::string name = store.HasComponent<TagComponent>(entity) ? store.GetComponent<TagComponent>(entity)->tag : "Entity " + std::to_string(entity);
 
                 if (ImGui::TreeNodeEx(name.c_str(), treeNodeFlags))
                 {
                     if (ImGui::IsItemClicked())
                     {
-                        selectedEntity = entity;
+                        selection.SelectEntity(entity);
                     }
 
                     if (ImGui::BeginPopupContextItem("Entity Context Menu"))
@@ -85,13 +90,13 @@ namespace Slayer::Editor {
                         if (ImGui::MenuItem("Delete Entity"))
                         {
                             enitityToDelete = entity;
-                            if (entity == selectedEntity)
-                                selectedEntity = SL_INVALID_ENTITY;
+                            if (entity == selection.entity)
+                                selection.SelectEntity(SL_INVALID_ENTITY);
                         }
 
                         if (ImGui::MenuItem("Duplicate Entity"))
                         {
-                            selectedEntity = store.DuplicateEntity(entity);
+                            selection.SelectEntity(store.DuplicateEntity(entity));
                         }
 
                         ImGui::EndPopup();
@@ -102,6 +107,69 @@ namespace Slayer::Editor {
 
                 ImGui::PopID();
             }
+
+            // Separator with spacing in the y direction
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+
+            //// SINGLETONS ////
+
+            // Singleton context menu
+            if (ImGui::BeginPopupContextItem("Add Singleton"))
+            {
+                ForEachSingletonType([&store, &selection]<typename T>() {
+
+                    std::string typeName = GetSanitizedTypeName<T>();
+                    if (ImGui::MenuItem(typeName.c_str()))
+                    {
+                        store.AddSingleton<T>(T());
+                        selection.SelectSingleton(HashType<T>());
+                    }
+                });
+
+                ImGui::EndPopup();
+            }
+
+            // Add component button
+            if (ImGui::Button("Add Singleton"))
+            {
+                ImGui::OpenPopup("Add Singleton");
+            }
+
+            ImGui::Spacing();
+
+            ForEachSingletonType([&store, &selection]<typename T>() {
+                store.WithSingleton<T>([&]<typename U>(U * singleton) {
+                    ComponentType singletonType = HashType<T>();
+                    const auto treeNodeFlags = ImGuiTreeNodeFlags_Leaf | (selection.singleton == singletonType ? ImGuiTreeNodeFlags_Selected : 0);
+                    std::string typeName = GetSanitizedTypeName<T>();
+                    ImGui::PushID(typeName.c_str());
+
+                    if (ImGui::TreeNodeEx(typeName.c_str(), treeNodeFlags))
+                    {
+                        if (ImGui::IsItemClicked())
+                        {
+                            selection.SelectSingleton(singletonType);
+                        }
+
+                        if (ImGui::BeginPopupContextItem("Singleton Context Menu"))
+                        {
+                            if (ImGui::MenuItem("Remove Singleton"))
+                            {
+                                store.RemoveSingleton<T>();
+                            }
+
+                            ImGui::EndPopup();
+                        }
+
+                        ImGui::TreePop();
+                    }
+
+                    ImGui::PopID();
+                });
+            });
 
             ImGui::End();
 
@@ -111,7 +179,7 @@ namespace Slayer::Editor {
             }
         }
 
-        void RenderInspectorPanel(PropertySerializer& serializer, Entity& selectedEntity)
+        void RenderInspectorPanel(PropertySerializer& serializer, SelectionContext& selection)
         {
             auto& store = World::GetWorldStore();
             const auto treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen;
@@ -119,69 +187,83 @@ namespace Slayer::Editor {
             // Scene tree view panel, with ImGui tree
             ImGui::Begin("Entity Inspector");
 
-            Entity entity = selectedEntity;
+            Entity entity = selection.entity;
+            ComponentType singleton = selection.singleton;
 
-            if (entity == SL_INVALID_ENTITY)
+            if (entity != SL_INVALID_ENTITY)
             {
-                ImGui::Text("No entity selected");
-                ImGui::End();
-                return;
-            }
 
-            if (ImGui::BeginPopupContextItem("Add Component"))
-            {
-                ForEachComponentType([&store, &selectedEntity]<typename T>() {
-                    if (store.HasComponent<T>(selectedEntity))
+                if (ImGui::BeginPopupContextItem("Add Component"))
+                {
+                    ForEachComponentType([&store, &entity]<typename T>() {
+                        if (store.HasComponent<T>(entity))
+                            return;
+
+                        std::string typeName = GetSanitizedTypeName<T>();
+                        if (ImGui::MenuItem(typeName.c_str()))
+                        {
+                            store.AddComponent(entity, T());
+                        }
+                    });
+
+                    ImGui::EndPopup();
+                }
+
+                // Add component button
+                if (ImGui::Button("Add Component"))
+                {
+                    ImGui::OpenPopup("Add Component");
+                }
+
+                ForEachComponentType([entity, &store, &serializer, &treeNodeFlags]<typename T>()
+                {
+                    if (!store.HasComponent<T>(entity))
                         return;
 
                     std::string typeName = GetSanitizedTypeName<T>();
-                    if (ImGui::MenuItem(typeName.c_str()))
+                    ImGui::PushID(typeName.c_str());
+
+                    T* component = store.GetComponent<T>(entity);
+
+                    if (ImGui::TreeNodeEx(typeName.c_str(), treeNodeFlags))
                     {
-                        store.AddComponent(selectedEntity, T());
-                    }
-                });
-
-                ImGui::EndPopup();
-            }
-
-            // Add component button
-            if (ImGui::Button("Add Component"))
-            {
-                ImGui::OpenPopup("Add Component");
-            }
-
-            ForEachComponentType([entity, &store, &serializer]<typename T>()
-            {
-                if (!store.HasComponent<T>(entity))
-                    return;
-
-                std::string typeName = GetSanitizedTypeName<T>();
-                ImGui::PushID(typeName.c_str());
-
-                T* component = store.GetComponent<T>(entity);
-
-                if (ImGui::TreeNodeEx(typeName.c_str(), treeNodeFlags))
-                {
-                    if (ImGui::BeginPopupContextItem("Component Context Menu"))
-                    {
-                        if (ImGui::MenuItem("Remove Component"))
+                        if (ImGui::BeginPopupContextItem("Component Context Menu"))
                         {
-                            store.RemoveComponent<T>(entity);
+                            if (ImGui::MenuItem("Remove Component"))
+                            {
+                                store.RemoveComponent<T>(entity);
+                            }
+
+                            ImGui::EndPopup();
                         }
 
-                        ImGui::EndPopup();
+                        component->Transfer(serializer);
+
+                        ImGui::TreePop();
                     }
+                    ImGui::PopID();
+                });
+            }
+            else if (singleton != 0)
+            {
+                ForEachSingletonType([singleton, &store, &serializer, &treeNodeFlags]<typename T>() {
+                    if (HashType<T>() != singleton)
+                        return;
 
-                    component->Transfer(serializer);
-
-                    ImGui::TreePop();
-                }
-                ImGui::PopID();
-            });
+                    store.WithSingleton<T>([&]<typename U>(U * singleton) {
+                        ImGui::PushID(singleton);
+                        singleton->Transfer(serializer);
+                        ImGui::PopID();
+                    });
+                });
+            }
+            else
+            {
+                ImGui::Text("No entity selected");
+                ImGui::Text("Singleton selected: %f", singleton);
+            }
 
             ImGui::End();
-
-            selectedEntity = entity;
         }
     }
 
@@ -208,6 +290,9 @@ namespace Slayer::Editor {
         {
             LoadScene(m_settings.lastScenePath);
         }
+
+        auto& window = Application::Get()->GetWindow();
+        m_camera.SetProjectionMatrix(45.0f, window.GetWidth(), window.GetHeight(), 20.0f, 10000.0f);
     }
 
     void EditorLayer::OnDetach()
@@ -218,6 +303,19 @@ namespace Slayer::Editor {
     void EditorLayer::OnUpdate(Timespan ts)
     {
         m_deltaTime = ts;
+
+        if (!m_editMode)
+        {
+            m_camera.Update(ts);
+        }
+        else if (!m_camera.GetFirstMouse())
+        {
+            m_camera.SetFirstMouse(true);
+        }
+
+
+        auto* renderer = Renderer::Get();
+        renderer->SetCameraData(m_camera.GetProjectionMatrix(), m_camera.GetViewMatrix(), m_camera.GetPosition());
 
         if (!m_loadingScene)
             return;
@@ -243,8 +341,9 @@ namespace Slayer::Editor {
 
     void EditorLayer::OnEvent(Event& e)
     {
+        m_camera.OnEvent(e);
         SL_EVENT_DISPATCH(Slayer::KeyPressEvent, Slayer::Editor::EditorLayer::OnKeyPress);
-        SL_EVENT_DISPATCH(Slayer::MouseMoveEvent, Slayer::Editor::EditorLayer::OnMouseMove);
+        SL_EVENT_DISPATCH(Slayer::WindowResizeEvent, Slayer::Editor::EditorLayer::OnWindowResize);
     }
 
     bool EditorLayer::OnKeyPress(KeyPressEvent& e)
@@ -301,6 +400,12 @@ namespace Slayer::Editor {
     bool EditorLayer::OnMouseMove(MouseMoveEvent& e)
     {
         return m_editMode; // Capture mouse movement only when in edit mode
+    }
+
+    bool EditorLayer::OnWindowResize(WindowResizeEvent& e)
+    {
+        m_camera.SetProjectionMatrix(m_camera.GetFov(), e.width, e.height, 20.0f, 10000.0f);
+        return false;
     }
 
     void EditorLayer::InitializeGUI()
@@ -369,8 +474,8 @@ namespace Slayer::Editor {
                 };
 
             Panels::RenderMenuBar(saveScene, loadScene);
-            Panels::RenderScenePanel(m_selectedEntity);
-            Panels::RenderInspectorPanel(m_propertySerializer, m_selectedEntity);
+            Panels::RenderScenePanel(m_selection);
+            Panels::RenderInspectorPanel(m_propertySerializer, m_selection);
             ImGui::ShowDemoWindow();
 
             ImGui::End();
@@ -420,7 +525,7 @@ namespace Slayer::Editor {
 
     void EditorLayer::LoadSettings()
     {
-        constexpr std::string settingsPath = "settings.yml";
+        const std::string settingsPath = "settings.yml";
         if (!std::filesystem::exists(settingsPath))
             return;
 
@@ -430,7 +535,7 @@ namespace Slayer::Editor {
 
     void EditorLayer::SaveSettings()
     {
-        constexpr std::string settingsPath = "settings.yml";
+        const std::string settingsPath = "settings.yml";
         YamlSerializer serializer;
         serializer.Serialize(m_settings, settingsPath);
     }

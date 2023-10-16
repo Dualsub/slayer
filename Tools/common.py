@@ -37,7 +37,7 @@ ASSET_TYPES = {
 }
 
 TEXTURE_EXTS = [".png", ".jpg", ".jpeg", ".tga", ".bmp", ".hdr"]
-MODEL_EXTS = [".obj", ".fbx"]
+MODEL_EXTS = [".obj", ".fbx", ".gltf"]
 SKELETON_EXTS = [".skeleton"]
 
 MAX_BONE_WEIGHTS = 4

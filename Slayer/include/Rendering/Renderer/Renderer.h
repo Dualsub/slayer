@@ -3,6 +3,7 @@
 #include "Core/Core.h"
 #include "Core/Containers.h"
 #include "Core/Math.h"
+#include "Core/Singleton.h"
 #include "Serialization/Serialization.h"
 #include "Rendering/Renderer/Model.h"
 #include "Rendering/Renderer/SkeletalModel.h"
@@ -272,7 +273,7 @@ namespace Slayer {
 		}
 	};
 
-	class Renderer
+	class Renderer : public Singleton<Renderer>
 	{
 	private:
 		const int MAX_LINES = 10000;
@@ -281,7 +282,7 @@ namespace Slayer {
 		Shared<Framebuffer> m_viewportFramebuffer;
 		float m_exposure = 1.0f;
 		float m_gamma = 2.2f;
-		Shared<Camera> m_camera;
+
 		CameraData m_cameraData;
 		Shared<UniformBuffer> m_cameraBuffer;
 
@@ -327,7 +328,16 @@ namespace Slayer {
 		void BindMaterial(Shared<Material> material, Shared<Shader> shader);
 		void BindInstanceBuffer(const FixedVector<int32_t, SL_MAX_INSTANCES>& animInstanceIds, const FixedVector<Mat4, SL_MAX_INSTANCES>& transforms);
 	public:
-		void SetActiveCamera(Shared<Camera> inCamera, const Vec2& windowSize);
+		Renderer()
+		{
+			SetInstance(this);
+		}
+
+		~Renderer()
+		{
+			SetInstance(nullptr);
+		}
+
 		void SetCameraData(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position);
 		void SetDirectionalLight(const Vec3& direction, const Vec3& color);
 		void SetExposure(float exposure) { m_exposure = exposure; }
@@ -338,7 +348,6 @@ namespace Slayer {
 		void Clear();
 		void BeginScene();
 		void BeginScene(const LightInfo& lightInfo, const ShadowInfo& shadowSettings);
-		void BeginScene(const Vector<PointLightData>& inPointLights, const DirectionalLightData& inDirectionalLight);
 		void Submit(Shared<SkeletalModel> model, const Mat4& transform, AnimationState* animationState);
 		void Submit(Shared<SkeletalModel> model, AnimationState* animationState, Shared<Material> material, const Mat4& transform);
 		void Submit(Shared<Model> model, Shared<Material> material, const Mat4& transform);

@@ -230,6 +230,11 @@ def serialize_animation_texture(name, duration, ticks_per_second, channels, bone
     for frame in range(len(timestamps)):
         for channel in channels:
             bone_name = channel["node_name"]
+            if bone_name not in bone_data:
+                print(colored("[WARNING]", "yellow"),
+                      f"Bone {bone_name} not found for animation {name}.")
+                continue
+
             bone_id = bone_data[bone_name]["id"]
             texture[frame, bone_id * 3 + 0,
                     :3] = np.array(channel["position_keys"])[frame][1:]
@@ -260,6 +265,10 @@ def serialize_material(name, textures: list, texture_ids: list, meta: dict = {})
 
     texture_data = b""
     for texture in textures:
+        if texture["name"] not in texture_ids:
+            print(colored("[ERROR]", "red"),
+                  f"Texture {texture['name']} not found.")
+            raise Exception("Texture not found.")
         assetId = texture_ids[texture["name"]]
         # Textures consist of a uint8 for the type and a uint64 for assetId
         texture_data += struct.pack("<B", texture["type"])
@@ -289,6 +298,7 @@ def serialize_asset(name, asset_data, type_str: str, meta: dict = {}):
     print(colored(f"[{'ADDED' if has_new_id else 'UPDATED'}]", "green" if has_new_id else "blue"),
           f"name: {name}, type: {type_str}, id: {asset_id}")
 
+    meta["asset_id"] = int(asset_id)
     save_meta(meta)
 
     return asset_id, name, data

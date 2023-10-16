@@ -32,11 +32,11 @@ namespace Slayer {
 		AssetID overrideShader;
 		// Only handles one texture per type for now.
 		Map<TextureType, AssetID> textures = {
-			{ TextureType::ALBEDO,		-1 },
-			{ TextureType::NORMAL,		-1 },
-			{ TextureType::METALLIC,	-1 },
-			{ TextureType::ROUGHNESS,	-1 },
-			{ TextureType::AMBIENT,		-1 },
+			{ TextureType::ALBEDO,		SL_INVALID_ASSET_ID },
+			{ TextureType::NORMAL,		SL_INVALID_ASSET_ID },
+			{ TextureType::METALLIC,	SL_INVALID_ASSET_ID },
+			{ TextureType::ROUGHNESS,	SL_INVALID_ASSET_ID },
+			{ TextureType::AMBIENT,		SL_INVALID_ASSET_ID },
 		};
 	public:
 		AssetID assetID;

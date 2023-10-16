@@ -25,7 +25,7 @@ namespace Slayer
     };
 
     template<typename T>
-    class AssetArray: public AssetArrayBase
+    class AssetArray : public AssetArrayBase
     {
     private:
         Dict<AssetID, Shared<T>> m_data;
@@ -49,6 +49,7 @@ namespace Slayer
     private:
         Dict<std::string, AssetID> m_namesToIDs;
         Dict<AssetTypeHash, Unique<AssetArrayBase>> m_assets;
+        Dict<AssetType, Map<AssetID, AssetRecord>> m_assetRecords;
     public:
         AssetStore() = default;
         ~AssetStore() = default;
@@ -61,15 +62,19 @@ namespace Slayer
         }
 
         template<typename T>
-        void AddAsset(const AssetID& id, const std::string& name, Shared<T> asset)
+        void AddAsset(const AssetRecord& record, Shared<T> asset)
         {
-            if (m_assets.find(HashAssetType<T>()) == m_assets.end())
+            const size_t assetTypeHash = HashAssetType<T>();
+            if (m_assets.find(assetTypeHash) == m_assets.end())
                 RegisterAssetType<T>();
 
-            AssetArray<T>* array = (AssetArray<T>*)m_assets[HashAssetType<T>()].get();
-            array->AddAsset(id, asset);
-            
-            m_namesToIDs[name] = id;
+            AssetArray<T>* array = (AssetArray<T>*)m_assets[assetTypeHash].get();
+            array->AddAsset(record.id, asset);
+
+            m_namesToIDs[record.name] = record.id;
+            if (m_assetRecords.find(record.type) == m_assetRecords.end())
+                m_assetRecords[record.type] = {};
+            m_assetRecords[record.type].insert({ record.id, record });
         }
 
         template<typename T>
@@ -92,6 +97,11 @@ namespace Slayer
             return m_namesToIDs[assetName];
         }
 
+        const Map<AssetID, AssetRecord>& GetAssetRecords(AssetType assetType) const
+        {
+            SL_ASSERT(m_assetRecords.find(assetType) != m_assetRecords.end() && "Asset type not registered");
+            return m_assetRecords.at(assetType);
+        }
     };
 }
 

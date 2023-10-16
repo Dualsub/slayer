@@ -33,12 +33,21 @@ namespace Slayer {
         {
             SL_EVENT();
 
-            ResourceManager* rm = ResourceManager::Get();
+            store.WithSingleton<DirectionalLight>([&](DirectionalLight* light)
+                {
+                    renderer.SetDirectionalLight(light->orientation, light->intensity * light->color);
+                    renderer.SetExposure(light->exposure);
+                    renderer.SetGamma(light->gamma);
+                });
 
+            ResourceManager* rm = ResourceManager::Get();
             store.ForEach<Transform, SkeletalRenderer>([&](Entity entity, Transform* transform, SkeletalRenderer* modelRenderer)
                 {
                     Shared<SkeletalModel> model = rm->GetAsset<SkeletalModel>(modelRenderer->modelID);
                     Shared<Material> material = rm->GetAsset<Material>(modelRenderer->materialID);
+                    if (!model || !material)
+                        return;
+
                     modelRenderer->state.inverseBindPose = model->GetInverseBindPoseMatrices();
                     modelRenderer->state.parents = model->GetParents();
                     renderer.Submit(model, &modelRenderer->state, material, transform->worldTransform);
@@ -48,6 +57,9 @@ namespace Slayer {
                 {
                     Shared<Model> model = rm->GetAsset<Model>(modelRenderer->modelID);
                     Shared<Material> material = rm->GetAsset<Material>(modelRenderer->materialID);
+                    if (!model || !material)
+                        return;
+
                     renderer.Submit(model, material, transform->worldTransform);
                 });
         }

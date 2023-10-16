@@ -28,12 +28,19 @@ namespace Slayer {
 			store.ForEach<Transform, SkeletalRenderer, AnimationPlayer>([&](Entity entity, Transform* transform, SkeletalRenderer* renderer, AnimationPlayer* player)
 				{
 					Shared<SkeletalModel> model = ResourceManager::Get()->GetAsset<SkeletalModel>(renderer->modelID);
+					if (!model)
+						return;
 					AnimationState* state = &renderer->state;
 
 					for (uint32_t i = 0; i < player->animationClips.size(); i++)
 					{
 						auto& clip = player->animationClips[i];
 						Shared<Animation> animation = ResourceManager::Get()->GetAsset<Animation>(clip.animationID);
+						if (!animation)
+						{
+							state->SetAnimation(i, 0, 0.0f, { 0, 0 }, 0.0f);
+							continue;
+						}
 
 						float& time = clip.time;
 						time = fmod(time + dt, animation->GetDuration());

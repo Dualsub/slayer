@@ -5,6 +5,7 @@
 #include "Serialization/Serialization.h"
 #include "Resources/Asset.h"
 #include "Scene/Components.h"
+#include "Scene/SingletonComponent.h"
 
 #include <future>
 
@@ -58,7 +59,7 @@ namespace Slayer
 
     public:
 
-        virtual void RemoveEntity(Entity entity)
+        virtual void RemoveEntity(Entity entity) override
         {
             if (m_entityToIndexMap.find(entity) != m_entityToIndexMap.end())
             {
@@ -91,15 +92,6 @@ namespace Slayer
 
             return &m_componentArray[m_entityToIndexMap[entity]];
         }
-    };
-
-    class SingletonComponent
-    {
-    public:
-        SingletonComponent() = default;
-        virtual ~SingletonComponent() = default;
-        SingletonComponent(const SingletonComponent&) = delete;
-        SingletonComponent& operator=(const SingletonComponent&) = delete;
     };
 
     class ComponentStore
@@ -183,7 +175,26 @@ namespace Slayer
                 componentRecord.componentArray->RemoveEntity(entity);
             }
 
+            m_archetypeEntityMap[m_entityComponentIndexMap[entity]].erase(entity);
             m_entityComponentIndexMap.erase(entity);
+            m_entityIdMap.erase(entity);
+        }
+
+        // TODO: Optimize to add components directly to the new entity
+        Entity DuplicateEntity(Entity entity)
+        {
+            Entity newEntity = CreateEntity();
+
+            ForEachComponentType([this, entity, newEntity]<typename T>()
+            {
+                if (!HasComponent<T>(entity) || HashType<T>() == HashType<EntityID>() || HashType<T>() == HashType<TagComponent>())
+                    return;
+
+                T* component = GetComponent<T>(entity);
+                AddComponent<T>(newEntity, *component);
+            });
+
+            return newEntity;
         }
 
         bool IsValid(Entity entity)
@@ -430,12 +441,12 @@ namespace Slayer
             return m_components;
         }
 
-        template<typename T, typename... Args>
-        void AddSingleton(Args... args)
+        template<typename T>
+        void AddSingleton(const T& singleton)
         {
             uint32_t typeHash = HashType<T>();
             SL_ASSERT(m_singletons.find(typeHash) == m_singletons.end() && "Singleton already exists.");
-            m_singletons.insert(std::make_pair(typeHash, MakeShared<T>(args)));
+            m_singletons.emplace(typeHash, MakeShared<T>(singleton));
         }
 
         template<typename T>
@@ -444,6 +455,15 @@ namespace Slayer
             uint32_t typeHash = HashType<T>();
             SL_ASSERT(m_singletons.find(typeHash) != m_singletons.end() && "Singleton does not exist.");
             return static_cast<T*>(m_singletons[typeHash].get());
+        }
+
+        template<typename T, typename Func>
+        void WithSingleton(Func&& func)
+        {
+            uint32_t typeHash = HashType<T>();
+            if (m_singletons.find(typeHash) == m_singletons.end())
+                return;
+            func(static_cast<T*>(m_singletons[typeHash].get()));
         }
 
         template<typename T>
@@ -460,6 +480,38 @@ namespace Slayer
         void Transfer(Serializer& serializer)
         {
             SL_ASSERT(serializer.PushObject("Scene"));
+
+            if (serializer.PushObject("Singletons"))
+            {
+                if (serializer.GetFlags() == SerializationFlags::Read)
+                {
+                    ForEachSingletonType([this, &serializer]<typename T>()
+                    {
+                        WithSingleton<T>([this, &serializer]<typename U>(U * singleton)
+                        {
+                            std::string typeName = GetSanitizedTypeName<T>();
+                            serializer.Transfer(*singleton, typeName);
+                        });
+                    });
+                }
+                else if (serializer.GetFlags() == SerializationFlags::Write)
+                {
+                    ForEachSingletonType([this, &serializer]<typename T>()
+                    {
+                        std::string typeName = GetSanitizedTypeName<T>();
+                        if (!serializer.IsValid(typeName))
+                            return;
+
+                        T singleton;
+                        serializer.Transfer(singleton, typeName);
+                        AddSingleton<T>(singleton);
+                    });
+                }
+
+                serializer.PopObject();
+            }
+
+
             SL_ASSERT(serializer.PushArray("Entities"));
 
             if (serializer.GetFlags() == SerializationFlags::Read)

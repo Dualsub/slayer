@@ -35,6 +35,9 @@ namespace Slayer
 
     class ResourceManager
     {
+    private:
+        static ResourceManager* instance;
+        AssetStore m_assetStore;
     public:
         ResourceManager() = default;
         ~ResourceManager() = default;
@@ -63,8 +66,9 @@ namespace Slayer
             return m_assetStore.GetAssetID(assetName);
         }
 
-    private:
-        static ResourceManager* instance;
-        AssetStore m_assetStore;
+        const Map<AssetID, AssetRecord>& GetAssetRecords(AssetType assetType) const
+        {
+            return m_assetStore.GetAssetRecords(assetType);
+        }
     };
 }

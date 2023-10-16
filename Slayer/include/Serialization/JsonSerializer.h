@@ -74,7 +74,7 @@ namespace Slayer {
         }
 
         template<typename T>
-        void TransferVector(const std::string& name, std::vector<T>& data)
+        void TransferVector(const std::string& name, std::vector<T>& data, const int32_t& maxCount = -1)
         {
             PushArray(name);
             for (auto& element : data)

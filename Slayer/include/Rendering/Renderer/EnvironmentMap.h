@@ -30,6 +30,8 @@ namespace Slayer {
 		unsigned int GetIrradianceMapID() { return irradianceMapID; }
 		unsigned int GetPrefilterMapID() { return prefilterMapID; }
 		unsigned int GetBRDFTextureID() { return brdfTextureID; }
+
+		void Dispose();
 	};
 
 }

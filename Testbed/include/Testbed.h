@@ -132,7 +132,7 @@ namespace Testbed
             InitializeScene();
 
             PushLayer<class TestbedLayer>();
-            PushLayer<Slayer::EditorLayer>();
+            PushLayer<Slayer::Editor::EditorLayer>();
         }
 
         virtual void OnUpdate(Slayer::Timespan ts) override
@@ -184,15 +184,13 @@ namespace Testbed
                 return;
 
             m_renderer.Clear();
-
-            m_renderer.BeginScene({}, Slayer::DirectionalLight(Slayer::Vec3(-1.0f), Slayer::Vec3(1.0f)));
+            m_renderer.BeginScene();
 
             m_renderingSystem.Render(m_renderer, m_world.GetStore());
 
-            //m_renderer.DrawShadows();
+            m_renderer.DrawShadows();
             m_renderer.Draw();
             // m_renderer.DrawLines();
-
             m_renderer.EndScene();
         }
 

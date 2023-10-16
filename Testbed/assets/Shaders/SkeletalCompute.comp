@@ -94,9 +94,18 @@ void main()
     uint boneID = gl_GlobalInvocationID.x;
     uint instanceID = gl_GlobalInvocationID.y;
 
+    if (states[instanceID].skeletonID < 0)
+    {
+        return;
+    }
+
     uint parentOffset = states[instanceID].skeletonID * MAX_BONES;
     
-    mat4 boneMat = (states[instanceID].weights.x * GetBoneMatrix(boneID, states[instanceID].animationIDs.x, states[instanceID].times.x, states[instanceID].frames.xy, parentOffset))  + (states[instanceID].weights.y * GetBoneMatrix(boneID, states[instanceID].animationIDs.y, states[instanceID].times.y, states[instanceID].frames.zw, parentOffset));
+    mat4 boneMat = mat4(1.0); 
+    if (states[instanceID].animationIDs.x >= 0)
+    {
+        boneMat = (states[instanceID].weights.x * GetBoneMatrix(boneID, states[instanceID].animationIDs.x, states[instanceID].times.x, states[instanceID].frames.xy, parentOffset))  + (states[instanceID].weights.y * GetBoneMatrix(boneID, states[instanceID].animationIDs.y, states[instanceID].times.y, states[instanceID].frames.zw, parentOffset));
+    }
 
     // Write to image
     imageStore(boneTransformTex, ivec2(instanceID, 4 * boneID + 0), boneMat[0]);

@@ -152,8 +152,13 @@ namespace Slayer {
             out << YAML::Key << name << YAML::Value << value;
         }
 
+        void TransferAsset(AssetID& value, AssetType assetType, const std::string& name)
+        {
+            Transfer(value, name);
+        }
+
         template<typename T>
-        void TransferVector(Vector<T>& values, const std::string& name)
+        void TransferVector(Vector<T>& values, const std::string& name, const int32_t& maxCount = -1)
         {
             out << YAML::Key << name;
             out << YAML::Value;
@@ -397,8 +402,13 @@ namespace Slayer {
                 value = node[name].as<std::string>();
         }
 
+        void TransferAsset(AssetID& value, AssetType assetType, const std::string& name)
+        {
+            Transfer(value, name);
+        }
+
         template<typename T>
-        void TransferVector(Vector<T>& values, const std::string& name)
+        void TransferVector(Vector<T>& values, const std::string& name, const int32_t& maxCount = -1)
         {
             auto parentNode = nodeStack.top();
             auto node = parentNode[name];

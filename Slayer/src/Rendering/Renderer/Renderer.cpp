@@ -22,14 +22,12 @@ namespace Slayer
 
 	void Renderer::Resize(int width, int height)
 	{
-		m_camera->SetProjectionMatrix(m_camera->GetFov(), (float)width, (float)height, 20.0f, 10000.0f);
 		m_viewportFramebuffer->Resize(width, height);
 		glViewport(0, 0, width, height);
 	}
 
 	void Renderer::Resize(int x, int y, int width, int height)
 	{
-		m_camera->SetProjectionMatrix(m_camera->GetFov(), (float)width, (float)height, 20.0f, 10000.0f);
 		m_viewportFramebuffer->Resize(width * 2, height * 2);
 		glViewport(x, y, width, height);
 	}
@@ -56,8 +54,6 @@ namespace Slayer
 
 
 		// Camera
-		m_camera = inCamera;
-		m_camera->SetProjectionMatrix(45.0f, (float)width, (float)height, 20.0f, 10000.0f);
 		m_cameraBuffer = UniformBuffer::Create(sizeof(CameraData), 0);
 
 		// Instance
@@ -111,18 +107,13 @@ namespace Slayer
 
 		colorAttachments = Vector<Attachment>();
 		depthAttachment = { AttachmentTarget::DEPTHCOMPONENT, TextureTarget::TEXTURE_2D, TextureWrap::CLAMP_TO_BORDER };
-		int shadowMapScale = 8;
+		int shadowMapScale = 16;
 		m_shadowFramebuffer = Framebuffer::Create(colorAttachments, depthAttachment, shadowMapScale * 512, shadowMapScale * 512);
 		m_shadowShaderStatic = rm->GetAsset<Shader>("ShadowMap_static");
 		m_shadowShaderSkeletal = rm->GetAsset<Shader>("ShadowMap_skeletal");
 		m_lightProjection = glm::ortho(shadowMapScale * -20.0f, shadowMapScale * 20.0f, shadowMapScale * -20.0f, shadowMapScale * 20.0f, 5.0f, shadowMapScale * 200.0f);
 
 		Resize(-width / 2, -height / 2, width / 2, height / 2);
-	}
-
-	void Renderer::BeginScene()
-	{
-		BeginScene(m_lightInfo, m_shadowInfo);
 	}
 
 	void Renderer::Clear()
@@ -136,30 +127,17 @@ namespace Slayer
 	{
 		m_lightInfo = inLightInfo;
 		m_shadowInfo = inShadowInfo;
-		CameraData cameraData(m_camera->GetProjectionMatrix(), m_camera->GetViewMatrix(), m_camera->GetPosition());
-		m_cameraBuffer->SetData((void*)&cameraData, sizeof(CameraData));
-
-		// shadowFramebuffer->Resize((unsigned int)shadowInfo.width, (unsigned int)shadowInfo.height);
-		m_lightProjection = glm::ortho(-m_shadowInfo.width / 2, m_shadowInfo.width / 2, -m_shadowInfo.height / 2, m_shadowInfo.height / 2, m_shadowInfo.near, m_shadowInfo.far);
-		m_lightPos = m_shadowInfo.distance * glm::normalize(Vec3(m_lightInfo.directionalLight.direction)) + m_shadowInfo.lightPos;
-		Mat4 lightView = glm::lookAt(m_lightPos, m_lightPos + Vec3(m_lightInfo.directionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
-		m_lightSpaceMatrix = m_lightProjection * lightView;
-		Vector<PointLight> pointLights;
-		LightsData lightsData(m_lightInfo.directionalLight, pointLights, m_lightSpaceMatrix);
-		m_lightsBuffer->SetData((void*)&lightsData, sizeof(LightsData));
-
-		m_debugInfo.drawCalls = 0;
+		BeginScene();
 	}
 
-	void Renderer::BeginScene(const Vector<PointLight>& inPointLights, const DirectionalLight& inDirectionalLight)
+	void Renderer::BeginScene()
 	{
 		SL_EVENT();
-		CameraData cameraData(m_camera->GetProjectionMatrix(), m_camera->GetViewMatrix(), m_camera->GetPosition());
-		m_cameraBuffer->SetData((void*)&cameraData, sizeof(CameraData));
-		m_lightPos = -30.0f * glm::normalize(inDirectionalLight.direction);
-		Mat4 lightView = glm::lookAt(m_lightPos, m_lightPos + Vec3(inDirectionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
+		m_cameraBuffer->SetData((void*)&m_cameraData, sizeof(CameraData));
+		m_lightPos = -600.0f * glm::normalize(m_directionalLight.direction);
+		Mat4 lightView = glm::lookAt(m_lightPos, m_lightPos + Vec3(m_directionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
 		m_lightSpaceMatrix = m_lightProjection * lightView;
-		LightsData lightsData(inDirectionalLight, inPointLights, m_lightSpaceMatrix);
+		LightsData lightsData(m_directionalLight, {}, m_lightSpaceMatrix);
 		m_lightsBuffer->SetData((void*)&lightsData, sizeof(LightsData));
 
 		m_debugInfo.drawCalls = 0;
@@ -412,21 +390,69 @@ namespace Slayer
 		m_lineBuffer.clear();
 	}
 
+	void Renderer::BindInstanceBuffer(const FixedVector<int32_t, SL_MAX_INSTANCES>& animInstanceIds, const FixedVector<Mat4, SL_MAX_INSTANCES>& transforms)
+	{
+		const size_t transformsSize = SL_MAX_INSTANCES * sizeof(Mat4);
+		m_instanceBuffer->Bind();
+		m_instanceBuffer->SetSubData(transforms.Data(), transformsSize);
+
+		int32_t animInstanceIdsArray[SL_MAX_INSTANCES * 4]; // We create the array with 12 bytes of padding per instance. :/
+		std::memset(animInstanceIdsArray, -1, sizeof(int32_t) * SL_MAX_INSTANCES * 4);
+		for (size_t i = 0; i < animInstanceIds.Size(); i++)
+		{
+			animInstanceIdsArray[i * 4] = animInstanceIds[i];
+		}
+
+		m_instanceBuffer->SetSubData(animInstanceIdsArray, sizeof(int32_t) * SL_MAX_INSTANCES * 4, transformsSize);
+		m_instanceBuffer->Unbind();
+	}
+
 	void Renderer::DrawShadows()
 	{
 		SL_ASSERT(true && "Not implemented.");
 		SL_EVENT("Shadow Pass");
 
-		Shared<Shader> shadowShader = nullptr;
-		unsigned int currentVao = 0;
-
 		// Shadow pass
-		glCullFace(GL_BACK);
+		glCullFace(GL_FRONT);
 		m_shadowFramebuffer->Bind();
 
 		glClear(GL_DEPTH_BUFFER_BIT);
 
-		shadowShader->Unbind();
+		const auto& batches = m_mainPass.GetBatches();
+		for (auto& batch : batches)
+		{
+			Shared<Shader> currentShader = batch.inverseBindPose ? m_shadowShaderSkeletal : m_shadowShaderStatic;
+			{
+				SL_GPU_EVENT("Shader Setup");
+				currentShader->Bind();
+
+				currentShader->SetUniform("boneTransformTex", 12);
+				m_boneTransformTexture->Bind();
+
+				currentShader->SetUniform("lightSpaceMatrix", m_lightSpaceMatrix);
+			}
+
+			{
+				SL_GPU_EVENT("VAO Bind");
+				VertexArray::Unbind();
+				VertexArray::Bind(batch.vaoID);
+			}
+
+			{
+				SL_GPU_EVENT("Instance buffer");
+				BindInstanceBuffer(batch.animInstanceIds, batch.transforms);
+				if (batch.inverseBindPose)
+					m_boneBuffer->SetData(batch.inverseBindPose, SL_MAX_BONES * sizeof(Mat4));
+			}
+
+			{
+				SL_GPU_EVENT("Draw call");
+				glDrawElementsInstanced(GL_TRIANGLES, batch.indexCount, GL_UNSIGNED_INT, 0, (GLsizei)batch.transforms.Size());
+			}
+
+			m_debugInfo.drawCalls++;
+		}
+
 		m_shadowFramebuffer->Unbind();
 	}
 
@@ -472,22 +498,9 @@ namespace Slayer
 
 			{
 				SL_GPU_EVENT("Instance buffer");
-
-				const size_t transformsSize = SL_MAX_INSTANCES * sizeof(Mat4);
-				m_instanceBuffer->Bind();
-				m_instanceBuffer->SetSubData(batch.transforms.Data(), transformsSize);
-
-				int32_t animInstanceIds[SL_MAX_INSTANCES * 4]; // We create the array with 12 bytes of padding per instance. :/
-				std::memset(animInstanceIds, -1, sizeof(int32_t) * SL_MAX_INSTANCES * 4);
-				for (size_t i = 0; i < batch.animInstanceIds.Size(); i++)
-				{
-					animInstanceIds[i * 4] = batch.animInstanceIds[i];
-				}
-
-				m_instanceBuffer->SetSubData(animInstanceIds, sizeof(int32_t) * SL_MAX_INSTANCES * 4, transformsSize);
-				m_instanceBuffer->Unbind();
-
-				m_boneBuffer->SetData(batch.inverseBindPose, SL_MAX_BONES * sizeof(Mat4));
+				BindInstanceBuffer(batch.animInstanceIds, batch.transforms);
+				if (batch.inverseBindPose)
+					m_boneBuffer->SetData(batch.inverseBindPose, SL_MAX_BONES * sizeof(Mat4));
 			}
 
 			{
@@ -510,6 +523,7 @@ namespace Slayer
 
 		m_screenShader->Bind();
 		m_screenShader->SetUniform("exposure", m_exposure);
+		m_screenShader->SetUniform("gamma", m_gamma);
 		m_screenShader->SetUniform("screenTexture", 0);
 		glBindVertexArray(Mesh::GetQuadVaoID());
 		// glDisable(GL_DEPTH_TEST);
@@ -521,12 +535,37 @@ namespace Slayer
 
 	void Renderer::CleanUp()
 	{
+		m_screenShader->Dispose();
+		m_viewportFramebuffer->Dispose();
+		m_cameraBuffer->Dispose();
+		m_boneBuffer->Dispose();
+		m_instanceBuffer->Dispose();
+		m_lightsBuffer->Dispose();
+		m_lineVertexArray->Dispose();
+		m_lineVertexBuffer->Dispose();
+		m_lineShader->Dispose();
+		m_shadowFramebuffer->Dispose();
+		m_shadowShaderStatic->Dispose();
+		m_shadowShaderSkeletal->Dispose();
+		m_animationShader->Dispose();
+		m_animationBuffer->Dispose();
+		m_boneTransformTexture->Dispose();
+		m_hdrTexture->Dispose();
+		m_environmentMap->Dispose();
+		m_shaderStatic->Dispose();
+		m_shaderSkeletal->Dispose();
 	}
 
-	void Renderer::SetActiveCamera(Shared<Camera> inCamera, const Vec2& windowSize)
+	void Renderer::SetCameraData(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position)
 	{
-		m_camera = inCamera;
-		Resize(-windowSize.x / 2, -windowSize.y / 2, windowSize.x / 2, windowSize.y / 2);
+		m_cameraData.Set(projectionMatrix, viewMatrix, position);
+	}
+
+	void Renderer::SetDirectionalLight(const Vec3& orientation, const Vec3& color)
+	{
+		Vec3 direction = Vec3(0.0f, -1.0f, 0.0f);
+		direction = glm::mat3_cast(Quat(glm::radians(orientation))) * direction;
+		m_directionalLight = { direction, color };
 	}
 
 	RenderJob::RenderJob(unsigned int vaoID, unsigned int indexCount, Shared<Material> material, Shared<Shader> shader, const Mat4& transform) : vaoID(vaoID), indexCount(indexCount), material(material), shader(shader), transform(transform)

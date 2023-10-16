@@ -46,31 +46,27 @@ namespace Slayer {
 
 	Shared<Texture> Texture::LoadTexture(const uint8_t* data, uint32_t width, uint32_t height, uint32_t numChannels, uint32_t slotOffset, TextureTarget target)
 	{
+		SL_ASSERT(data && "Texture data is null!");
+
 		unsigned int textureID;
 		glGenTextures(1, &textureID);
 
-		if (data)
+		GLenum format = GL_RGB;
+		switch (numChannels)
 		{
-			GLenum format = GL_RGB;
-			switch (numChannels)
-			{
-			case 1: format = GL_RED; break;
-			case 3: format = GL_RGB; break;
-			case 4: format = GL_RGBA; break;
-			}
-			glBindTexture(GL_TEXTURE_2D, textureID);
-			glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-			glGenerateMipmap(GL_TEXTURE_2D);
+		case 1: format = GL_RED; break;
+		case 3: format = GL_RGB; break;
+		case 4: format = GL_RGBA; break;
+		}
+		glBindTexture(GL_TEXTURE_2D, textureID);
 
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		}
-		else
-		{
-			Slayer::Log::Error("Failed to load texture!");
-		}
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
 
 		GPU_TEXTURE_MEM_ALLOCATED += (width * height * numChannels * sizeof(uint8_t));
 
@@ -108,16 +104,18 @@ namespace Slayer {
 		{
 			glGenTextures(1, &hdrTextureID);
 			glBindTexture(GL_TEXTURE_2D, hdrTextureID);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, (void*)data);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, (void*)data);
 		}
 		else
 		{
 			Slayer::Log::Error("Failed to load HDR texture!");
 		}
+
+		GPU_TEXTURE_MEM_ALLOCATED += (width * height * numChannels * sizeof(float));
 
 		return MakeShared<Texture>(hdrTextureID, 0);
 	}

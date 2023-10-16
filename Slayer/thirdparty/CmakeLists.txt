@@ -3,9 +3,10 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/glad)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/glm)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/yaml-cpp)
 
-#ImGUI
+# ImGUI
 add_library(imgui STATIC
     imgui/imgui.cpp
+    imgui/misc/cpp/imgui_stdlib.cpp
     imgui/imgui_draw.cpp
     imgui/imgui_widgets.cpp
     imgui/imgui_demo.cpp

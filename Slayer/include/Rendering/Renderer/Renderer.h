@@ -3,6 +3,7 @@
 #include "Core/Core.h"
 #include "Core/Containers.h"
 #include "Core/Math.h"
+#include "Core/Singleton.h"
 #include "Serialization/Serialization.h"
 #include "Rendering/Renderer/Model.h"
 #include "Rendering/Renderer/SkeletalModel.h"
@@ -24,8 +25,8 @@ namespace Slayer {
 
 	struct LightInfo
 	{
-		//Vector<PointLight> pointLights;
-		DirectionalLight directionalLight = DirectionalLight(Vec3(-1.0f), Vec3(1.0f));
+		//Vector<PointLightData> pointLights;
+		DirectionalLightData directionalLight = DirectionalLightData(Vec3(-1.0f), Vec3(1.0f));
 		template<typename Serializer>
 		void Transfer(Serializer& serializer)
 		{
@@ -157,7 +158,7 @@ namespace Slayer {
 			if (batchIndices.find(hash) == batchIndices.end())
 			{
 				batchIndices[hash] = batches.size();
-				Batch newBatch(job.vaoID, job.indexCount, job.material, job.shader, job.animationState->inverseBindPose);
+				Batch newBatch(job.vaoID, job.indexCount, job.material, job.shader, job.animationState ? job.animationState->inverseBindPose : nullptr);
 				batches.push_back(newBatch);
 				batch = &batches.back();
 			}
@@ -240,14 +241,39 @@ namespace Slayer {
 		Mat4 projectionMatrix;
 		Mat4 viewMatrix;
 		Vec3 position;
-		float padding;
+		float padding = 0.0f;
 		CameraData(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position)
 			: projectionMatrix(projectionMatrix), viewMatrix(viewMatrix), position(position)
 		{
 		}
+
+		CameraData() = default;
+		~CameraData() = default;
+
+		void SetProjectionMatrix(const Mat4& projectionMatrix)
+		{
+			this->projectionMatrix = projectionMatrix;
+		}
+
+		void SetViewMatrix(const Mat4& viewMatrix)
+		{
+			this->viewMatrix = viewMatrix;
+		}
+
+		void SetPosition(const Vec3& position)
+		{
+			this->position = position;
+		}
+
+		void Set(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position)
+		{
+			this->projectionMatrix = projectionMatrix;
+			this->viewMatrix = viewMatrix;
+			this->position = position;
+		}
 	};
 
-	class Renderer
+	class Renderer : public Singleton<Renderer>
 	{
 	private:
 		const int MAX_LINES = 10000;
@@ -255,9 +281,11 @@ namespace Slayer {
 		Shared<Shader> m_screenShader;
 		Shared<Framebuffer> m_viewportFramebuffer;
 		float m_exposure = 1.0f;
-		Shared<Camera> m_camera;
+		float m_gamma = 2.2f;
+
+		CameraData m_cameraData;
 		Shared<UniformBuffer> m_cameraBuffer;
-		
+
 		Shared<UniformBuffer> m_boneBuffer;
 		Shared<UniformBuffer> m_instanceBuffer;
 		Shared<UniformBuffer> m_lightsBuffer;
@@ -289,8 +317,8 @@ namespace Slayer {
 		Shared<Shader> m_shaderStatic;
 		Shared<Shader> m_shaderSkeletal;
 
-		DirectionalLight m_directionalLight;
-		Vector<PointLight> m_pointLights;
+		DirectionalLightData m_directionalLight;
+		Vector<PointLightData> m_pointLights;
 		LightInfo m_lightInfo;
 		ShadowInfo m_shadowInfo;
 		RenderPass m_shadowPass;
@@ -298,16 +326,28 @@ namespace Slayer {
 		DebugInfo m_debugInfo;
 
 		void BindMaterial(Shared<Material> material, Shared<Shader> shader);
+		void BindInstanceBuffer(const FixedVector<int32_t, SL_MAX_INSTANCES>& animInstanceIds, const FixedVector<Mat4, SL_MAX_INSTANCES>& transforms);
 	public:
-		void SetActiveCamera(Shared<Camera> inCamera, const Vec2& windowSize);
+		Renderer()
+		{
+			SetInstance(this);
+		}
+
+		~Renderer()
+		{
+			SetInstance(nullptr);
+		}
+
+		void SetCameraData(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position);
+		void SetDirectionalLight(const Vec3& direction, const Vec3& color);
 		void SetExposure(float exposure) { m_exposure = exposure; }
+		void SetGamma(float gamma) { m_gamma = gamma; }
 		void Initialize(Shared<Camera> inCamera, int width, int height);
 		void Resize(int width, int height);
 		void Resize(int x, int y, int width, int height);
 		void Clear();
 		void BeginScene();
 		void BeginScene(const LightInfo& lightInfo, const ShadowInfo& shadowSettings);
-		void BeginScene(const Vector<PointLight>& inPointLights, const DirectionalLight& inDirectionalLight);
 		void Submit(Shared<SkeletalModel> model, const Mat4& transform, AnimationState* animationState);
 		void Submit(Shared<SkeletalModel> model, AnimationState* animationState, Shared<Material> material, const Mat4& transform);
 		void Submit(Shared<Model> model, Shared<Material> material, const Mat4& transform);

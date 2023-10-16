@@ -49,6 +49,11 @@ namespace Slayer {
 		return MakeShared<VertexBuffer>(vboID);
 	}
 
+	void VertexBuffer::Dispose()
+	{
+		glDeleteBuffers(1, &vboID);
+	}
+
 	Shared<VertexBuffer> VertexBuffer::Create(size_t size)
 	{
 		unsigned int vboID;

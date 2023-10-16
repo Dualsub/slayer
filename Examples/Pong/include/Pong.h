@@ -145,7 +145,7 @@ namespace Pong {
             if (m_state != AS_Running)
                 return;
 
-            m_renderer.BeginScene({}, Slayer::DirectionalLight(Slayer::Vec3(-1.0f), Slayer::Vec3(1.0f)));
+            m_renderer.BeginScene({}, Slayer::DirectionalLightData(Slayer::Vec3(-1.0f), Slayer::Vec3(1.0f)));
 
             m_renderingSystem.Render(m_renderer, m_store);
 

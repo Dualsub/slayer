@@ -125,8 +125,13 @@ def serialize_skeletal_model(name, meshes: list, meta: dict = {}):
             bone_name_data = bone_name.encode("utf-8")
             mesh_data += struct.pack("<I", len(bone_name_data))
             mesh_data += bone_name_data
-            # Bone id
-            mesh_data += struct.pack("<i", bone[0])
+            try:
+                # Bone id
+                mesh_data += struct.pack("<i", bone[0])
+            except Exception as e:
+                print(bone_name, bone, sep="\n")
+                print(e)
+                exit()
             # Parent id
             mesh_data += struct.pack("<i", bone[1])
             # Bone transform
@@ -423,8 +428,11 @@ def pack_file(file_tuple: tuple, old_data: dict = {}, skeletons={}, texture_ids=
             return serialize_animation_texture(name, duration, ticks_per_second, channels, bone_data, meta)
 
         is_skeletal = all(len(mesh.bones) > 0 for mesh in scene.meshes)
+        if "override_skeletal" in meta:
+            is_skeletal = meta["override_skeletal"]
         if is_skeletal:
-            meshes = load_skeletal_model(path)
+            meshes = load_skeletal_model(
+                path, skeleton=(skeletons[meta["skeleton"]] if "skeleton" in meta else None))
             return serialize_skeletal_model(name, meshes, meta)
         else:
             meshes = load_model(scene)

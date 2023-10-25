@@ -55,7 +55,7 @@ namespace Slayer::Editor {
         template<>
         void Transfer(AssetID& value, const std::string& name)
         {
-            ImGui::InputInt(name.c_str(), (int*)&value, 1, 100, ImGuiInputTextFlags_ReadOnly | ImGuiInputTextFlags_CharsDecimal);
+            ImGui::InputInt(name.c_str(), (int*)&value);
         }
 
         void TransferAsset(AssetID& value, AssetType assetType, const std::string& name)

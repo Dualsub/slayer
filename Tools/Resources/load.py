@@ -5,7 +5,7 @@ import numpy as np
 import cv2 as cv
 import PIL.Image as Image
 import json
-from slayer_bindings.assimp import load_bone_data
+from slayer_bindings.assimp import load_bone_data, load_bone_data_with_skeleton
 
 from common import *
 import impasse as assimp
@@ -130,20 +130,27 @@ def load_skeletons(model_files: list[str]):
         _, _, bones, inv_transform = load_bone_data(file)
 
         skeletons[name] = {"bone_data": {bone_name: {"id": bone_id, "parent_id": parent_id, "offset_matrix": offset_matrix}
-                           for bone_name, (bone_id, parent_id, offset_matrix) in bones.items()}, "inv_transform": inv_transform}
+                           for bone_name, (bone_id, parent_id, offset_matrix) in bones.items()}, "inv_transform": inv_transform, "raw_bone_data": bones}
 
     return skeletons
 
 
-def load_skeletal_model(path) -> tuple:
+def load_skeletal_model(path, skeleton=None) -> tuple:
     # Load model
-    vertices, indices, bone_data, inv_transform = load_bone_data(path)
+    try:
+        vertices, indices, bone_data, inv_transform = load_bone_data_with_skeleton(
+            path, skeleton["raw_bone_data"]) if skeleton is not None else load_bone_data(path)
+    except Exception as e:
+        print("Failed to load skeletal model: " + path,
+              "Skeleton exists" if skeleton is not None else "Skeleton does not exist", sep="\n")
+        raise e
+
     meshes = []
     meshes.append({
         "vertices": vertices,
         "indices": indices,
-        "bone_data": bone_data,
-        "inv_transform": inv_transform
+        "bone_data": bone_data if skeleton is None else skeleton["raw_bone_data"],
+        "inv_transform": inv_transform if skeleton is None else skeleton["inv_transform"]
     })
     return meshes
 

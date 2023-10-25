@@ -292,7 +292,7 @@ namespace Slayer::Editor {
         }
 
         auto& window = Application::Get()->GetWindow();
-        m_camera.SetProjectionMatrix(45.0f, window.GetWidth(), window.GetHeight(), 20.0f, 10000.0f);
+        m_camera.SetProjectionMatrix(45.0f, window.GetWidth(), window.GetHeight(), 5.0f, 10000.0f);
     }
 
     void EditorLayer::OnDetach()
@@ -404,7 +404,7 @@ namespace Slayer::Editor {
 
     bool EditorLayer::OnWindowResize(WindowResizeEvent& e)
     {
-        m_camera.SetProjectionMatrix(m_camera.GetFov(), e.width, e.height, 20.0f, 10000.0f);
+        m_camera.SetProjectionMatrix(m_camera.GetFov(), e.width, e.height, 5.0f, 10000.0f);
         return false;
     }
 

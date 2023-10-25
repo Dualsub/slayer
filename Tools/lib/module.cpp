@@ -167,6 +167,113 @@ py::tuple load_bone_data(const std::string& file_path) {
     return bone_data;
 }
 
+py::tuple load_bone_data_with_skeleton(const std::string& file_path, py::dict& bone_map) {
+    // Create the importer and read the file
+    Assimp::Importer importer;
+    const aiScene* scene = importer.ReadFile(file_path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_PopulateArmatureData | aiProcess_LimitBoneWeights);
+
+    if (!scene) {
+        std::cout << "Failed to load file: " << file_path << " with error message: " << importer.GetErrorString() << std::endl;
+        throw std::runtime_error("Failed to load file: " + file_path + " with error message: " + importer.GetErrorString());
+    }
+
+    std::vector<float> vertices;
+
+    // Get the mesh
+    const aiMesh* mesh = scene->mMeshes[0];
+
+    const uint32_t vertex_size = 3 + 2 + 3 + 4 + 4;
+
+    aiMatrix4x4 globalInv = scene->mRootNode->mTransformation;
+    globalInv = globalInv.Inverse();
+    py::array::ShapeContainer shape = { 4, 4 };
+    py::array::StridesContainer strides = { 4 * sizeof(float), sizeof(float) };
+    py::buffer_info buf_info = py::buffer_info(&globalInv.a1, sizeof(float), py::format_descriptor<float>::format(), 2, shape, strides);
+    py::array_t<float> global_inverse_transform(buf_info);
+
+    for (unsigned int v = 0; v < mesh->mNumVertices; v++)
+    {
+        vertices.push_back(mesh->mVertices[v].x);
+        vertices.push_back(mesh->mVertices[v].y);
+        vertices.push_back(mesh->mVertices[v].z);
+
+        vertices.push_back(mesh->mTextureCoords[0][v].x);
+        vertices.push_back(mesh->mTextureCoords[0][v].y);
+
+        vertices.push_back(mesh->mNormals[v].x);
+        vertices.push_back(mesh->mNormals[v].y);
+        vertices.push_back(mesh->mNormals[v].z);
+
+        for (unsigned int i = 0; i < 4; i++)
+            vertices.push_back(-1.0f);
+
+        for (unsigned int i = 0; i < 4; i++)
+            vertices.push_back(0.0f);
+    }
+
+    py::list indices;
+
+    for (unsigned int f = 0; f < mesh->mNumFaces; f++)
+    {
+        aiFace face = mesh->mFaces[f];
+        for (unsigned int ind = 0; ind < face.mNumIndices; ind++)
+        {
+            indices.append(face.mIndices[ind]);
+        }
+    }
+
+    // Initialize a dictionary to store the bone weights, names, and offset matrices
+    py::dict bones;
+    const uint32_t bone_id_offset = 8;
+    const uint32_t bone_weight_offset = bone_id_offset + 4;
+
+    for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
+    {
+        auto* bone = mesh->mBones[boneIndex];
+        int boneID = -1;
+        std::string boneName = bone->mName.C_Str();
+
+        if (bone_map.contains(py::str(boneName)))
+        {
+            // Conatins dict with "id".
+            boneID = bone_map[py::str(boneName)].cast<py::tuple>()[0].cast<int>();
+            std::cout << "Bone " << boneName << " found in bone_map with id " << boneID << std::endl;
+        }
+        else
+        {
+            std::cout << "Bone " << boneName << " not found in bone_map" << std::endl;
+            throw std::runtime_error("Bone " + boneName + " not found in bone_map");
+        }
+
+        auto weights = mesh->mBones[boneIndex]->mWeights;
+        int numWeights = mesh->mBones[boneIndex]->mNumWeights;
+
+        for (int weightIndex = 0; weightIndex < numWeights; ++weightIndex)
+        {
+            int vertexId = weights[weightIndex].mVertexId;
+            float weight = weights[weightIndex].mWeight;
+
+            float* vertex = &vertices[vertexId * vertex_size];
+            for (int i = 0; i < 4; ++i)
+            {
+                if (vertex[bone_id_offset + i] < 0)
+                {
+                    vertex[bone_id_offset + i] = (float)boneID;
+                    vertex[bone_weight_offset + i] = weight;
+                    break;
+                }
+            }
+        }
+    }
+
+    importer.FreeScene();
+    buf_info = py::buffer_info(vertices.data(), sizeof(float), py::format_descriptor<float>::format(), 2, { (int)vertices.size() / vertex_size, vertex_size }, { vertex_size * sizeof(float), sizeof(float) });
+    py::array_t<float> vertices_array(buf_info);
+    py::tuple bone_data = py::make_tuple(vertices_array, indices, py::none(), py::none());
+
+    return bone_data;
+}
+
 py::tuple transform_decompose(const py::array_t<float>& transform)
 {
     py::buffer_info buf_info = transform.request();
@@ -308,7 +415,8 @@ py::tuple transform_bone(const py::array_t<float>& translation, const py::array_
 PYBIND11_MODULE(slayer_bindings, m) {
     m.doc() = "Slayer bindings tools";
     m.def_submodule("assimp")
-        .def("load_bone_data", &load_bone_data, "Compute bone weights, influencing bones, and offset matrices for a given mesh file path");
+        .def("load_bone_data", &load_bone_data, "Compute bone weights, influencing bones, and offset matrices for a given mesh file path")
+        .def("load_bone_data_with_skeleton", &load_bone_data_with_skeleton, "Compute bone weights, influencing bones, and offset matrices for a given mesh file path with a skeleton");
     m.def_submodule("glm")
         .def("transform_decompose", &transform_decompose, "Decompose a 4x4 transformation matrix into a translation, rotation, and scale")
         .def("transform_compose", &transform_compose, "Compose a 4x4 transformation matrix from a translation, rotation, and scale")

@@ -350,7 +350,7 @@ namespace Slayer {
 		void BeginScene(const LightInfo& lightInfo, const ShadowInfo& shadowSettings);
 		void Submit(Shared<SkeletalModel> model, const Mat4& transform, AnimationState* animationState);
 		void Submit(Shared<SkeletalModel> model, AnimationState* animationState, Shared<Material> material, const Mat4& transform);
-		void Submit(Shared<Model> model, Shared<Material> material, const Mat4& transform);
+		void Submit(Shared<Model> model, const Vector<Shared<Material>>& materials, const Mat4& transform);
 		void Submit(Shared<SkeletalModel> model, Shared<Material> material, const Mat4& transform);
 		void Submit(Shared<Mesh> mesh, const Mat4& transform);
 		void SubmitQuad(Shared<Material> material, const Mat4& transform);

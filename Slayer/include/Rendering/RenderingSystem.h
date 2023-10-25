@@ -32,6 +32,23 @@ namespace Slayer {
         void Render(Renderer& renderer, ComponentStore& store)
         {
             SL_EVENT();
+            store.WithSingleton<WorldCamera>([&store, &renderer](WorldCamera* camera)
+                {
+                    Entity attachEntity = store.GetEntity(camera->attachEntityId);
+                    if (!store.IsValid(attachEntity) || !store.HasComponent<Transform>(attachEntity))
+                        return;
+
+                    Transform* transform = store.GetComponent<Transform>(attachEntity);
+
+                    Application* app = Application::Get();
+                    float width = (float)app->GetWindow().GetWidth();
+                    float height = (float)app->GetWindow().GetHeight();
+                    Mat4 projection = glm::perspective(glm::radians(camera->fov), width / height, camera->nearPlane, camera->farPlane);
+
+                    Mat4 view = glm::inverse(transform->GetMatrix());
+
+                    renderer.SetCameraData(projection, view, transform->position);
+                });
 
             store.WithSingleton<DirectionalLight>([&](DirectionalLight* light)
                 {
@@ -56,11 +73,17 @@ namespace Slayer {
             store.ForEach<Transform, ModelRenderer>([&](Entity entity, Transform* transform, ModelRenderer* modelRenderer)
                 {
                     Shared<Model> model = rm->GetAsset<Model>(modelRenderer->modelID);
-                    Shared<Material> material = rm->GetAsset<Material>(modelRenderer->materialID);
-                    if (!model || !material)
+                    Vector<Shared<Material>> materials;
+                    for (auto& materialAsset : modelRenderer->materialIDs)
+                    {
+                        Shared<Material> material = rm->GetAsset<Material>(materialAsset.id);
+                        materials.push_back(material);
+                    }
+
+                    if (!model)
                         return;
 
-                    renderer.Submit(model, material, transform->worldTransform);
+                    renderer.Submit(model, materials, transform->worldTransform);
                 });
         }
     };

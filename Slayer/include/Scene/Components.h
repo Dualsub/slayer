@@ -18,7 +18,8 @@
     Slayer::AnimationPlayer
 
 #define ENGINE_SINGLETONS \
-    Slayer::DirectionalLight
+    Slayer::DirectionalLight, \
+    Slayer::WorldCamera
 
 namespace Slayer {
 
@@ -75,7 +76,7 @@ namespace Slayer {
         {
             Mat4 matrix = Mat4(1.0f);
             matrix = glm::translate(matrix, position);
-            matrix = matrix * glm::mat4_cast(rotation);
+            matrix *= glm::toMat4(rotation);
             matrix = glm::scale(matrix, scale);
             return matrix;
         }
@@ -103,20 +104,39 @@ namespace Slayer {
             }
             else if (serializer.GetFlags() == SerializationFlags::ReadWrite)
             {
-                rotation = Quat(eulerProxy * glm::pi<float>() / 180.0f);
                 serializer.Transfer(eulerProxy, "rotation");
+                rotation = Quat(eulerProxy * glm::pi<float>() / 180.0f);
             }
         }
     };
 
     struct ModelRenderer
     {
+        struct MaterialAsset
+        {
+            AssetID id;
+
+            MaterialAsset() = default;
+            MaterialAsset(const AssetID& materialID) :
+                id(materialID)
+            {
+            }
+
+            ~MaterialAsset() = default;
+
+            template<typename Serializer>
+            void Transfer(Serializer& serializer)
+            {
+                SL_TRANSFER_ASSET(id, AssetType::SL_ASSET_TYPE_MATERIAL);
+            }
+        };
+
         AssetID modelID;
-        AssetID materialID;
+        Vector<MaterialAsset> materialIDs;
 
         ModelRenderer() = default;
-        ModelRenderer(const AssetID& modelID, const AssetID& materialID) :
-            modelID(modelID), materialID(materialID)
+        ModelRenderer(const AssetID& modelID, const Vector<MaterialAsset>& materialIDs) :
+            modelID(modelID), materialIDs(materialIDs)
         {
         }
         ~ModelRenderer() = default;
@@ -125,7 +145,7 @@ namespace Slayer {
         void Transfer(Serializer& serializer)
         {
             SL_TRANSFER_ASSET(modelID, AssetType::SL_ASSET_TYPE_MODEL);
-            SL_TRANSFER_ASSET(materialID, AssetType::SL_ASSET_TYPE_MATERIAL);
+            SL_TRANSFER_VEC(materialIDs);
         }
     };
 
@@ -262,6 +282,31 @@ namespace Slayer {
             SL_TRANSFER_VAR(intensity);
             SL_TRANSFER_VAR(exposure);
             SL_TRANSFER_VAR(gamma);
+        }
+    };
+
+    struct WorldCamera : public SingletonComponent
+    {
+        float fov = 45.0f;
+        float nearPlane = 5.0f;
+        float farPlane = 10000.0f;
+        AssetID attachEntityId = 0;
+
+        Mat4 projection = Mat4(1.0f);
+
+        WorldCamera() = default;
+        virtual ~WorldCamera() = default;
+
+        WorldCamera(const WorldCamera& other) = default;
+        WorldCamera& operator=(const WorldCamera& other) = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(fov);
+            SL_TRANSFER_VAR(nearPlane);
+            SL_TRANSFER_VAR(farPlane);
+            SL_TRANSFER_VAR(attachEntityId);
         }
     };
 

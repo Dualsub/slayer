@@ -187,13 +187,20 @@ namespace Slayer
 		}
 	}
 
-	void Renderer::Submit(Shared<Model> model, Shared<Material> material, const Mat4& transform)
+	void Renderer::Submit(Shared<Model> model, const Vector<Shared<Material>>& materials, const Mat4& transform)
 	{
-		for (auto& mesh : model->GetMeshes())
+		auto& meshes = model->GetMeshes();
+		for (uint32_t i = 0; i < meshes.size(); i++)
 		{
+			if (i >= materials.size())
+				break;
+			if (!materials[i])
+				continue;
+
+			auto& mesh = meshes[i];
 			RenderJob job = { mesh->GetVaoID(),
 								mesh->GetIndexCount(),
-								material,
+								materials[i],
 								m_shaderStatic,
 								transform };
 			m_mainPass.Submit(job);

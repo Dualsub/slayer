@@ -16,6 +16,24 @@ namespace Slayer::Editor {
 
     namespace Panels {
 
+        void ShadowMapPanel()
+        {
+            ImGui::Begin("Shadow Map Viewer");
+
+            auto* renderer = Renderer::Get();
+            if (!renderer || !renderer->GetShadowFramebuffer())
+            {
+                ImGui::End();
+                return;
+            }
+
+            auto shadowMapId = renderer->GetShadowFramebuffer()->GetDepthAttachmentID();
+            uint32_t size = std::min(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+            ImGui::Image((ImTextureID)shadowMapId, ImVec2(size, size), ImVec2(0, 1), ImVec2(1, 0));
+
+            ImGui::End();
+        }
+
         void RenderMenuBar(auto&& saveScene = []() {}, auto&& loadScene = []() {})
         {
             if (ImGui::BeginMenuBar())
@@ -292,7 +310,7 @@ namespace Slayer::Editor {
         }
 
         auto& window = Application::Get()->GetWindow();
-        m_camera.SetProjectionMatrix(45.0f, window.GetWidth(), window.GetHeight(), 5.0f, 10000.0f);
+        m_camera.SetProjectionMatrix(45.0f, (float)window.GetWidth(), (float)window.GetHeight(), 5.0f, 2000.0f);
     }
 
     void EditorLayer::OnDetach()
@@ -404,7 +422,6 @@ namespace Slayer::Editor {
 
     bool EditorLayer::OnWindowResize(WindowResizeEvent& e)
     {
-        m_camera.SetProjectionMatrix(m_camera.GetFov(), e.width, e.height, 5.0f, 10000.0f);
         return false;
     }
 
@@ -476,7 +493,7 @@ namespace Slayer::Editor {
             Panels::RenderMenuBar(saveScene, loadScene);
             Panels::RenderScenePanel(m_selection);
             Panels::RenderInspectorPanel(m_propertySerializer, m_selection);
-            ImGui::ShowDemoWindow();
+            Panels::ShadowMapPanel();
 
             ImGui::End();
         }

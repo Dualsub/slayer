@@ -325,6 +325,10 @@ namespace Slayer {
 		RenderPass m_mainPass;
 		DebugInfo m_debugInfo;
 
+		Array<Vec4, 8> GetFrustumCornersWorldSpace(const CameraData& cameraData);
+		Vec3 GetCenterOfFrustum(const Array<Vec4, 8>& frustumCorners);
+		Mat4 GetLightProjection(const Array<Vec4, 8>& frustumCorners, const Mat4& lightView);
+
 		void BindMaterial(Shared<Material> material, Shared<Shader> shader);
 		void BindInstanceBuffer(const FixedVector<int32_t, SL_MAX_INSTANCES>& animInstanceIds, const FixedVector<Mat4, SL_MAX_INSTANCES>& transforms);
 	public:
@@ -364,6 +368,10 @@ namespace Slayer {
 
 		// Debug
 		DebugInfo& GetDebugInfo() { return m_debugInfo; }
+
+		// Getters
+		Shared<Framebuffer> GetViewportFramebuffer() { return m_viewportFramebuffer; }
+		Shared<Framebuffer> GetShadowFramebuffer() { return m_shadowFramebuffer; }
 	};
 
 }

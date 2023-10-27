@@ -95,6 +95,7 @@ namespace Slayer::Editor {
         SL_EVENT_DISPATCH(Slayer::KeyPressEvent, EditorCamera::OnKeyPress);
         SL_EVENT_DISPATCH(Slayer::KeyReleaseEvent, EditorCamera::OnKeyRelease);
         SL_EVENT_DISPATCH(Slayer::MouseMoveEvent, EditorCamera::OnMouseMove);
+        SL_EVENT_DISPATCH(Slayer::WindowResizeEvent, EditorCamera::OnWindowResize);
     }
 
     bool EditorCamera::OnKeyPress(Slayer::KeyPressEvent& e)
@@ -150,6 +151,12 @@ namespace Slayer::Editor {
         m_forward = glm::normalize(dir);
         m_right = glm::cross(m_forward, m_up);
         return true;
+    }
+
+    bool EditorCamera::OnWindowResize(Slayer::WindowResizeEvent& e)
+    {
+        SetProjectionMatrix(m_fov, (float)e.width, (float)e.height, nearPlane, farPlane);
+        return false;
     }
 
 }

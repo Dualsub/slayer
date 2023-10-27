@@ -27,6 +27,7 @@ namespace Slayer::Editor {
         bool OnKeyPress(Slayer::KeyPressEvent& e);
         bool OnKeyRelease(Slayer::KeyReleaseEvent& e);
         bool OnMouseMove(Slayer::MouseMoveEvent& e);
+        bool OnWindowResize(Slayer::WindowResizeEvent& e);
         void Update(float dt);
 
         inline bool GetFirstMouse() const { return m_firstMouse; }

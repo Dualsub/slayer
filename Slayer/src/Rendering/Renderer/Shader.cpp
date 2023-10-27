@@ -103,7 +103,7 @@ namespace Slayer
         std::cout << "Loading: " << vsFile << std::endl;
         std::cout << "Loading: " << fsFile << std::endl;
 
-        auto shader = LoadShader(vertexCode, fragmentCode);
+        auto shader = LoadShader(vertexCode, fragmentCode, "");
         return shader;
 #else
         return LoadShader(vertexCode, fragmentCode);
@@ -242,21 +242,24 @@ namespace Slayer
     {
     }
 
-    Shared<Shader> Shader::LoadShader(const std::string& vs, const std::string& fs)
+    Shared<Shader> Shader::LoadShader(const std::string& vs, const std::string& fs, const std::string& gs)
     {
         int programID = glCreateProgram();
         int vsID = CompileShader(vs, GL_VERTEX_SHADER);
         int fsID = CompileShader(fs, GL_FRAGMENT_SHADER);
+        int gsID = gs.length() > 0 ? CompileShader(gs, GL_GEOMETRY_SHADER) : -1;
 
         glAttachShader(programID, vsID);
         glAttachShader(programID, fsID);
+        if (gsID != -1)
+            glAttachShader(programID, gsID);
+
         glLinkProgram(programID);
 
         if (vs.find("Skeletal VS") != std::string::npos)
         {
             std::cout << vs << std::endl;
         }
-
 
         GLint linkSuccess;
         glGetProgramiv(programID, GL_LINK_STATUS, &linkSuccess);
@@ -267,7 +270,6 @@ namespace Slayer
             Log::Error("Shader linking failed: " + std::string(infoLog));
             SL_ASSERT(false);
         }
-
 
         Shared<Shader> shader = MakeShared<Shader>(programID, vsID, fsID);
         shader->vsSource = vs;

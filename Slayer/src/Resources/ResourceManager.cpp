@@ -96,7 +96,7 @@ namespace Slayer
 
 		for (auto& [sa, record] : gpuLoadData.shaders)
 		{
-			Shared<Shader> shader = Shader::LoadShader(sa.vsSource, sa.fsSource);
+			Shared<Shader> shader = Shader::LoadShader(sa.vsSource, sa.fsSource, sa.gsSource);
 			m_assetStore.AddAsset(record, shader);
 		}
 

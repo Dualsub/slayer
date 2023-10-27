@@ -55,7 +55,7 @@ namespace Slayer
 		static int CompileShader(const std::string& source, unsigned int type);
 
 		static Shared<Shader> LoadShaderFromFiles(const std::string& vsFile, const std::string& fsFile);
-		static Shared<Shader> LoadShader(const std::string& vs, const std::string& fs);
+		static Shared<Shader> LoadShader(const std::string& vs, const std::string& fs, const std::string& gs);
 	};
 
 }

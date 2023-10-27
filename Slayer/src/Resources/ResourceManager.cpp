@@ -85,7 +85,7 @@ namespace Slayer
 			}
 			else if (ta.target == uint32_t(0x0DE1)) // 2D
 			{
-				Shared<Texture> texture = Texture::LoadTexture(ta.data.data(), ta.width, ta.height, ta.channels, (TextureTarget)ta.target);
+				Shared<Texture> texture = Texture::LoadTexture(ta.data.data(), ta.data.size(), ta.channels, (TextureTarget)ta.target);
 				m_assetStore.AddAsset(record, texture);
 			}
 			else

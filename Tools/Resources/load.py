@@ -33,7 +33,10 @@ def load_texture(path: str) -> tuple:
     # Flip image vertically
     # image = np.flip(image, 0)
     # Get image data
-    data = image.tobytes()
+    image = Image.fromarray(image)
+    # Get the binary data from the image formatted as a PNG
+    with open(path, "rb") as f:
+        data = f.read()
 
     return width, height, channels, target, data
 

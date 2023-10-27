@@ -42,6 +42,7 @@ namespace Slayer {
 
 		static Shared<Texture> CreateBuffer(uint32_t width, uint32_t height, uint32_t numChannels, uint32_t unit, uint32_t slotOffset = 0, TextureTarget target = TextureTarget::TEXTURE_2D);
 		static Shared<Texture> LoadTexture(const uint8_t* data, uint32_t width, uint32_t height, uint32_t numChannels, uint32_t slotOffset = 0, TextureTarget target = TextureTarget::TEXTURE_2D);
+		static Shared<Texture> LoadTexture(const uint8_t* data, uint32_t length, uint32_t slotOffset = 0, TextureTarget target = TextureTarget::TEXTURE_2D);
 		static Shared<Texture> LoadTextureHDR(const float* data, uint32_t width, uint32_t height, uint32_t numChannels);
 		static void BindTexture(unsigned int textureID, int slot = 0, TextureTarget target = TextureTarget::TEXTURE_2D);
 	};

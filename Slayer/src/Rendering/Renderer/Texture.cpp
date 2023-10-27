@@ -1,5 +1,7 @@
 #include "Core/Log.h"
 #include "Rendering/Renderer/Texture.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 namespace Slayer {
 
@@ -42,6 +44,19 @@ namespace Slayer {
 	void Texture::Dispose()
 	{
 		glDeleteTextures(1, &textureID);
+	}
+
+	Shared<Texture> Texture::LoadTexture(const uint8_t* data, uint32_t length, uint32_t slotOffset, TextureTarget target)
+	{
+		stbi_set_flip_vertically_on_load(false);
+		uint32_t width, height, numChannels;
+
+		uint8_t* localBuffer = stbi_load_from_memory(data, length, (int*)&width, (int*)&height, (int*)&numChannels, 0);
+		Shared<Texture> texture = Texture::LoadTexture(localBuffer, width, height, numChannels, slotOffset, target);
+
+		stbi_image_free(localBuffer);
+
+		return texture;
 	}
 
 	Shared<Texture> Texture::LoadTexture(const uint8_t* data, uint32_t width, uint32_t height, uint32_t numChannels, uint32_t slotOffset, TextureTarget target)

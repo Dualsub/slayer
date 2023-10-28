@@ -35,6 +35,9 @@ namespace Slayer {
 			euler = glm::eulerAngles(rotation) * (180.0f / glm::pi<float>());
 			return euler.y;
 		}
+		inline float GetNearPlane() { return nearPlane; }
+		inline float GetFarPlane() { return farPlane; }
+		inline float GetAspectRatio() { return width / height; }
 		void SetPosition(const Vec3& position) { this->position = position; }
 		void SetRotation(const Quat& rotation) { this->rotation = rotation; }
 		const Mat4& GetProjectionMatrix();

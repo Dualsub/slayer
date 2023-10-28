@@ -32,6 +32,14 @@ namespace Slayer {
         void Render(Renderer& renderer, ComponentStore& store)
         {
             SL_EVENT();
+
+            store.WithSingleton<WorldRenderingSettings>([&](WorldRenderingSettings* settings)
+                {
+                    renderer.SetGamma(settings->gamma);
+                    renderer.SetExposure(settings->exposure);
+                    renderer.SetShadowCascadeIndex(settings->shadowCascadeIndex);
+                });
+
             store.WithSingleton<WorldCamera>([&store, &renderer](WorldCamera* camera)
                 {
                     Entity attachEntity = store.GetEntity(camera->attachEntityId);
@@ -47,14 +55,20 @@ namespace Slayer {
 
                     Mat4 view = glm::inverse(transform->GetMatrix());
 
-                    renderer.SetCameraData(projection, view, transform->position);
+                    renderer.SetCameraData(
+                        camera->nearPlane,
+                        camera->farPlane,
+                        camera->fov,
+                        width / height,
+                        projection,
+                        view,
+                        transform->position);
                 });
 
             store.WithSingleton<DirectionalLight>([&](DirectionalLight* light)
                 {
                     renderer.SetDirectionalLight(light->orientation, light->intensity * light->color);
-                    renderer.SetExposure(light->exposure);
-                    renderer.SetGamma(light->gamma);
+
                 });
 
             ResourceManager* rm = ResourceManager::Get();

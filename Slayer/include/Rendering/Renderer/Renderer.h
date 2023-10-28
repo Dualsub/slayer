@@ -16,6 +16,8 @@
 #define SL_MAX_INSTANCES 128
 #define SL_MAX_SKELETONS 4
 #define SL_MAX_ANIMATIONS 16
+#define SL_SHADOW_CASCADES 4
+#define SL_SHADOW_CASCADE_SPLITS SL_SHADOW_CASCADES - 1
 
 namespace Slayer {
 
@@ -238,12 +240,20 @@ namespace Slayer {
 
 	struct CameraData
 	{
-		Mat4 projectionMatrix;
-		Mat4 viewMatrix;
-		Vec3 position;
-		float padding = 0.0f;
+		float nearPlane = 0.1f;
+		float farPlane = 1000.0f;
+		float fov = 60.0f;
+		float aspectRatio = 1.0f;
+
+		struct Buffer {
+			Mat4 projectionMatrix;
+			Mat4 viewMatrix;
+			Vec3 position;
+			float padding = 0.0f;
+		} buffer;
+
 		CameraData(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position)
-			: projectionMatrix(projectionMatrix), viewMatrix(viewMatrix), position(position)
+			: buffer({ projectionMatrix, viewMatrix, position })
 		{
 		}
 
@@ -252,24 +262,35 @@ namespace Slayer {
 
 		void SetProjectionMatrix(const Mat4& projectionMatrix)
 		{
-			this->projectionMatrix = projectionMatrix;
+			buffer.projectionMatrix = projectionMatrix;
 		}
 
 		void SetViewMatrix(const Mat4& viewMatrix)
 		{
-			this->viewMatrix = viewMatrix;
+			buffer.viewMatrix = viewMatrix;
 		}
 
 		void SetPosition(const Vec3& position)
 		{
-			this->position = position;
+			buffer.position = position;
 		}
 
-		void Set(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position)
+		void SetBuffer(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position)
 		{
-			this->projectionMatrix = projectionMatrix;
-			this->viewMatrix = viewMatrix;
-			this->position = position;
+			buffer.projectionMatrix = projectionMatrix;
+			buffer.viewMatrix = viewMatrix;
+			buffer.position = position;
+		}
+
+		void Set(float nearPlane, float farPlane, float fov, float aspectRatio, const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position)
+		{
+			this->nearPlane = nearPlane;
+			this->farPlane = farPlane;
+			this->fov = fov;
+			this->aspectRatio = aspectRatio;
+			buffer.projectionMatrix = projectionMatrix;
+			buffer.viewMatrix = viewMatrix;
+			buffer.position = position;
 		}
 	};
 
@@ -283,6 +304,7 @@ namespace Slayer {
 		float m_exposure = 1.0f;
 		float m_gamma = 2.2f;
 
+		// Camera
 		CameraData m_cameraData;
 		Shared<UniformBuffer> m_cameraBuffer;
 
@@ -296,20 +318,27 @@ namespace Slayer {
 		Shared<Shader> m_lineShader;
 		Vector<float> m_lineBuffer;
 
-		Shared<Framebuffer> m_shadowFramebuffer;
-		Shared<Shader> m_shadowShaderStatic;
-		Shared<Shader> m_shadowShaderSkeletal;
-
 		// Animation
 		Shared<ComputeShader> m_animationShader;
 		Shared<UniformBuffer> m_animationBuffer;
 		Shared<Texture> m_boneTransformTexture;
 
 
+		// Shadow
+		Shared<Framebuffer> m_shadowFramebuffer;
+		Shared<Shader> m_shadowShaderStatic;
+		Shared<Shader> m_shadowShaderSkeletal;
+		Array<float, SL_SHADOW_CASCADE_SPLITS> m_shadowCascadeSplits;
+		ShadowInfo m_shadowInfo;
+
 		// Lights
 		Mat4 m_lightProjection;
 		Mat4 m_lightSpaceMatrix;
+		Array<Mat4, SL_SHADOW_CASCADES> m_lightSpaceMatrices;
 		Vec3 m_lightPos;
+		DirectionalLightData m_directionalLight;
+		Vector<PointLightData> m_pointLights;
+		LightInfo m_lightInfo;
 
 		// PBR
 		Shared<Texture> m_hdrTexture;
@@ -317,17 +346,19 @@ namespace Slayer {
 		Shared<Shader> m_shaderStatic;
 		Shared<Shader> m_shaderSkeletal;
 
-		DirectionalLightData m_directionalLight;
-		Vector<PointLightData> m_pointLights;
-		LightInfo m_lightInfo;
-		ShadowInfo m_shadowInfo;
+		// Render passes
 		RenderPass m_shadowPass;
 		RenderPass m_mainPass;
-		DebugInfo m_debugInfo;
 
-		Array<Vec4, 8> GetFrustumCornersWorldSpace(const CameraData& cameraData);
+		// Debug
+		DebugInfo m_debugInfo;
+		uint32_t m_shadowCascadeIndex = 0;
+
+		Array<Vec4, 8> GetFrustumCornersWorldSpace(const CameraData& cameraData, float nearPlane, float farPlane);
 		Vec3 GetCenterOfFrustum(const Array<Vec4, 8>& frustumCorners);
 		Mat4 GetLightProjection(const Array<Vec4, 8>& frustumCorners, const Mat4& lightView);
+		Array<float, SL_SHADOW_CASCADE_SPLITS> GetShadowSplits(float near, float far);
+		Array<Mat4, SL_SHADOW_CASCADES> CalculateLightSpaceMatrices(const CameraData& cameraData, const Vec3& lightDirection);
 
 		void BindMaterial(Shared<Material> material, Shared<Shader> shader);
 		void BindInstanceBuffer(const FixedVector<int32_t, SL_MAX_INSTANCES>& animInstanceIds, const FixedVector<Mat4, SL_MAX_INSTANCES>& transforms);
@@ -342,7 +373,7 @@ namespace Slayer {
 			SetInstance(nullptr);
 		}
 
-		void SetCameraData(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position);
+		void SetCameraData(float nearPlane, float farPlane, float fov, float aspectRatio, const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position);
 		void SetDirectionalLight(const Vec3& direction, const Vec3& color);
 		void SetExposure(float exposure) { m_exposure = exposure; }
 		void SetGamma(float gamma) { m_gamma = gamma; }
@@ -368,6 +399,7 @@ namespace Slayer {
 
 		// Debug
 		DebugInfo& GetDebugInfo() { return m_debugInfo; }
+		void SetShadowCascadeIndex(int index) { m_shadowCascadeIndex = std::clamp(index, 0, SL_SHADOW_CASCADES - 1); }
 
 		// Getters
 		Shared<Framebuffer> GetViewportFramebuffer() { return m_viewportFramebuffer; }

@@ -1,8 +1,10 @@
 #version 450 core
 
+#define MAX_POINT_LIGHTS 64 
+#define NUM_SHADOW_CASCADES 4
+
 const float PI = 3.14159265359;
 const int numShadowSamples = 3;
-#define MAX_POINT_LIGHTS 64 
 
 out vec4 FragColor;
 
@@ -31,7 +33,7 @@ struct IBL {
 
 uniform Material material;
 uniform IBL ibl;
-uniform sampler2D shadowMap;
+uniform sampler2DArray shadowMap;
 uniform vec3 lightPos;
 
 struct PointLight {    
@@ -44,14 +46,20 @@ struct DirectionalLight {
     vec3 color;
 };
 
+layout(std140, binding = 0) uniform Camera { 
+    mat4 projectionMatrix;
+    mat4 viewMatrix;
+    vec3 position;
+};
+
 //Lights
 layout(std140, binding = 1) uniform Lights { 
     DirectionalLight directionalLight;
     PointLight pointLights[MAX_POINT_LIGHTS];
-    mat4 lightSpaceMatrix;
+    mat4 lightSpaceMatrices[NUM_SHADOW_CASCADES];
+    float cascadeEnds[NUM_SHADOW_CASCADES];
     int numLights;
 };
-
 
 vec3 getNormalFromMap()
 {
@@ -141,27 +149,27 @@ vec3 CalcDirLight(DirectionalLight light, vec3 N, vec3 V, vec3 albedo, float rou
    return (kD * albedo / PI + specular) * light.color * NdotL;
 }  
 
-float CalcShadow(vec4 fragPosLightSpace)
+float CalcShadow(vec4 fragPosLightSpace, int cascadeIndex)
 {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
 
     projCoords = projCoords * 0.5 + 0.5;
-
-    float closestDepth = texture(shadowMap, projCoords.xy).r; 
 
     float currentDepth = projCoords.z;
 
     vec3 normal = normalize(vs_Input.Normal);
     vec3 lightDir = normalize(lightPos - vs_Input.WorldPosition);
     float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+    const float biasModifier = 0.5f;
+    bias *= 1 / (cascadeEnds[cascadeIndex] * biasModifier);
 
     float shadow = 0.0;
-    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
     for(int x = -numShadowSamples/2; x <= numShadowSamples/2; ++x)
     {
         for(int y = -numShadowSamples/2; y <= numShadowSamples/2; ++y)
         {
-            float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+            float pcfDepth = texture(shadowMap, vec3(projCoords.xy + vec2(x, y) * texelSize, cascadeIndex)).r; 
             shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;        
         }    
     }
@@ -171,6 +179,18 @@ float CalcShadow(vec4 fragPosLightSpace)
         shadow = 0.0;
         
     return shadow;
+}
+
+int getShadowCascadeIndex()
+{
+    vec4 fragPosViewSpace = viewMatrix * vec4(vs_Input.WorldPosition, 1.0);
+    float depth = abs(fragPosViewSpace.z);
+    for(int i = 0; i < NUM_SHADOW_CASCADES; ++i)
+    {
+        if(depth < cascadeEnds[i])
+            return i;
+    }
+    return NUM_SHADOW_CASCADES - 1;
 }
 
 void main()
@@ -191,30 +211,6 @@ void main()
 
     Lo += CalcDirLight(directionalLight, N, V, albedo, roughness, metallic, F0);
 
-    // for(int i = 0; i < min(numLights, MAX_POINT_LIGHTS); i++)
-    // {
-    //     vec3 L = normalize(pointLights[i].position - vs_Input.WorldPosition);
-    //     vec3 H = normalize(V + L);
-    //     float distance = length(pointLights[i].position - vs_Input.WorldPosition);
-    //     float attenuation = 1.0 / (distance * distance);
-    //     vec3 radiance = pointLights[i].color * attenuation;        
-   
-    //     float NDF = DistributionGGX(N, H, roughness);   
-    //     float G = GeometrySmith(N, V, L, roughness);    
-    //     vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);        
-
-    //     vec3 numerator = NDF * G * F;
-    //     float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001; // 0.001 to prevent divide by zero.
-    //     vec3 specular = numerator / denominator;
-        
-    //     vec3 kS = F;
-    //     vec3 kD = vec3(1.0) - kS;
-    //     kD *= 1.0 - metallic;	                
-
-    //     float NdotL = max(dot(N, L), 0.0);        
-    //     Lo += (kD * albedo / PI + specular) * radiance * NdotL; 
-    // } 
-
     vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
     
     vec3 kS = F;
@@ -229,14 +225,14 @@ void main()
     vec2 brdf  = texture(ibl.brdf, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
-    float shadow = CalcShadow(lightSpaceMatrix * vec4(vs_Input.WorldPosition, 1.0));
+    int cascadeIndex = getShadowCascadeIndex();
+    mat4 lightSpaceMatrix = lightSpaceMatrices[cascadeIndex];
+    float shadow = CalcShadow(lightSpaceMatrix * vec4(vs_Input.WorldPosition, 1.0), cascadeIndex);
 
     vec3 ambient = (kD * diffuse + specular) * ao;
     
+    // vec3 shadowColor = vec3(cascadeIndex % 3 == 0, (cascadeIndex + 1) % 3 == 0, (cascadeIndex + 2) % 3 == 0);  
     vec3 color = ambient + Lo * (1.0 - shadow);
-
-    // color = color / (color + vec3(1.0));
-    // color = pow(color, vec3(1.0/2.2)); 
 
     FragColor = vec4(color, 1.0);
 }

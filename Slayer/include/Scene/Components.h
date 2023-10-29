@@ -19,6 +19,7 @@
 
 #define ENGINE_SINGLETONS \
     Slayer::DirectionalLight, \
+    Slayer::WorldRenderingSettings, \
     Slayer::WorldCamera
 
 namespace Slayer {
@@ -260,13 +261,33 @@ namespace Slayer {
         }
     };
 
+    struct WorldRenderingSettings : public SingletonComponent
+    {
+        float exposure = 1.0f;
+        float gamma = 2.2f;
+        // Debug, TODO: Remove
+        uint32_t shadowCascadeIndex = 0;
+
+        WorldRenderingSettings() = default;
+        virtual ~WorldRenderingSettings() = default;
+
+        WorldRenderingSettings(const WorldRenderingSettings& other) = default;
+        WorldRenderingSettings& operator=(const WorldRenderingSettings& other) = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(exposure);
+            SL_TRANSFER_VAR(gamma);
+            SL_TRANSFER_VAR(shadowCascadeIndex);
+        }
+    };
+
     struct DirectionalLight : public SingletonComponent
     {
         Vec3 orientation = Vec3(0.0f); // Euler angles
         Vec3 color = Vec3(1.0f);
         float intensity = 1.0f;
-        float exposure = 1.0f;
-        float gamma = 2.2f;
 
         DirectionalLight() = default;
         virtual ~DirectionalLight() = default;
@@ -280,8 +301,6 @@ namespace Slayer {
             SL_TRANSFER_VAR(orientation);
             SL_TRANSFER_VAR(color);
             SL_TRANSFER_VAR(intensity);
-            SL_TRANSFER_VAR(exposure);
-            SL_TRANSFER_VAR(gamma);
         }
     };
 

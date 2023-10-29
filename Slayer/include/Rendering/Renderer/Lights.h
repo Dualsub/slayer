@@ -7,6 +7,7 @@
 #include "Serialization/Serialization.h"
 
 #define MAX_POINT_LIGHTS 64
+#define SL_SHADOW_CASCADES 4
 
 namespace Slayer {
 
@@ -35,15 +36,25 @@ namespace Slayer {
 
 	struct LightsData
 	{
+		constexpr static uint32_t NUM_FLOAT_PAD = 4;
 		DirectionalLightData directionalLight;
 		PointLightData pointLights[MAX_POINT_LIGHTS];
-		Mat4 lightSpaceMatrix;
-		int numLights;
-		LightsData(const DirectionalLightData& directionalLight, const Vector<PointLightData>& inPointLights, const Mat4& lightSpaceMatrix)
-			: directionalLight(directionalLight), lightSpaceMatrix(lightSpaceMatrix)
+		Mat4 lightSpaceMatrices[SL_SHADOW_CASCADES];
+		float shadowCascadeEnds[SL_SHADOW_CASCADES * NUM_FLOAT_PAD] = { 0 }; // 4 floats for padding
+		int32_t numLights = 0;
+
+		LightsData() = default;
+		~LightsData() = default;
+
+		LightsData(const DirectionalLightData& directionalLight, const Vector<PointLightData>& pointLights, const Array<Mat4, SL_SHADOW_CASCADES>& lightSpaceMatrices, const Array<float, SL_SHADOW_CASCADES>& shadowCascadeEnds)
+			: directionalLight(directionalLight), numLights(uint32_t(pointLights.size()))
 		{
-			std::copy(inPointLights.begin(), inPointLights.end(), pointLights);
-			numLights = (int)inPointLights.size();
+			Copy(pointLights.data(), this->pointLights, pointLights.size() * sizeof(PointLightData));
+			Copy(lightSpaceMatrices.data(), this->lightSpaceMatrices, SL_SHADOW_CASCADES * sizeof(Mat4));
+			for (int i = 0; i < SL_SHADOW_CASCADES; i++)
+			{
+				this->shadowCascadeEnds[i * NUM_FLOAT_PAD] = shadowCascadeEnds[i];
+			}
 		}
 	};
 

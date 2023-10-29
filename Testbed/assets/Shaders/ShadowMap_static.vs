@@ -14,5 +14,5 @@ layout(std140, binding = 3) uniform Instance {
 void main()
 {
     mat4 transformMatrix = transformMatrices[gl_InstanceID];
-    gl_Position = lightSpaceMatrix * transformMatrix * vec4(aPos, 1.0);
+    gl_Position = transformMatrix * vec4(aPos, 1.0);
 }

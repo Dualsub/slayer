@@ -57,5 +57,5 @@ void main()
 	}
 
     mat4 transformMatrix = transformMatrices[gl_InstanceID];
-    gl_Position = lightSpaceMatrix * transformMatrix * boneMatrix * vec4(aPos, 1.0);
+    gl_Position = transformMatrix * boneMatrix * vec4(aPos, 1.0);
 }

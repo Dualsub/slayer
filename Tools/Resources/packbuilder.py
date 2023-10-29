@@ -39,13 +39,15 @@ def serialize_texture(name, width, height, channels, target, data, meta: dict = 
     return serialize_asset(name, header + data, "texture", meta)
 
 
-def serialize_shader(name, vsSource: str, fsSource: str, meta: dict = {}):
+def serialize_shader(name, vs_source: str, fs_source: str, gs_source: str, meta: dict = {}):
     old_id = meta["old_data"]["id"] if "old_data" in meta and "id" in meta["old_data"] else None
     # Create header
-    vsData = vsSource.encode("utf-8")
-    fsData = fsSource.encode("utf-8")
-    data = struct.pack("<I", len(vsData)) + vsData
-    data += struct.pack("<I", len(fsData)) + fsData
+    vs_data = vs_source.encode("utf-8")
+    fs_data = fs_source.encode("utf-8")
+    gs_data = gs_source.encode("utf-8")
+    data = struct.pack("<I", len(vs_data)) + vs_data
+    data += struct.pack("<I", len(fs_data)) + fs_data
+    data += struct.pack("<I", len(gs_data)) + gs_data
 
     # Add header and data to the pack
     return serialize_asset(name, data, "shader", meta)
@@ -438,8 +440,8 @@ def pack_file(file_tuple: tuple, old_data: dict = {}, skeletons={}, texture_ids=
             meshes = load_model(scene)
             return serialize_model(name, meshes, meta)
     elif ext == ".shader":
-        vs, fs = load_shader(path)
-        return serialize_shader(name, vs, fs, meta)
+        vs, fs, gs = load_shader(path)
+        return serialize_shader(name, vs, fs, gs, meta)
     elif ext == ".material":
         textures = load_material(path)
         return serialize_material(name, textures, texture_ids, meta)

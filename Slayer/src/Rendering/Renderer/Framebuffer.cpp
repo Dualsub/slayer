@@ -157,15 +157,25 @@ namespace Slayer {
 
 	void Framebuffer::AttachDepthTexture(const Attachment& attachment, GLenum format, GLenum attachmentType, unsigned int width, unsigned int height)
 	{
-		glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
+		switch (attachment.textureTarget)
+		{
+		case TextureTarget::TEXTURE_2D:
+			glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
+			break;
+		case TextureTarget::TEXTURE_2D_ARRAY:
+			glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, format, width, height, attachment.depth);
+			break;
+		default:
+			break;
+		}
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, attachment.textureWrap);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, attachment.textureWrap);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, attachment.textureWrap);
+		glTexParameteri(attachment.textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(attachment.textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(attachment.textureTarget, GL_TEXTURE_WRAP_R, attachment.textureWrap);
+		glTexParameteri(attachment.textureTarget, GL_TEXTURE_WRAP_S, attachment.textureWrap);
+		glTexParameteri(attachment.textureTarget, GL_TEXTURE_WRAP_T, attachment.textureWrap);
 
-		glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentType, GL_TEXTURE_2D, attachment.attachmentID, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, attachmentType, attachment.attachmentID, 0);
 	}
 
 	void Framebuffer::Dispose()
@@ -236,6 +246,9 @@ namespace Slayer {
 		{
 			glDrawBuffer(GL_NONE);
 		}
+
+		// Check if framebuffer is complete
+		SL_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

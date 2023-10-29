@@ -96,7 +96,10 @@ def load_shader(path: str) -> tuple:
         base_path, data["vs"]), mode="r", encoding="utf8").read() + "\0"
     fs_src = open(os.path.join(
         base_path, data["fs"]), mode="r", encoding="utf8").read() + "\0"
-    return vs_src, fs_src
+    gs_src = open(os.path.join(
+        base_path, data["gs"]), mode="r", encoding="utf8").read() + "\0" if "gs" in data else ""
+
+    return vs_src, fs_src, gs_src
 
 
 def load_compute_shader(path: str) -> tuple:

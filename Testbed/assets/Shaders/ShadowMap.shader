@@ -1,1 +1,1 @@
-{"name": "ShadowMap", "vs": "ShadowMap.vs", "fs": "ShadowMap.fs"}
+{"name": "ShadowMap", "vs": "ShadowMap.vs", "fs": "ShadowMap.fs", "gs": "ShadowMap.gs"}

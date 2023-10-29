@@ -35,12 +35,14 @@ namespace Slayer
     {
         std::string vsSource = "";
         std::string fsSource = "";
+        std::string gsSource = "";
 
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
             SL_TRANSFER_VAR(vsSource);
             SL_TRANSFER_VAR(fsSource);
+            SL_TRANSFER_VAR(gsSource);
         }
     };
 

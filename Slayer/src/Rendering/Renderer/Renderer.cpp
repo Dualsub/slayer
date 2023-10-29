@@ -16,7 +16,6 @@
 #include "glad/glad.h"
 #include "glm/gtc/matrix_transform.hpp"
 
-
 namespace Slayer
 {
 
@@ -54,7 +53,7 @@ namespace Slayer
 
 
 		// Camera
-		m_cameraBuffer = UniformBuffer::Create(sizeof(CameraData), 0);
+		m_cameraBuffer = UniformBuffer::Create(sizeof(CameraData::Buffer), 0);
 
 		// Instance
 		m_instanceBuffer = UniformBuffer::Create(SL_MAX_INSTANCES * (sizeof(Mat4) + 4 * sizeof(int32_t)), 3);
@@ -106,13 +105,11 @@ namespace Slayer
 		);
 
 		colorAttachments = Vector<Attachment>();
-		depthAttachment = { AttachmentTarget::DEPTHCOMPONENT, TextureTarget::TEXTURE_2D, TextureWrap::CLAMP_TO_BORDER };
+		depthAttachment = { AttachmentTarget::DEPTHCOMPONENT, TextureTarget::TEXTURE_2D_ARRAY, TextureWrap::CLAMP_TO_BORDER, SL_SHADOW_CASCADES };
 		int shadowMapScale = 16;
 		m_shadowFramebuffer = Framebuffer::Create(colorAttachments, depthAttachment, shadowMapScale * 512, shadowMapScale * 512);
 		m_shadowShaderStatic = rm->GetAsset<Shader>("ShadowMap_static");
 		m_shadowShaderSkeletal = rm->GetAsset<Shader>("ShadowMap_skeletal");
-		m_lightProjection = glm::ortho(shadowMapScale * -20.0f, shadowMapScale * 20.0f, shadowMapScale * -20.0f, shadowMapScale * 20.0f, 5.0f, shadowMapScale * 200.0f);
-
 		Resize(-width / 2, -height / 2, width / 2, height / 2);
 	}
 
@@ -133,11 +130,12 @@ namespace Slayer
 	void Renderer::BeginScene()
 	{
 		SL_EVENT();
-		m_cameraBuffer->SetData((void*)&m_cameraData, sizeof(CameraData));
-		m_lightPos = -600.0f * glm::normalize(m_directionalLight.direction);
-		Mat4 lightView = glm::lookAt(m_lightPos, m_lightPos + Vec3(m_directionalLight.direction), Vec3(0.0f, 1.0f, 0.0f));
-		m_lightSpaceMatrix = m_lightProjection * lightView;
-		LightsData lightsData(m_directionalLight, {}, m_lightSpaceMatrix);
+		m_cameraBuffer->SetData((void*)&m_cameraData.buffer, sizeof(CameraData::Buffer));
+		// TODO: This should not be done every frame.
+		const auto& cascadeEnds = GetCascadeEnds(m_cameraData.nearPlane, m_cameraData.farPlane);
+		m_lightSpaceMatrices = CalculateLightSpaceMatrices(m_cameraData, Vec3(m_directionalLight.direction), cascadeEnds);
+
+		LightsData lightsData(m_directionalLight, {}, m_lightSpaceMatrices, cascadeEnds);
 		m_lightsBuffer->SetData((void*)&lightsData, sizeof(LightsData));
 
 		m_debugInfo.drawCalls = 0;
@@ -231,6 +229,121 @@ namespace Slayer
 							transform };
 		m_mainPass.Submit(job);
 		m_shadowPass.Submit(job);
+	}
+
+	Array<Vec4, 8> Renderer::GetFrustumCornersWorldSpace(const CameraData& cameraData, float nearPlane, float farPlane)
+	{
+		Mat4 proj = glm::perspective(glm::radians(cameraData.fov), cameraData.aspectRatio, nearPlane, farPlane);
+		Mat4 inv = glm::inverse(proj * cameraData.buffer.viewMatrix);
+		Array<Vec4, 8> corners;
+
+		for (uint32_t x = 0; x < 2; ++x)
+		{
+			for (uint32_t y = 0; y < 2; ++y)
+			{
+				for (uint32_t z = 0; z < 2; ++z)
+				{
+					const glm::vec4 pt =
+						inv * glm::vec4(
+							2.0f * x - 1.0f,
+							2.0f * y - 1.0f,
+							2.0f * z - 1.0f,
+							1.0f);
+					corners[x + y * 2 + z * 4] = pt / pt.w;
+				}
+			}
+		}
+
+		return corners;
+	}
+
+	Vec3 Renderer::GetCenterOfFrustum(const Array<Vec4, 8>& frustumCorners)
+	{
+		Vec3 center = Vec3(0.0f);
+		for (auto& corner : frustumCorners)
+		{
+			center += Vec3(corner);
+		}
+		return center / (float)frustumCorners.size();
+	}
+
+	Mat4 Renderer::GetLightProjection(const Array<Vec4, 8>& frustumCorners, const Mat4& lightView)
+	{
+		float minX = std::numeric_limits<float>::max();
+		float maxX = std::numeric_limits<float>::lowest();
+		float minY = std::numeric_limits<float>::max();
+		float maxY = std::numeric_limits<float>::lowest();
+		float minZ = std::numeric_limits<float>::max();
+		float maxZ = std::numeric_limits<float>::lowest();
+		for (const auto& v : frustumCorners)
+		{
+			const auto trf = lightView * v;
+			minX = std::min(minX, trf.x);
+			maxX = std::max(maxX, trf.x);
+			minY = std::min(minY, trf.y);
+			maxY = std::max(maxY, trf.y);
+			minZ = std::min(minZ, trf.z);
+			maxZ = std::max(maxZ, trf.z);
+		}
+
+		// Tune this parameter according to the scene
+		constexpr float zMult = 10.0f;
+		if (minZ < 0)
+		{
+			minZ *= zMult;
+		}
+		else
+		{
+			minZ /= zMult;
+		}
+		if (maxZ < 0)
+		{
+			maxZ /= zMult;
+		}
+		else
+		{
+			maxZ *= zMult;
+		}
+
+		return glm::ortho(minX, maxX, minY, maxY, minZ, maxZ);
+	}
+
+	Array<float, SL_SHADOW_CASCADES> Renderer::GetCascadeEnds(float near, float far)
+	{
+		Array<float, SL_SHADOW_CASCADES> ends;
+		const float cascadeSplitLambda = 0.95f;
+
+		for (uint32_t i = 0; i < SL_SHADOW_CASCADES - 1; i++)
+		{
+			float p = (i + 1) / (float)SL_SHADOW_CASCADES;
+			float log = near * std::pow(far / near, p);
+			float uniform = near + (far - near) * p;
+			float d = cascadeSplitLambda * (log - uniform) + uniform;
+			ends[i] = d;
+		}
+
+		ends[SL_SHADOW_CASCADES - 1] = far;
+
+		return ends;
+	}
+
+	Array<Mat4, SL_SHADOW_CASCADES> Renderer::CalculateLightSpaceMatrices(const CameraData& cameraData, const Vec3& lightDirection, const Array<float, SL_SHADOW_CASCADES>& cascadeEnds)
+	{
+		Array<Mat4, SL_SHADOW_CASCADES> lightSpaceMatrices;
+
+		for (uint32_t i = 0; i < SL_SHADOW_CASCADES; i++)
+		{
+			float nearPlane = i == 0 ? m_cameraData.nearPlane : cascadeEnds[i - 1];
+			float farPlane = cascadeEnds[i];
+
+			Array<Vec4, 8> frustumCorners = GetFrustumCornersWorldSpace(m_cameraData, nearPlane, farPlane);
+			Vec3 center = GetCenterOfFrustum(frustumCorners);
+			Mat4 lightView = glm::lookAt(center, center + lightDirection, Vec3(0.0f, 1.0f, 0.0f));
+			Mat4 lightProjection = GetLightProjection(frustumCorners, lightView);
+			lightSpaceMatrices[i] = lightProjection * lightView;
+		}
+
+		return lightSpaceMatrices;
 	}
 
 	void Renderer::BindMaterial(Shared<Material> material, Shared<Shader> shader)
@@ -486,7 +599,7 @@ namespace Slayer
 				Texture::BindTexture(m_environmentMap->GetIrradianceMapID(), 0, TextureTarget::TEXTURE_CUBE_MAP);
 				Texture::BindTexture(m_environmentMap->GetPrefilterMapID(), 1, TextureTarget::TEXTURE_CUBE_MAP);
 				Texture::BindTexture(m_environmentMap->GetBRDFTextureID(), 2, TextureTarget::TEXTURE_2D);
-				Texture::BindTexture(m_shadowFramebuffer->GetDepthAttachmentID(), 3, TextureTarget::TEXTURE_2D);
+				Texture::BindTexture(m_shadowFramebuffer->GetDepthAttachmentID(), 3, TextureTarget::TEXTURE_2D_ARRAY);
 
 				currentShader->SetUniform("boneTransformTex", 12);
 				m_boneTransformTexture->Bind();
@@ -563,9 +676,9 @@ namespace Slayer
 		m_shaderSkeletal->Dispose();
 	}
 
-	void Renderer::SetCameraData(const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position)
+	void Renderer::SetCameraData(float nearPlane, float farPlane, float fov, float aspectRatio, const Mat4& projectionMatrix, const Mat4& viewMatrix, const Vec3& position)
 	{
-		m_cameraData.Set(projectionMatrix, viewMatrix, position);
+		m_cameraData.Set(nearPlane, farPlane, fov, aspectRatio, projectionMatrix, viewMatrix, position);
 	}
 
 	void Renderer::SetDirectionalLight(const Vec3& orientation, const Vec3& color)

@@ -31,6 +31,7 @@ namespace Slayer {
 		AttachmentTarget attachmentTarget = AttachmentTarget::TARGET_NONE;
 		TextureTarget textureTarget = TextureTarget::TYPE_NONE;
 		TextureWrap textureWrap = TextureWrap::WRAP_NONE;
+		uint32_t depth = 1;
 		bool generateMips = false;
 		Attachment() = default;
 		Attachment(AttachmentTarget attachmentTarget)
@@ -40,13 +41,13 @@ namespace Slayer {
 			textureWrap = TextureWrap::CLAMP_TO_EDGE;
 		}
 
-		Attachment(AttachmentTarget attachmentTarget, TextureTarget textureTarget, TextureWrap textureWrap)
-			: attachmentTarget(attachmentTarget), textureTarget(textureTarget), textureWrap(textureWrap)
+		Attachment(AttachmentTarget attachmentTarget, TextureTarget textureTarget, TextureWrap textureWrap, uint32_t depth = 1, bool generateMips = false)
+			: attachmentTarget(attachmentTarget), textureTarget(textureTarget), textureWrap(textureWrap), depth(depth), generateMips(generateMips)
 		{
 		}
 
-		Attachment(unsigned int attachmentID, AttachmentTarget attachmentTarget, TextureTarget textureTarget, TextureWrap textureWrap, bool generateMips = false)
-			: attachmentID(attachmentID), attachmentTarget(attachmentTarget), textureTarget(textureTarget), textureWrap(textureWrap), generateMips(generateMips)
+		Attachment(unsigned int attachmentID, AttachmentTarget attachmentTarget, TextureTarget textureTarget, TextureWrap textureWrap, uint32_t depth = 1, bool generateMips = false)
+			: attachmentID(attachmentID), attachmentTarget(attachmentTarget), textureTarget(textureTarget), textureWrap(textureWrap), depth(depth), generateMips(generateMips)
 		{
 		}
 	};

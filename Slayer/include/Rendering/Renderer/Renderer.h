@@ -16,8 +16,6 @@
 #define SL_MAX_INSTANCES 128
 #define SL_MAX_SKELETONS 4
 #define SL_MAX_ANIMATIONS 16
-#define SL_SHADOW_CASCADES 4
-#define SL_SHADOW_CASCADE_SPLITS SL_SHADOW_CASCADES - 1
 
 namespace Slayer {
 
@@ -172,7 +170,7 @@ namespace Slayer {
 			if (job.animationState != nullptr)
 			{
 				animationStates.push_back(*job.animationState);
-				batch->Add(animationStates.size() - 1, job);
+				batch->Add(animationStates.size() - size_t(1), job);
 			}
 			else
 			{
@@ -328,7 +326,6 @@ namespace Slayer {
 		Shared<Framebuffer> m_shadowFramebuffer;
 		Shared<Shader> m_shadowShaderStatic;
 		Shared<Shader> m_shadowShaderSkeletal;
-		Array<float, SL_SHADOW_CASCADE_SPLITS> m_shadowCascadeSplits;
 		ShadowInfo m_shadowInfo;
 
 		// Lights
@@ -357,8 +354,8 @@ namespace Slayer {
 		Array<Vec4, 8> GetFrustumCornersWorldSpace(const CameraData& cameraData, float nearPlane, float farPlane);
 		Vec3 GetCenterOfFrustum(const Array<Vec4, 8>& frustumCorners);
 		Mat4 GetLightProjection(const Array<Vec4, 8>& frustumCorners, const Mat4& lightView);
-		Array<float, SL_SHADOW_CASCADE_SPLITS> GetShadowSplits(float near, float far);
-		Array<Mat4, SL_SHADOW_CASCADES> CalculateLightSpaceMatrices(const CameraData& cameraData, const Vec3& lightDirection);
+		Array<float, SL_SHADOW_CASCADES> GetCascadeEnds(float near, float far);
+		Array<Mat4, SL_SHADOW_CASCADES> CalculateLightSpaceMatrices(const CameraData& cameraData, const Vec3& lightDirection, const Array<float, SL_SHADOW_CASCADES>& cascadeEnds);
 
 		void BindMaterial(Shared<Material> material, Shared<Shader> shader);
 		void BindInstanceBuffer(const FixedVector<int32_t, SL_MAX_INSTANCES>& animInstanceIds, const FixedVector<Mat4, SL_MAX_INSTANCES>& transforms);

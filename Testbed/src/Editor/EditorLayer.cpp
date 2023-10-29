@@ -310,7 +310,7 @@ namespace Slayer::Editor {
         }
 
         auto& window = Application::Get()->GetWindow();
-        m_camera.SetProjectionMatrix(45.0f, (float)window.GetWidth(), (float)window.GetHeight(), 5.0f, 2000.0f);
+        m_camera.SetProjectionMatrix(45.0f, (float)window.GetWidth(), (float)window.GetHeight(), 5.0f, 10000.0f);
     }
 
     void EditorLayer::OnDetach()
@@ -331,9 +331,16 @@ namespace Slayer::Editor {
             m_camera.SetFirstMouse(true);
         }
 
-
         auto* renderer = Renderer::Get();
-        renderer->SetCameraData(m_camera.GetProjectionMatrix(), m_camera.GetViewMatrix(), m_camera.GetPosition());
+        renderer->SetCameraData(
+            m_camera.GetNearPlane(),
+            m_camera.GetFarPlane(),
+            m_camera.GetFov(),
+            m_camera.GetAspectRatio(),
+            m_camera.GetProjectionMatrix(),
+            m_camera.GetViewMatrix(),
+            m_camera.GetPosition()
+        );
 
         if (!m_loadingScene)
             return;

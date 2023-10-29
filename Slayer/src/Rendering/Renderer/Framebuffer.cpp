@@ -175,7 +175,7 @@ namespace Slayer {
 		glTexParameteri(attachment.textureTarget, GL_TEXTURE_WRAP_S, attachment.textureWrap);
 		glTexParameteri(attachment.textureTarget, GL_TEXTURE_WRAP_T, attachment.textureWrap);
 
-		glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentType, attachment.textureTarget, attachment.attachmentID, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, attachmentType, attachment.attachmentID, 0);
 	}
 
 	void Framebuffer::Dispose()
@@ -246,6 +246,9 @@ namespace Slayer {
 		{
 			glDrawBuffer(GL_NONE);
 		}
+
+		// Check if framebuffer is complete
+		SL_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

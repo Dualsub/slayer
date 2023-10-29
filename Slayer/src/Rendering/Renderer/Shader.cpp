@@ -16,13 +16,6 @@ namespace Slayer
 
     Shader::~Shader()
     {
-        glDetachShader(programID, vertexShaderID);
-        glDeleteShader(vertexShaderID);
-
-        glDetachShader(programID, fragmentShaderID);
-        glDeleteShader(fragmentShaderID);
-
-        glDeleteProgram(programID);
     }
 
     int Shader::CompileShader(const std::string& source, unsigned int type)
@@ -240,6 +233,13 @@ namespace Slayer
 
     void Shader::Dispose()
     {
+        glDetachShader(programID, vertexShaderID);
+        glDeleteShader(vertexShaderID);
+
+        glDetachShader(programID, fragmentShaderID);
+        glDeleteShader(fragmentShaderID);
+
+        glDeleteProgram(programID);
     }
 
     Shared<Shader> Shader::LoadShader(const std::string& vs, const std::string& fs, const std::string& gs)
@@ -255,11 +255,6 @@ namespace Slayer
             glAttachShader(programID, gsID);
 
         glLinkProgram(programID);
-
-        if (vs.find("Skeletal VS") != std::string::npos)
-        {
-            std::cout << vs << std::endl;
-        }
 
         GLint linkSuccess;
         glGetProgramiv(programID, GL_LINK_STATUS, &linkSuccess);

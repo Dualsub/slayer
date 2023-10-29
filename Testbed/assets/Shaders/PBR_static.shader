@@ -1,1 +1,1 @@
-{"name": "PBR_static", "vs": "PBR_shadows_static.vs", "fs": "PBR_shadows_static.fs"}
+{"name": "PBR_static", "vs": "PBR_shadows_static.vs", "fs": "PBR_shadows.fs"}

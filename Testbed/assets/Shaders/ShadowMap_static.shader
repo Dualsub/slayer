@@ -1,1 +1,1 @@
-{"name":"ShadowMap_static", "vs": "ShadowMap_static.vs", "fs": "ShadowMap.fs"}
+{"name":"ShadowMap_static", "vs": "ShadowMap_static.vs", "fs": "ShadowMap.fs", "gs": "ShadowMap.gs" }

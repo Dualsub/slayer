@@ -16,7 +16,6 @@
 #include "glad/glad.h"
 #include "glm/gtc/matrix_transform.hpp"
 
-
 namespace Slayer
 {
 
@@ -106,7 +105,7 @@ namespace Slayer
 		);
 
 		colorAttachments = Vector<Attachment>();
-		depthAttachment = { AttachmentTarget::DEPTHCOMPONENT, TextureTarget::TEXTURE_2D, TextureWrap::CLAMP_TO_BORDER };
+		depthAttachment = { AttachmentTarget::DEPTHCOMPONENT, TextureTarget::TEXTURE_2D_ARRAY, TextureWrap::CLAMP_TO_BORDER, SL_SHADOW_CASCADES };
 		int shadowMapScale = 16;
 		m_shadowFramebuffer = Framebuffer::Create(colorAttachments, depthAttachment, shadowMapScale * 512, shadowMapScale * 512);
 		m_shadowShaderStatic = rm->GetAsset<Shader>("ShadowMap_static");
@@ -132,11 +131,11 @@ namespace Slayer
 	{
 		SL_EVENT();
 		m_cameraBuffer->SetData((void*)&m_cameraData.buffer, sizeof(CameraData::Buffer));
+		// TODO: This should not be done every frame.
+		const auto& cascadeEnds = GetCascadeEnds(m_cameraData.nearPlane, m_cameraData.farPlane);
+		m_lightSpaceMatrices = CalculateLightSpaceMatrices(m_cameraData, Vec3(m_directionalLight.direction), cascadeEnds);
 
-		m_lightSpaceMatrices = CalculateLightSpaceMatrices(m_cameraData, Vec3(m_directionalLight.direction));
-		m_lightSpaceMatrix = m_lightSpaceMatrices[m_shadowCascadeIndex];
-
-		LightsData lightsData(m_directionalLight, {}, m_lightSpaceMatrix);
+		LightsData lightsData(m_directionalLight, {}, m_lightSpaceMatrices, cascadeEnds);
 		m_lightsBuffer->SetData((void*)&lightsData, sizeof(LightsData));
 
 		m_debugInfo.drawCalls = 0;
@@ -288,7 +287,7 @@ namespace Slayer
 		}
 
 		// Tune this parameter according to the scene
-		constexpr float zMult = 1.0f;
+		constexpr float zMult = 10.0f;
 		if (minZ < 0)
 		{
 			minZ *= zMult;
@@ -309,28 +308,33 @@ namespace Slayer
 		return glm::ortho(minX, maxX, minY, maxY, minZ, maxZ);
 	}
 
-	Array<float, SL_SHADOW_CASCADE_SPLITS> Renderer::GetShadowSplits(float near, float far)
+	Array<float, SL_SHADOW_CASCADES> Renderer::GetCascadeEnds(float near, float far)
 	{
-		// SL_SHADOW_CASCADE_SPLITS is the number of splits between near and far, one less than the number of cascades.
-		Array<float, SL_SHADOW_CASCADE_SPLITS> splits;
+		Array<float, SL_SHADOW_CASCADES> ends;
+		const float cascadeSplitLambda = 0.95f;
 
-		for (uint32_t i = 0; i < SL_SHADOW_CASCADE_SPLITS; i++)
+		for (uint32_t i = 0; i < SL_SHADOW_CASCADES - 1; i++)
 		{
-			splits[i] = near + ((far - near) * (i + 1) / (float)SL_SHADOW_CASCADES);
+			float p = (i + 1) / (float)SL_SHADOW_CASCADES;
+			float log = near * std::pow(far / near, p);
+			float uniform = near + (far - near) * p;
+			float d = cascadeSplitLambda * (log - uniform) + uniform;
+			ends[i] = d;
 		}
 
-		return splits;
+		ends[SL_SHADOW_CASCADES - 1] = far;
+
+		return ends;
 	}
 
-	Array<Mat4, SL_SHADOW_CASCADES> Renderer::CalculateLightSpaceMatrices(const CameraData& cameraData, const Vec3& lightDirection)
+	Array<Mat4, SL_SHADOW_CASCADES> Renderer::CalculateLightSpaceMatrices(const CameraData& cameraData, const Vec3& lightDirection, const Array<float, SL_SHADOW_CASCADES>& cascadeEnds)
 	{
-		Array<float, SL_SHADOW_CASCADE_SPLITS> splits = GetShadowSplits(m_cameraData.nearPlane, m_cameraData.farPlane);
 		Array<Mat4, SL_SHADOW_CASCADES> lightSpaceMatrices;
 
 		for (uint32_t i = 0; i < SL_SHADOW_CASCADES; i++)
 		{
-			float nearPlane = i == 0 ? m_cameraData.nearPlane : splits[i - 1];
-			float farPlane = i == SL_SHADOW_CASCADES - 1 ? m_cameraData.farPlane : splits[i];
+			float nearPlane = i == 0 ? m_cameraData.nearPlane : cascadeEnds[i - 1];
+			float farPlane = cascadeEnds[i];
 
 			Array<Vec4, 8> frustumCorners = GetFrustumCornersWorldSpace(m_cameraData, nearPlane, farPlane);
 			Vec3 center = GetCenterOfFrustum(frustumCorners);
@@ -595,7 +599,7 @@ namespace Slayer
 				Texture::BindTexture(m_environmentMap->GetIrradianceMapID(), 0, TextureTarget::TEXTURE_CUBE_MAP);
 				Texture::BindTexture(m_environmentMap->GetPrefilterMapID(), 1, TextureTarget::TEXTURE_CUBE_MAP);
 				Texture::BindTexture(m_environmentMap->GetBRDFTextureID(), 2, TextureTarget::TEXTURE_2D);
-				Texture::BindTexture(m_shadowFramebuffer->GetDepthAttachmentID(), 3, TextureTarget::TEXTURE_2D);
+				Texture::BindTexture(m_shadowFramebuffer->GetDepthAttachmentID(), 3, TextureTarget::TEXTURE_2D_ARRAY);
 
 				currentShader->SetUniform("boneTransformTex", 12);
 				m_boneTransformTexture->Bind();

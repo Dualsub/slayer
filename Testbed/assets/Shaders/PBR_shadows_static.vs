@@ -15,10 +15,14 @@ out VertexOutput
 
 out vec3 viewPos;
 
-layout(std140, binding = 3) uniform Instance {
-    mat4 transformMatrices[MAX_INSTANCES];
-    int animInstanceIDs[MAX_INSTANCES];
+struct InstanceData {
+    mat4 transformMatrix;
+    int animInstanceID;
 };
+
+layout(std430, binding = 3) buffer Instance {
+    InstanceData instances[];
+}; 
 
 layout(std140, binding = 0) uniform Camera { 
     mat4 projectionMatrix;
@@ -28,7 +32,8 @@ layout(std140, binding = 0) uniform Camera {
 
 void main()
 {
-    mat4 transformMatrix = transformMatrices[gl_InstanceID];
+    InstanceData instance = instances[gl_InstanceID];
+    mat4 transformMatrix = instance.transformMatrix;
 	vs_Output.TexCoord = aTexCoord;
 	vs_Output.Normal = mat3(transformMatrix) * aNormal;
     vs_Output.WorldPosition = vec3(transformMatrix * vec4(aPos, 1.0));

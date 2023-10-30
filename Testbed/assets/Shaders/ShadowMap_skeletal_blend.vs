@@ -13,15 +13,14 @@ layout (location = 4) in vec4 aWeights;
 
 uniform mat4 lightSpaceMatrix;
 
-struct AnimationState {
-    ivec2 frames;
-    float time;
+struct InstanceData {
+    mat4 transformMatrix;
+    int animInstanceID;
 };
 
-layout(std140, binding = 3) uniform Instance {
-    mat4 transformMatrices[MAX_INSTANCES];
-    int animInstanceIDs[MAX_INSTANCES];
-};
+layout(std430, binding = 3) buffer Instance {
+    InstanceData instances[];
+}; 
 
 layout(std140, binding = 2) uniform Bones { 
     mat4 invBindPose[MAX_BONES];
@@ -44,7 +43,8 @@ mat4 GetPose(int boneID, int instanceID) {
 
 void main()
 {
-    int animInstanceID = animInstanceIDs[gl_InstanceID];
+    InstanceData instance = instances[gl_InstanceID];
+    int animInstanceID = instance.animInstanceID;
     mat4 boneMatrix = mat4(0.0);
     for (int i = 0; i < MAX_WEIGHTS; i++) {
 		int boneID = aBoneIDs[i];
@@ -56,6 +56,5 @@ void main()
 		boneMatrix += GetPose(boneID, animInstanceID) * aWeights[i];
 	}
 
-    mat4 transformMatrix = transformMatrices[gl_InstanceID];
-    gl_Position = transformMatrix * boneMatrix * vec4(aPos, 1.0);
+    gl_Position = instance.transformMatrix * boneMatrix * vec4(aPos, 1.0);
 }

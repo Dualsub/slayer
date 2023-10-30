@@ -236,6 +236,21 @@ namespace Slayer {
 		}
 	};
 
+	struct InstanceData
+	{
+		Mat4 transform;
+		int32_t animInstanceId = -1;
+		int32_t padding[3] = { 0 };
+
+		InstanceData(const Mat4& transform, int32_t animInstanceId)
+			: transform(transform), animInstanceId(animInstanceId)
+		{
+		}
+
+		InstanceData() = default;
+		~InstanceData() = default;
+	};
+
 	struct CameraData
 	{
 		float nearPlane = 0.1f;
@@ -307,7 +322,7 @@ namespace Slayer {
 		Shared<UniformBuffer> m_cameraBuffer;
 
 		Shared<UniformBuffer> m_boneBuffer;
-		Shared<UniformBuffer> m_instanceBuffer;
+		Shared<ShaderStorageBuffer> m_instanceBuffer;
 		Shared<UniformBuffer> m_lightsBuffer;
 
 		// Lines

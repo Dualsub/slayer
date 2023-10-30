@@ -6,13 +6,17 @@ layout (location = 0) in vec3 aPos;
 
 uniform mat4 lightSpaceMatrix;
 
-layout(std140, binding = 3) uniform Instance {
-    mat4 transformMatrices[MAX_INSTANCES];
-    int animInstanceIDs[MAX_INSTANCES];
+struct InstanceData {
+    mat4 transformMatrix;
+    int animInstanceID;
 };
+
+layout(std430, binding = 3) buffer Instance {
+    InstanceData instances[];
+}; 
 
 void main()
 {
-    mat4 transformMatrix = transformMatrices[gl_InstanceID];
-    gl_Position = transformMatrix * vec4(aPos, 1.0);
+    InstanceData instance = instances[gl_InstanceID];
+    gl_Position = instance.transformMatrix * vec4(aPos, 1.0);
 }

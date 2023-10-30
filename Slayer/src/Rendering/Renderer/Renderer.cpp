@@ -56,7 +56,7 @@ namespace Slayer
 		m_cameraBuffer = UniformBuffer::Create(sizeof(CameraData::Buffer), 0);
 
 		// Instance
-		m_instanceBuffer = UniformBuffer::Create(SL_MAX_INSTANCES * (sizeof(Mat4) + 4 * sizeof(int32_t)), 3);
+		m_instanceBuffer = ShaderStorageBuffer::Create(SL_MAX_INSTANCES * sizeof(InstanceData), 3);
 
 		// Animation
 		m_animationBuffer = UniformBuffer::Create((SL_MAX_INSTANCES * sizeof(AnimationBuffer)) + (SL_MAX_SKELETONS * SL_MAX_BONES * sizeof(int32_t) * 4), 4);
@@ -106,8 +106,8 @@ namespace Slayer
 
 		colorAttachments = Vector<Attachment>();
 		depthAttachment = { AttachmentTarget::DEPTHCOMPONENT, TextureTarget::TEXTURE_2D_ARRAY, TextureWrap::CLAMP_TO_BORDER, SL_SHADOW_CASCADES };
-		int shadowMapScale = 16;
-		m_shadowFramebuffer = Framebuffer::Create(colorAttachments, depthAttachment, shadowMapScale * 512, shadowMapScale * 512);
+		const int32_t shadowMapResolution = 512 * 8;
+		m_shadowFramebuffer = Framebuffer::Create(colorAttachments, depthAttachment, shadowMapResolution, shadowMapResolution);
 		m_shadowShaderStatic = rm->GetAsset<Shader>("ShadowMap_static");
 		m_shadowShaderSkeletal = rm->GetAsset<Shader>("ShadowMap_skeletal");
 		Resize(-width / 2, -height / 2, width / 2, height / 2);
@@ -480,7 +480,7 @@ namespace Slayer
 
 		{
 			SL_EVENT("Compute Shader Dispatch");
-			m_animationShader->Dispatch(SL_MAX_BONES, SL_MAX_INSTANCES, 1);
+			m_animationShader->Dispatch(SL_MAX_BONES, m_mainPass.animationStates.size(), 1);
 			m_animationShader->MemoryBarrier(MemoryBarrierBits::SL_IMAGE_ACCESS);
 		}
 
@@ -512,18 +512,16 @@ namespace Slayer
 
 	void Renderer::BindInstanceBuffer(const FixedVector<int32_t, SL_MAX_INSTANCES>& animInstanceIds, const FixedVector<Mat4, SL_MAX_INSTANCES>& transforms)
 	{
-		const size_t transformsSize = SL_MAX_INSTANCES * sizeof(Mat4);
 		m_instanceBuffer->Bind();
-		m_instanceBuffer->SetSubData(transforms.Data(), transformsSize);
 
-		int32_t animInstanceIdsArray[SL_MAX_INSTANCES * 4]; // We create the array with 12 bytes of padding per instance. :/
-		std::memset(animInstanceIdsArray, -1, sizeof(int32_t) * SL_MAX_INSTANCES * 4);
-		for (size_t i = 0; i < animInstanceIds.Size(); i++)
+		InstanceData instanceData[SL_MAX_INSTANCES];
+		for (size_t i = 0; i < transforms.Size(); i++)
 		{
-			animInstanceIdsArray[i * 4] = animInstanceIds[i];
+			int32_t animInstanceId = animInstanceIds.Size() > i ? animInstanceIds[i] : -1;
+			instanceData[i] = { transforms[i], animInstanceId };
 		}
+		m_instanceBuffer->SetSubData(instanceData, transforms.Size() * sizeof(InstanceData));
 
-		m_instanceBuffer->SetSubData(animInstanceIdsArray, sizeof(int32_t) * SL_MAX_INSTANCES * 4, transformsSize);
 		m_instanceBuffer->Unbind();
 	}
 

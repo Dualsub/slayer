@@ -66,4 +66,5 @@ target_link_libraries(Slayer PUBLIC
     yaml-cpp
     optick
     stb_image
+    Jolt
 )

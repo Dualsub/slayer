@@ -94,6 +94,14 @@ namespace Slayer
         }
     };
 
+
+    struct ArchetypeTransition
+    {
+        Entity entity;
+        Archetype oldArchetype;
+        Archetype newArchetype;
+    };
+
     class ComponentStore
     {
     public:
@@ -108,7 +116,7 @@ namespace Slayer
         using ComponentDict = DictHash<ComponentType, ComponentRecord, std::hash<ComponentType>>;
         using SingletonDict = DictHash<ComponentType, Shared<SingletonComponent>, std::hash<ComponentType>>;
     private:
-        Entity entityIndex = 0;
+        Entity m_entityIndex = 0;
 
         // Stores the what component types are associated with each entity
         DictHash<Entity, Archetype, EntityHash> m_entityComponentIndexMap;
@@ -119,7 +127,10 @@ namespace Slayer
         ComponentDict m_components;
         SingletonDict m_singletons;
 
-        inline void UpdateArachtype(Entity entity, Archetype oldArchetype, Archetype newArchetype)
+        // Stores the transition of entities from one archetype to another
+        Vector<ArchetypeTransition> m_archetypeTransitions;
+
+        inline void UpdateArchetype(Entity entity, Archetype oldArchetype, Archetype newArchetype)
         {
             if (m_archetypeEntityMap.find(oldArchetype) != m_archetypeEntityMap.end())
             {
@@ -128,6 +139,7 @@ namespace Slayer
 
             m_archetypeEntityMap[newArchetype].insert(entity);
             m_entityComponentIndexMap[entity] = newArchetype;
+            m_archetypeTransitions.push_back({ entity, oldArchetype, newArchetype });
         }
 
 
@@ -137,7 +149,7 @@ namespace Slayer
         {
             SL_ASSERT(m_entityComponentIndexMap.size() < SL_MAX_ENTITIES && "Too many entities.");
 
-            Entity entity = entityIndex++;
+            Entity entity = m_entityIndex++;
 
             EntityID component;
             component.id = GenerateAssetID();
@@ -150,7 +162,7 @@ namespace Slayer
         {
             SL_ASSERT(m_entityComponentIndexMap.size() < SL_MAX_ENTITIES && "Too many entities.");
 
-            Entity entity = entityIndex++;
+            Entity entity = m_entityIndex++;
 
             EntityID component;
             component.id = id;
@@ -163,7 +175,7 @@ namespace Slayer
         {
             SL_ASSERT(m_entityComponentIndexMap.size() < SL_MAX_ENTITIES && "Too many entities.");
 
-            Entity entity = entityIndex++;
+            Entity entity = m_entityIndex++;
 
             return entity;
         }
@@ -175,9 +187,12 @@ namespace Slayer
                 componentRecord.componentArray->RemoveEntity(entity);
             }
 
-            m_archetypeEntityMap[m_entityComponentIndexMap[entity]].erase(entity);
+            const Archetype archetype = m_entityComponentIndexMap[entity];
+            m_archetypeEntityMap[archetype].erase(entity);
             m_entityComponentIndexMap.erase(entity);
             m_entityIdMap.erase(entity);
+            //TODO: The entity will be deleted before the transition is processed
+            m_archetypeTransitions.push_back({ entity, archetype, 0 });
         }
 
         // TODO: Optimize to add components directly to the new entity
@@ -258,7 +273,7 @@ namespace Slayer
             GetComponentArray<C>()->InsertData(entity, component);
             Archetype oldArch = m_entityComponentIndexMap[entity];
             Archetype newArch = oldArch | (uint64_t(1) << uint64_t(m_components[HashType<C>()].bitIndex));
-            UpdateArachtype(entity, oldArch, newArch);
+            UpdateArchetype(entity, oldArch, newArch);
         }
 
         template <>
@@ -269,7 +284,7 @@ namespace Slayer
             GetComponentArray<EntityID>()->InsertData(entity, component);
             Archetype oldArch = m_entityComponentIndexMap[entity];
             Archetype newArch = oldArch | (uint64_t(1) << uint64_t(m_components[HashType<EntityID>()].bitIndex));
-            UpdateArachtype(entity, oldArch, newArch);
+            UpdateArchetype(entity, oldArch, newArch);
         }
 
         template <typename C>
@@ -278,7 +293,7 @@ namespace Slayer
             GetComponentArray<C>()->RemoveEntity(entity);
             Archetype oldArch = m_entityComponentIndexMap[entity];
             Archetype newArch = oldArch & ~(1 << m_components[HashType<C>()].bitIndex);
-            UpdateArachtype(entity, oldArch, newArch);
+            UpdateArchetype(entity, oldArch, newArch);
         }
 
         template <typename T>
@@ -474,6 +489,38 @@ namespace Slayer
             {
                 m_singletons.erase(typeHash);
             }
+        }
+
+        template<typename... Ts>
+        void ForTransitionTo(auto&& func)
+        {
+            for (auto& transition : m_archetypeTransitions)
+            {
+                const Archetype archetype = GetArchetype<Ts...>();
+                if ((archetype & transition.newArchetype) == archetype && (archetype & transition.oldArchetype) != archetype)
+                {
+                    func(transition.entity, GetComponent<Ts>(transition.entity)...);
+                }
+            }
+        }
+
+        // DISCLAMER: The entity could be deleted before the function is called.
+        template<typename... Ts>
+        void ForTransitionFrom(auto&& func)
+        {
+            for (auto& transition : m_archetypeTransitions)
+            {
+                const Archetype archetype = GetArchetype<Ts...>();
+                if ((archetype & transition.oldArchetype) == archetype && (archetype & transition.newArchetype) != archetype)
+                {
+                    func(transition.entity, GetComponent<Ts>(transition.entity)...);
+                }
+            }
+        }
+
+        void ClearTransitions()
+        {
+            m_archetypeTransitions.clear();
         }
 
         template<typename Serializer>

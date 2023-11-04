@@ -405,6 +405,7 @@ namespace Slayer {
 		void Skin();
 		void DrawShadows();
 		void DrawLines();
+		void DrawMain();
 		void Draw();
 		void EndScene();
 		void CleanUp();

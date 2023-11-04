@@ -22,6 +22,8 @@
 #include "Serialization/SceneSerializer.h"
 #include "Serialization/YamlSerializer.h"
 
+#include "Physics/PhysicsSystem.h"
+
 #include "Editor/EditorLayer.h"
 #include "SandboxCamera.h"
 
@@ -51,6 +53,11 @@ namespace Testbed
         }
 
         virtual void OnDetach()
+        {
+
+        }
+
+        virtual void OnFixedUpdate(Slayer::Timespan ts)
         {
 
         }
@@ -93,6 +100,7 @@ namespace Testbed
         Slayer::RenderingSystem m_renderingSystem;
         Slayer::AnimationSystem m_animationSystem;
         Slayer::TransformSystem m_transformSystem;
+        Slayer::PhysicsSystem m_physicsSystem;
 
         template<typename T>
         bool LoadScene(std::future<T>& future)
@@ -139,6 +147,14 @@ namespace Testbed
 
             PushLayer<class TestbedLayer>();
             PushLayer<Slayer::Editor::EditorLayer>(assetPath);
+        }
+
+        virtual void OnFixedUpdate(Slayer::Timespan ts) override
+        {
+            if (m_state != AS_Running)
+                return;
+
+            m_physicsSystem.Update(ts, m_world.GetStore());
         }
 
         virtual void OnUpdate(Slayer::Timespan ts) override
@@ -194,10 +210,10 @@ namespace Testbed
             m_renderer.BeginScene();
 
             m_renderingSystem.Render(m_renderer, m_world.GetStore());
+            m_physicsSystem.Render(m_renderer, m_world.GetStore());
 
-            m_renderer.DrawShadows();
             m_renderer.Draw();
-            // m_renderer.DrawLines();
+
             m_renderer.EndScene();
         }
 

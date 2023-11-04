@@ -15,7 +15,11 @@
     Slayer::SkeletalRenderer, \
     Slayer::SkeletalSockets, \
     Slayer::SocketAttacher, \
-    Slayer::AnimationPlayer
+    Slayer::AnimationPlayer, \
+    Slayer::RigidBody, \
+    Slayer::BoxCollider, \
+    Slayer::SphereCollider, \
+    Slayer::CapsuleCollider
 
 #define ENGINE_SINGLETONS \
     Slayer::DirectionalLight, \
@@ -258,6 +262,76 @@ namespace Slayer {
         void Transfer(Serializer& serializer)
         {
             SL_TRANSFER_VEC_FIXED(animationClips, SL_MAX_BLEND_ANIMATIONS);
+        }
+    };
+
+    struct RigidBody
+    {
+        float mass = 1.0f;
+
+        RigidBody() = default;
+        ~RigidBody() = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(mass);
+        }
+    };
+
+    struct BoxCollider
+    {
+        Vec3 halfExtents = Vec3(1.0f);
+
+        BoxCollider() = default;
+        BoxCollider(const Vec3& halfExtents) :
+            halfExtents(halfExtents)
+        {
+        }
+        ~BoxCollider() = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(halfExtents);
+        }
+    };
+
+    struct SphereCollider
+    {
+        float radius = 1.0f;
+
+        SphereCollider() = default;
+        SphereCollider(float radius) :
+            radius(radius)
+        {
+        }
+        ~SphereCollider() = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(radius);
+        }
+    };
+
+    struct CapsuleCollider
+    {
+        float radius = 1.0f;
+        float halfHeight = 1.0f;
+
+        CapsuleCollider() = default;
+        CapsuleCollider(float radius, float halfHeight) :
+            radius(radius), halfHeight(halfHeight)
+        {
+        }
+        ~CapsuleCollider() = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(radius);
+            SL_TRANSFER_VAR(halfHeight);
         }
     };
 

@@ -16,24 +16,6 @@ namespace Slayer::Editor {
 
     namespace Panels {
 
-        void ShadowMapPanel()
-        {
-            ImGui::Begin("Shadow Map Viewer");
-
-            auto* renderer = Renderer::Get();
-            if (!renderer || !renderer->GetShadowFramebuffer())
-            {
-                ImGui::End();
-                return;
-            }
-
-            auto shadowMapId = renderer->GetShadowFramebuffer()->GetDepthAttachmentID();
-            uint32_t size = std::min(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
-            ImGui::Image((ImTextureID)shadowMapId, ImVec2(size, size), ImVec2(0, 1), ImVec2(1, 0));
-
-            ImGui::End();
-        }
-
         void RenderMenuBar(auto&& saveScene = []() {}, auto&& loadScene = []() {})
         {
             if (ImGui::BeginMenuBar())
@@ -501,7 +483,6 @@ namespace Slayer::Editor {
             Panels::RenderMenuBar(saveScene, loadScene);
             Panels::RenderScenePanel(m_selection);
             Panels::RenderInspectorPanel(m_propertySerializer, m_selection);
-            Panels::ShadowMapPanel();
 
             ImGui::End();
         }

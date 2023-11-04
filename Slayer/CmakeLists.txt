@@ -17,6 +17,9 @@ set(SLAYER_SRC
     src/Core/Window.cpp
     src/Core/Singleton.cpp
 
+    src/Physics/PhysicsWorld.cpp
+    src/Physics/PhysicsSystem.cpp
+
     src/Rendering/RenderingManager.cpp
     src/Rendering/Renderer/Texture.cpp
     src/Rendering/Renderer/Mesh.cpp

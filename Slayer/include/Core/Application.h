@@ -25,6 +25,9 @@ namespace Slayer
         std::chrono::steady_clock::time_point m_lastFrameTime = std::chrono::high_resolution_clock::now();
         Timespan m_deltaTime = 0.0f;
 
+        std::chrono::steady_clock::time_point m_lastFixedTime = std::chrono::high_resolution_clock::now();
+        const Timespan m_fixedDeltaTime = 1 / 60.0f;
+
         Window m_window;
     public:
 
@@ -52,6 +55,7 @@ namespace Slayer
         virtual void OnPreInitialize() = 0;
         virtual void OnInitialize() = 0;
         virtual void OnUpdate(Timespan ts) = 0;
+        virtual void OnFixedUpdate(Timespan ts) = 0;
         virtual void OnRender() = 0;
         virtual void OnShutdown() = 0;
         virtual void OnEvent(Event& e) = 0;
@@ -65,6 +69,7 @@ namespace Slayer
 
         Timespan GetDeltaTime() const { return m_deltaTime; }
         void CalculateDeltaTime();
+        bool CalculateFixedDeltaTime();
 
         Window& GetWindow() { return m_window; }
     };

@@ -527,7 +527,6 @@ namespace Slayer
 
 	void Renderer::DrawShadows()
 	{
-		SL_ASSERT(true && "Not implemented.");
 		SL_EVENT("Shadow Pass");
 
 		// Shadow pass
@@ -574,11 +573,9 @@ namespace Slayer
 		m_shadowFramebuffer->Unbind();
 	}
 
-	void Renderer::Draw()
+	void Renderer::DrawMain()
 	{
 		SL_EVENT("Main Pass");
-
-		m_viewportFramebuffer->Bind();
 
 		glCullFace(GL_BACK);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -630,6 +627,18 @@ namespace Slayer
 		}
 
 		m_environmentMap->Draw();
+	}
+
+	void Renderer::Draw()
+	{
+		SL_EVENT("Draw Pass");
+
+		DrawShadows();
+
+		m_viewportFramebuffer->Bind();
+
+		DrawMain();
+		DrawLines();
 
 		m_viewportFramebuffer->Unbind();
 	}

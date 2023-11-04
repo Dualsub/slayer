@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Slayer.h"
+#include "Core/Core.h"
 #include "Core/Events.h"
 #include "Scene/ComponentStore.h"
 #include "Editor/PropertySerializer.h"
@@ -86,6 +86,7 @@ namespace Slayer::Editor {
         virtual void OnAttach() override;
         virtual void OnDetach() override;
         virtual void OnUpdate(Timespan ts) override;
+        virtual void OnFixedUpdate(Timespan ts) override {}
         virtual void OnRender() override;
         virtual void OnEvent(Event& e) override;
 

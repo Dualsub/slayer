@@ -1,6 +1,5 @@
 import os
 import struct
-import impasse as assimp
 import numpy as np
 import cv2 as cv
 import PIL.Image as Image

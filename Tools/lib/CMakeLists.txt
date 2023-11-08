@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(slayer_bindings VERSION 0.1.0)
 
+set(BUILD_SHARED_LIBS ON)
 add_subdirectory(thirdparty/assimp)
 add_subdirectory(thirdparty/pybind11)
 
@@ -13,3 +14,9 @@ add_custom_command(TARGET slayer_bindings POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
     $<TARGET_FILE:slayer_bindings>
     ${CMAKE_SOURCE_DIR}/Tools/slayer_bindings.pyd)
+
+# Generate DLLs for assimp and put them in the main directory
+add_custom_command(TARGET slayer_bindings POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    $<TARGET_FILE:assimp>
+    ${CMAKE_SOURCE_DIR}/Tools/.venv/Lib/site-packages/impasse)

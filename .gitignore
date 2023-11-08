@@ -5,8 +5,7 @@ build/
 out/
 CmakeSettings.json
 
-**/assets/*
-!**/assets/Shaders/
+*.slp
 
 .editorconfig
 *.log

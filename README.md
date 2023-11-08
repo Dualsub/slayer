@@ -2,19 +2,20 @@
 
 ## Project goals
 
-* Small, lightweight engine
-* Primary focus on creating games, not user experience
+* Small, lightweight game engine
+* Primary focus on the runtime, not on a user-friendly editor
 
 ## Features
 
 ### Runtime
-- [x] ECS: (Custom or EnTT)
+- [x] ECS: (Custom)
 - [x] 3D Renderer: (OpenGL or DirectX 11)
   - [x] Forward rendering
   - [x] PBR rendering
   - [ ] FXAA Anti-aliasing
-  - [ ] MSAA Anti-aliasing
-  - [x] Shadow mapping
+  - [x] MSAA Anti-aliasing
+  - [x] Cascaded shadow mapping
+  - [x] GPU-based skeletal animation 
   <!-- - [ ] Screen-space ambient occlusion -->
   <!-- - [ ] Screen-space reflections -->
   <!-- - [ ] Screen-space refraction -->
@@ -25,10 +26,27 @@
   - [ ] Asset compression
   - [x] Asset packaging
   - [ ] Asset streaming
-- [ ] Animation System
-- [ ] Physcis: (Bullet)
-- [ ] Audio: (Wwise)
+- [x] Animation System
+- [ ] Physcis: (Jolt)
+- [ ] Audio: (OpenAL, SteamAudio)
 - 
 
 ### Editor
-- [ ] Scene Editor(ImGUI)
+- [x] Scene Editor(ImGUI)
+
+## Getting Started
+
+*Prerequisites*: Cmake, C++ compiler(MSVC or Clang)
+
+First, clone the repository. In most cases, it's recommended to clone the dev branch. Also, ensure that you clone the submodules of the repository using the --recursive argument when cloning.
+```bat
+git clone https://github.com/Dualsub/slayer.git --branch dev --recursive
+```
+
+Then, run the setup script to build the executable and compile the assets.
+```bat
+cd Slayer
+Scripts/setup.bat
+```
+
+Now you should have a executable in the build folder and a `.slp`-file in the assets folder. You can run the testbed-application by running the executable.

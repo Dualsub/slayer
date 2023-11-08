@@ -1,0 +1,25 @@
+{
+  "name": "Mat_default",
+  "textures": [
+    {
+      "type": "albedo",
+      "name": "T_Rifle_ALB"
+    },
+    {
+      "type": "normal",
+      "name": "T_Rifle_NRM"
+    },
+    {
+      "type": "metallic",
+      "name": "T_Rifle_M_MSK_metalness"
+    },
+    {
+      "type": "roughness",
+      "name": "T_Rifle_M_MSK_roughness"
+    },
+    {
+      "type": "ambient",
+      "name": "T_Rifle_M_MSK_ao"
+    }
+  ]
+}

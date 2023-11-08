@@ -1,0 +1,123 @@
+Scene:
+  Singletons:
+    DirectionalLight:
+      orientation: [-30, 30, 0]
+      color: [1, 1, 1]
+      intensity: 5
+    WorldRenderingSettings:
+      exposure: 1
+      gamma: 2.20000005
+    WorldCamera:
+      fov: 69
+      nearPlane: 5
+      farPlane: 10000
+      attachEntityId: 1332298156039006325
+  Entities:
+    - EntityID:
+        id: 16585944679894648901
+      TagComponent:
+        tag: Arms
+      Transform:
+        parentId: 2451829188832
+        position: [0, 0, 8]
+        scale: [1, 1, 1]
+        rotation: [-90, 0, 0]
+      SkeletalRenderer:
+        modelID: 18182128199979709739
+        materialID: 6509653140662207454
+      AnimationPlayer:
+        animationClips:
+          - animationID: 15795504803734849171
+            weight: 1
+    - EntityID:
+        id: 1332298156039006324
+      TagComponent:
+        tag: Weapon
+      Transform:
+        parentId: 0
+        position: [-10.3299999, 145.419998, 23.4899998]
+        scale: [1, 1, 1]
+        rotation: [-90, 0, 0]
+      ModelRenderer:
+        modelID: 8601524820659633534
+        materialIDs:
+          - id: 8484318114773897130
+          - id: 17955001547278431938
+          - id: 16468097820443372522
+    - EntityID:
+        id: 1332298156039006325
+      TagComponent:
+        tag: Camera
+      Transform:
+        parentId: 0
+        position: [-0.899999976, 164.279999, 3.52999997]
+        scale: [1, 1, 1]
+        rotation: [-179.999985, -5.00895567e-06, -179.999985]
+    - EntityID:
+        id: 14472030910276529428
+      TagComponent:
+        tag: Mannequin
+      Transform:
+        parentId: 0
+        position: [23, 0, 268.670013]
+        scale: [1, 1, 1]
+        rotation: [90, -17.0000134, -179.999985]
+      SkeletalRenderer:
+        modelID: 17529307428130246956
+        materialID: 5244792205592968665
+      AnimationPlayer:
+        animationClips:
+          - animationID: 16336323561675531432
+            weight: 1
+    - EntityID:
+        id: 5932199937713210234
+      TagComponent:
+        tag: Floor
+      Transform:
+        parentId: 0
+        position: [-122.339996, -50, -85]
+        scale: [1, 0.1, 1]
+        rotation: [0, 0, 0]
+      ModelRenderer:
+        modelID: 9086005318548266571
+        materialIDs:
+          - id: 17211454273108038073
+      RigidBody:
+        mass: 0.0
+      BoxCollider:
+        halfExtents: [500, 50, 500]
+    - EntityID:
+        id: 5932199937713210231
+      TagComponent:
+        tag: Box1
+      Transform:
+        parentId: 0
+        position: [0, 100, 0]
+        scale: [0.1, 0.1, 0.1]
+        rotation: [0, 0, 0]
+      RigidBody:
+        mass: 1.0
+      BoxCollider:
+        halfExtents: [50, 50, 50]
+      ModelRenderer:
+        modelID: 9086005318548266571
+        materialIDs:
+          - id: 17211454273108038073
+    - EntityID:
+        id: 5932199937713210231
+      TagComponent:
+        tag: Box2
+      Transform:
+        parentId: 0
+        position: [50, 600, 10]
+        scale: [0.1, 0.1, 0.1]
+        rotation: [0, 0, 0]
+      RigidBody:
+        mass: 1.0
+      CapsuleCollider:
+        radius: 50
+        halfHeight: 100
+      ModelRenderer:
+        modelID: 9086005318548266571
+        materialIDs:
+          - id: 17211454273108038073

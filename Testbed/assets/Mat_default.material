@@ -1,0 +1,25 @@
+{
+  "name": "Mat_default",
+  "textures": [
+    {
+      "type": "albedo",
+      "name": "concrete_albedo"
+    },
+    {
+      "type": "normal",
+      "name": "concrete_normals"
+    },
+    {
+      "type": "metallic",
+      "name": "concrete_metalness"
+    },
+    {
+      "type": "roughness",
+      "name": "concrete_roughness"
+    },
+    {
+      "type": "ambient",
+      "name": "concrete_ao"
+    }
+  ]
+}

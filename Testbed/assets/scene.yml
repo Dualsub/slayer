@@ -1,0 +1,16 @@
+Scene:
+  Entities:
+    - EntityID:
+        id: 16585944679894648901
+      Transform:
+        parentId: 2451829188832
+        position: [200, -3, 8]
+        scale: [1, 1, 1]
+        rotation: [-90, 0, 0]
+      SkeletalRenderer:
+        modelID: 8362842741706777805
+        materialID: 5244792205592968665
+      AnimationPlayer:
+        animationClips:
+          - animationID: 2808606872812770950
+            weight: 1

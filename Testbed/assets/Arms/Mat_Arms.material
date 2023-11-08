@@ -1,0 +1,25 @@
+{
+  "name": "Mat_Arms",
+  "textures": [
+    {
+      "type": "albedo",
+      "name": "T_Arms_ALB"
+    },
+    {
+      "type": "normal",
+      "name": "T_Arms_NRM"
+    },
+    {
+      "type": "metallic",
+      "name": "T_Arms_M_MSK_metalness"
+    },
+    {
+      "type": "roughness",
+      "name": "T_Arms_M_MSK_roughness"
+    },
+    {
+      "type": "ambient",
+      "name": "T_Arms_M_MSK_ao"
+    }
+  ]
+}

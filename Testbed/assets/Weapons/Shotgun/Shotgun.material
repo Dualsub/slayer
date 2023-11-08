@@ -1,0 +1,25 @@
+{
+  "name": "Mat_Shotgun",
+  "textures": [
+    {
+      "type": "albedo",
+      "name": "T_White_Shotgun_D"
+    },
+    {
+      "type": "normal",
+      "name": "T_White_Shotgun_N"
+    },
+    {
+      "type": "metallic",
+      "name": "T_White_Shotgun_Metallic"
+    },
+    {
+      "type": "roughness",
+      "name": "T_White_Shotgun_Roughness"
+    },
+    {
+      "type": "ambient",
+      "name": "T_White_Shotgun_Roughness"
+    }
+  ]
+}

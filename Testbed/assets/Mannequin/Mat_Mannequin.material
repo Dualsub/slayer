@@ -1,0 +1,25 @@
+{
+  "name": "Mat_Mannequin",
+  "textures": [
+    {
+      "type": "albedo",
+      "name": "roughness"
+    },
+    {
+      "type": "normal",
+      "name": "normals"
+    },
+    {
+      "type": "metallic",
+      "name": "metallic"
+    },
+    {
+      "type": "roughness",
+      "name": "roughness"
+    },
+    {
+      "type": "ambient",
+      "name": "ao"
+    }
+  ]
+}

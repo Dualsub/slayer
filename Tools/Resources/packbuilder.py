@@ -287,6 +287,8 @@ def serialize_material(name, textures: list, texture_ids: list, meta: dict = {})
 
 def serialize_asset(name, asset_data, type_str: str, meta: dict = {}):
     old_id = meta["old_data"]["id"] if "old_data" in meta and "id" in meta["old_data"] else None
+    if old_id is None and "asset_id" in meta:
+        old_id = meta["asset_id"]
     data = b""
     type = ASSET_TYPES[type_str]
     asset_id = (np.random.randint(0, 2**64, dtype=np.uint64)

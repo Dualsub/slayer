@@ -17,9 +17,12 @@ message("- Testbed asset directory: ${CMAKE_CURRENT_SOURCE_DIR}/assets/")
 set(SLAYER_GAME_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE INTERNAL "")
 
 message("- Testbed Slayer Game Headers: ${SLAYER_GAME_HEADERS}")
+message("Hello: ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
 
-# If there is no imgui.ini file, copy the default one and put it in the same directory as the executable
-if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/imgui.ini)
-    message("- Copying imgui.ini to ${CMAKE_CURRENT_BINARY_DIR}")
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/assets/default_imgui.ini ${CMAKE_CURRENT_BINARY_DIR}/imgui.ini COPYONLY)
+if(NOT EXISTS)
+    message("- Copying imgui.ini to ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+    add_custom_command(TARGET Testbed POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/default_imgui.ini
+        ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/imgui.ini)
 endif()

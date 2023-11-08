@@ -3,8 +3,8 @@ echo Initial tools setup
 cd Tools
 python -m virtualenv .venv
 call .venv\Scripts\activate.bat
-pip install -r requirements.txt
-deactivate
+call pip install -r requirements.txt
+call deactivate
 cd ..
 
 @REM Building the project
@@ -19,7 +19,6 @@ cd ..
 echo Building asset pack
 cd Tools
 call .venv\Scripts\activate.bat
-pip install -r requirements.txt
 call buildpack.bat
-deactivate
+call deactivate
 cd ..

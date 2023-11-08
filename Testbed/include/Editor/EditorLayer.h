@@ -47,6 +47,8 @@ namespace Slayer::Editor {
     class EditorLayer : public Layer
     {
     private:
+        std::string m_assetDirectory;
+
         // Settings
         EditorSettings m_settings;
 
@@ -78,7 +80,7 @@ namespace Slayer::Editor {
         void LoadSettings();
         void SaveSettings();
     public:
-        EditorLayer();
+        EditorLayer(const std::string& assetDirectory);
         ~EditorLayer();
 
         virtual void OnAttach() override;
@@ -86,6 +88,8 @@ namespace Slayer::Editor {
         virtual void OnUpdate(Timespan ts) override;
         virtual void OnRender() override;
         virtual void OnEvent(Event& e) override;
+
+        const std::string& GetAssetDirectory() const { return m_assetDirectory; }
 
         bool OnKeyPress(KeyPressEvent& e);
         bool OnMouseMove(MouseMoveEvent& e);

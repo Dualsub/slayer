@@ -11,7 +11,15 @@ add_executable(Testbed
 
 target_link_libraries(Testbed PRIVATE Slayer)
 target_include_directories(Testbed PRIVATE i${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_definitions(Testbed PRIVATE SL_ASSET_PATH="${CMAKE_CURRENT_SOURCE_DIR}/assets/")
+message("- Testbed asset directory: ${CMAKE_CURRENT_SOURCE_DIR}/assets/")
 
 set(SLAYER_GAME_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE INTERNAL "")
 
-message("Testbed: ${SLAYER_GAME_HEADERS}")
+message("- Testbed Slayer Game Headers: ${SLAYER_GAME_HEADERS}")
+
+# If there is no imgui.ini file, copy the default one and put it in the same directory as the executable
+if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/imgui.ini)
+    message("- Copying imgui.ini to ${CMAKE_CURRENT_BINARY_DIR}")
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/assets/default_imgui.ini ${CMAKE_CURRENT_BINARY_DIR}/imgui.ini COPYONLY)
+endif()

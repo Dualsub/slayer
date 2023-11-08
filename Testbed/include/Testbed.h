@@ -33,6 +33,12 @@
 
 namespace Testbed
 {
+#ifdef SL_ASSET_PATH
+    const std::string assetPath = "C:/dev/repos/Slayer/Testbed/assets/";
+#else
+    const std::string assetPath = SL_ASSET_PATH;
+#endif
+
     class TestbedLayer : public Slayer::Layer
     {
     public:
@@ -132,7 +138,7 @@ namespace Testbed
             InitializeScene();
 
             PushLayer<class TestbedLayer>();
-            PushLayer<Slayer::Editor::EditorLayer>();
+            PushLayer<Slayer::Editor::EditorLayer>(assetPath);
         }
 
         virtual void OnUpdate(Slayer::Timespan ts) override

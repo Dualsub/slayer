@@ -286,7 +286,8 @@ namespace Slayer::Editor {
     }
 
 
-    EditorLayer::EditorLayer()
+    EditorLayer::EditorLayer(const std::string& assetsPath) :
+        m_assetDirectory(assetsPath)
     {
     }
 
@@ -490,11 +491,11 @@ namespace Slayer::Editor {
             ImGui::DockSpace(ImGui::GetID("EditorDockSpace"));
 
             auto saveScene = [this]() {
-                SaveScene(World::GetWorldStore(), "C:/dev/repos/Slayer/Testbed/assets/sponza.yml");
+                SaveScene(World::GetWorldStore(), GetAssetDirectory() + "sponza.yml");
                 };
 
             auto loadScene = [this]() {
-                LoadScene("C:/dev/repos/Slayer/Testbed/assets/sponza.yml");
+                LoadScene(GetAssetDirectory() + "sponza.yml");
                 };
 
             Panels::RenderMenuBar(saveScene, loadScene);

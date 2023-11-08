@@ -6,8 +6,6 @@
 
 #include <filesystem>
 
-const std::string assetPath = "C:/dev/repos/Slayer/Testbed/assets/";
-
 namespace Testbed
 {
     void TestbedApplication::InitializeResources()

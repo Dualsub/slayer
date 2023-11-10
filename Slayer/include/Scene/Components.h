@@ -78,7 +78,7 @@ namespace Slayer {
         }
         ~Transform() = default;
 
-        Mat4 GetMatrix() const
+        Mat4 GetLocalMatrix() const
         {
             Mat4 matrix = Mat4(1.0f);
             matrix = glm::translate(matrix, position);

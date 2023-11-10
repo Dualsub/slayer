@@ -54,7 +54,7 @@ namespace Slayer {
                     float height = (float)app->GetWindow().GetHeight();
                     Mat4 projection = glm::perspective(glm::radians(camera->fov), width / height, camera->nearPlane, camera->farPlane);
 
-                    Mat4 view = glm::inverse(transform->GetMatrix());
+                    Mat4 view = glm::inverse(transform->worldTransform);
 
                     renderer.SetCameraData(
                         camera->nearPlane,

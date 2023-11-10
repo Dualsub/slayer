@@ -190,9 +190,9 @@ namespace Testbed
                 m_camera->Update(ts);
                 auto& store = m_world.GetStore();
                 store.ClearTransitions();
+                m_transformSystem.Update(ts, store);
                 m_animationSystem.Update(ts, store);
                 m_animationSystem.Render(m_renderer, store);
-                m_transformSystem.Update(ts, store);
                 m_renderingSystem.Update(ts, store);
                 break;
             }

@@ -34,7 +34,7 @@ Scene:
       TagComponent:
         tag: Weapon
       Transform:
-        parentId: 0
+        parentId: 16585944679894648901
         position: [-10.3299999, 145.419998, 23.4899998]
         scale: [1, 1, 1]
         rotation: [-90, 0, 0]
@@ -104,7 +104,7 @@ Scene:
         materialIDs:
           - id: 17211454273108038073
     - EntityID:
-        id: 5932199937713210231
+        id: 5932199937713210232
       TagComponent:
         tag: Box2
       Transform:

@@ -15,36 +15,35 @@ namespace Slayer {
 		virtual void Initialize() {};
 		virtual void Shutdown() {};
 
+		Mat4 GetWorldTransform(Entity entity, ComponentStore& store)
+		{
+			if (!store.IsValid(entity) || !store.HasComponent<Transform>(entity))
+			{
+				return Mat4(1.0f);
+			}
+
+			Transform* transform = store.GetComponent<Transform>(entity);
+
+			Entity parentEntity = store.GetEntity(transform->parentId);
+			if (parentEntity != SL_INVALID_ENTITY)
+			{
+				return GetWorldTransform(parentEntity, store) * transform->GetLocalMatrix();
+			}
+			else
+			{
+				return transform->GetLocalMatrix();
+			}
+		}
+
 		virtual void Update(Timespan dt, ComponentStore& store) override
 		{
 			store.ForEach<Transform>([&](Entity entity, Transform* transform)
 				{
-					Entity parentEntity = store.GetEntity(transform->parentId);
-					if (store.IsValid(parentEntity) && store.HasComponent<Transform>(parentEntity))
-					{
-						if (store.HasComponent<SocketAttacher>(entity) && store.HasComponent<SkeletalSockets>(parentEntity))
-						{
-							auto* parentTransform = store.GetComponent<Transform>(parentEntity);
-							auto* attacher = store.GetComponent<SocketAttacher>(entity);
-							auto* sockets = store.GetComponent<SkeletalSockets>(parentEntity);
-							transform->worldTransform = parentTransform->GetMatrix() * sockets->GetWorldTransform(attacher->name) * transform->GetMatrix();
-						}
-						else
-						{
-							transform->worldTransform = transform->GetMatrix();
-						}
-					}
-					else
-					{
-						transform->worldTransform = transform->GetMatrix();
-					}
+					transform->worldTransform = GetWorldTransform(entity, store);
 				});
 		}
 
-		virtual void Render(class Renderer& renderer, class ComponentStore& store)
-		{
-
-		}
+		virtual void Render(class Renderer& renderer, class ComponentStore& store) {}
 	};
 
 }

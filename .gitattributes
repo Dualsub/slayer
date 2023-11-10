@@ -1,2 +1,5 @@
 *.hdr filter=lfs diff=lfs merge=lfs -text
 *.hdr !text !filter !merge !diff
+Testbed/assets/Textures/concrete.png filter=lfs diff=lfs merge=lfs -text
+Testbed/assets/Weapons/RU74/Textures/T_RU74_Body_M_MSK.TGA filter=lfs diff=lfs merge=lfs -text
+Testbed/assets/DefaultSkybox.hdr filter=lfs diff=lfs merge=lfs -text

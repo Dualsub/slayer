@@ -23,7 +23,7 @@ void PrintHeirarchy(aiNode* node, py::dict& bones, unsigned int level = 0)
     {
         std::cout << name << ": ";
         std::cout << bones[py::str(name)].cast<py::tuple>()[0].cast<int>();
-        std::cout << ", parent: " << bones[py::str(name)].cast<py::tuple>()[1].cast<int>();
+        // std::cout << ", parent: " << bones[py::str(name)].cast<py::tuple>()[1].cast<int>();
         std::cout << std::endl;
     }
 
@@ -54,6 +54,7 @@ void ReadParents(aiNode* node, py::dict& bones)
 py::tuple load_bone_data(const std::string& file_path) {
     // Create the importer and read the file
     Assimp::Importer importer;
+    std::cout << "Loading file: " << file_path << std::endl;
     const aiScene* scene = importer.ReadFile(file_path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_PopulateArmatureData | aiProcess_LimitBoneWeights);
 
     if (!scene) {
@@ -157,6 +158,7 @@ py::tuple load_bone_data(const std::string& file_path) {
         }
     }
 
+    // PrintHeirarchy(mesh->mBones[0]->mNode, bones);
     ReadParents(mesh->mBones[0]->mNode, bones);
 
     importer.FreeScene();

@@ -8,14 +8,24 @@ namespace Slayer::JoltHelpers {
     const float spaceScale = 100.0f;
     const float spaceScaleInv = 1 / spaceScale;
 
-    inline Vec3 Convert(const JPH::Vec3& inVec)
+    inline Vec3 ConvertWithUnits(const JPH::Vec3& inVec)
     {
         return Vec3(inVec.GetX(), inVec.GetY(), inVec.GetZ()) * spaceScale;
     }
 
-    inline JPH::Vec3 Convert(const Vec3& inVec)
+    inline JPH::Vec3 ConvertWithUnits(const Vec3& inVec)
     {
         return JPH::Vec3(inVec.x, inVec.y, inVec.z) * spaceScaleInv;
+    }
+
+    inline Vec3 Convert(const JPH::Vec3& inVec)
+    {
+        return Vec3(inVec.GetX(), inVec.GetY(), inVec.GetZ());
+    }
+
+    inline JPH::Vec3 Convert(const Vec3& inVec)
+    {
+        return JPH::Vec3(inVec.x, inVec.y, inVec.z);
     }
 
     inline Quat Convert(const JPH::Quat& inQuat)

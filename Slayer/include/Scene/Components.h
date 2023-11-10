@@ -17,6 +17,7 @@
     Slayer::SocketAttacher, \
     Slayer::AnimationPlayer, \
     Slayer::RigidBody, \
+    Slayer::CharacterBody, \
     Slayer::BoxCollider, \
     Slayer::SphereCollider, \
     Slayer::CapsuleCollider
@@ -267,10 +268,23 @@ namespace Slayer {
 
     struct RigidBody
     {
+        uint32_t id = 0;
         float mass = 1.0f;
 
         RigidBody() = default;
         ~RigidBody() = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(mass);
+        }
+    };
+
+    struct CharacterBody : public RigidBody
+    {
+        CharacterBody() = default;
+        ~CharacterBody() = default;
 
         template<typename Serializer>
         void Transfer(Serializer& serializer)

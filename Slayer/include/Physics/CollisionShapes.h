@@ -45,7 +45,7 @@ namespace Slayer {
         JPH::ShapeSettings::ShapeResult GetShapeSettings() const override
         {
             JPH::BoxShapeSettings settings;
-            settings.mHalfExtent = JoltHelpers::Convert(m_halfExtents);
+            settings.mHalfExtent = JoltHelpers::ConvertWithUnits(m_halfExtents);
             return settings.Create();
         }
     };

@@ -373,6 +373,9 @@ namespace Slayer::Editor {
         //     window.SetVSync(!window.IsVSync());
         // }
         // break;
+        case Slayer::KEY_F10:
+            m_renderColliders = !m_renderColliders;
+            break;
         case Slayer::KEY_TAB:
             if (Input::IsKeyPressed(SlayerKey::KEY_LEFT_SHIFT))
             {

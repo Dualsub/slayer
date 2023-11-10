@@ -75,39 +75,76 @@ namespace Slayer {
     void PhysicsWorld::StepSimulation(float dt)
     {
         m_physicsSystem->Update(dt, 1, s_tempAllocator.get(), s_jobSystem.get());
+
+        const float collisionTolerance = 0.05f;
+        for (auto& [id, character] : m_characters)
+        {
+            character->PostSimulation(collisionTolerance);
+        }
     }
 
-    RigidBodyTransform PhysicsWorld::GetTransform(uint32_t id)
+    RigidBodyTransform PhysicsWorld::GetRigidBodyState(BodyID id)
     {
         JPH::BodyInterface& interface = m_physicsSystem->GetBodyInterface();
         JPH::BodyID bodyId = m_bodyIDs[id];
 
         JPH::Vec3 position = interface.GetCenterOfMassPosition(bodyId);
         JPH::Quat rotation = interface.GetRotation(bodyId);
+        JPH::Vec3 linearVelocity = interface.GetLinearVelocity(bodyId);
+        JPH::Vec3 angularVelocity = interface.GetAngularVelocity(bodyId);
 
         return {
-            JoltHelpers::Convert(position),
-            JoltHelpers::Convert(rotation)
+            JoltHelpers::ConvertWithUnits(position),
+            JoltHelpers::Convert(rotation),
+            JoltHelpers::ConvertWithUnits(linearVelocity),
+            JoltHelpers::ConvertWithUnits(angularVelocity)
         };
     }
 
-    void PhysicsWorld::AddRigidBody(uint32_t id, RigidBodySettings& info)
+    BodyID PhysicsWorld::CreateRigidBody(RigidBodySettings& info, BodyType type)
     {
+        SL_ASSERT(m_nextBodyID < std::numeric_limits<BodyID>::max() && "BodyID overflow");
+
+        BodyID id = m_nextBodyID++;
         JPH::BodyInterface& interface = m_physicsSystem->GetBodyInterface();
 
         // Creating shape
         JPH::ShapeSettings::ShapeResult shapeResult = info.shape->GetShapeSettings();
         JPH::ShapeRefC shape = shapeResult.Get();
 
-        // Creating body
-        JPH::ObjectLayer layer = info.mass == 0.0f ? Layers::NON_MOVING : Layers::MOVING;
-        JPH::EMotionType motionType = info.mass == 0.0f ? JPH::EMotionType::Static : JPH::EMotionType::Dynamic;
-        JPH::BodyCreationSettings settings(shape, JoltHelpers::Convert(info.position), JoltHelpers::Convert(info.rotation), motionType, layer);
-        JPH::BodyID bodyId = interface.CreateAndAddBody(settings, JPH::EActivation::Activate);
-        m_bodyIDs[id] = bodyId;
+        if (type == BodyType::SL_BODY_TYPE_RIGID)
+        {
+            JPH::ObjectLayer layer = info.mass > 0.0f ? Layers::MOVING : Layers::NON_MOVING;
+            JPH::EMotionType motionType = info.mass > 0.0f ? JPH::EMotionType::Dynamic : JPH::EMotionType::Static;
+
+            JPH::BodyCreationSettings settings(shape, JoltHelpers::ConvertWithUnits(info.position), JoltHelpers::Convert(info.rotation), motionType, layer);
+            JPH::BodyID bodyId = interface.CreateAndAddBody(settings, JPH::EActivation::Activate);
+            m_bodyIDs[id] = bodyId;
+        }
+        else if (type == BodyType::SL_BODY_TYPE_CHARACTER)
+        {
+            JPH::CharacterSettings settings;
+            settings.mShape = shape;
+            settings.mLayer = Layers::MOVING;
+            settings.mUp = JPH::Vec3::sAxisY();
+            settings.mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -shape->GetLocalBounds().GetExtent().GetY());
+            settings.mFriction = 0.5f;
+
+            Unique<JPH::Character> character = MakeUnique<JPH::Character>(&settings, JoltHelpers::ConvertWithUnits(info.position), JoltHelpers::Convert(info.rotation), 0, m_physicsSystem.get());
+            character->AddToPhysicsSystem(JPH::EActivation::Activate);
+            JPH::BodyID bodyId = character->GetBodyID();
+            m_characters[id] = std::move(character);
+            m_bodyIDs[id] = bodyId;
+        }
+        else
+        {
+            SL_ASSERT(false && "Unknown body type");
+        }
+
+        return id;
     }
 
-    void PhysicsWorld::RemoveRigidBody(uint32_t id)
+    void PhysicsWorld::RemoveRigidBody(BodyID id)
     {
         JPH::BodyInterface& interface = m_physicsSystem->GetBodyInterface();
         JPH::BodyID bodyId = m_bodyIDs[id];
@@ -123,5 +160,50 @@ namespace Slayer {
             interface.DestroyBody(bodyId);
         }
         m_bodyIDs.clear();
+
+        for (auto& [id, character] : m_characters)
+        {
+            character->RemoveFromPhysicsSystem();
+        }
+        m_characters.clear();
+    }
+
+
+    void PhysicsWorld::SetPosition(BodyID id, Vec3 position)
+    {
+        JPH::BodyInterface& interface = m_physicsSystem->GetBodyInterface();
+        JPH::BodyID bodyId = m_bodyIDs[id];
+        interface.SetPosition(bodyId, JoltHelpers::ConvertWithUnits(position), JPH::EActivation::Activate);
+    }
+
+    void PhysicsWorld::SetRotation(BodyID id, Quat rotation)
+    {
+        JPH::BodyInterface& interface = m_physicsSystem->GetBodyInterface();
+        JPH::BodyID bodyId = m_bodyIDs[id];
+        interface.SetRotation(bodyId, JoltHelpers::Convert(rotation), JPH::EActivation::Activate);
+    }
+
+    void PhysicsWorld::SetLinearVelocity(BodyID id, Vec3 velocity)
+    {
+        JPH::BodyInterface& interface = m_physicsSystem->GetBodyInterface();
+        JPH::BodyID bodyId = m_bodyIDs[id];
+        interface.SetLinearVelocity(bodyId, JoltHelpers::ConvertWithUnits(velocity));
+    }
+
+    void PhysicsWorld::SetAngularVelocity(BodyID id, Vec3 velocity)
+    {
+        JPH::BodyInterface& interface = m_physicsSystem->GetBodyInterface();
+        JPH::BodyID bodyId = m_bodyIDs[id];
+        interface.SetAngularVelocity(bodyId, JoltHelpers::Convert(velocity));
+    }
+
+    CharacterGroundState PhysicsWorld::GetCharacterGroundState(BodyID id)
+    {
+        if (m_characters.find(id) == m_characters.end())
+            return CharacterGroundState::SL_CHARACTER_GROUND_STATE_UNKNOWN;
+
+        JPH::Character* character = m_characters[id].get();
+        JPH::Character::EGroundState state = character->GetGroundState();
+        return static_cast<CharacterGroundState>(state);
     }
 }

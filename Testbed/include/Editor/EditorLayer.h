@@ -57,6 +57,7 @@ namespace Slayer::Editor {
 
         // Runtime state
         bool m_editMode = false;
+        bool m_renderColliders = false;
         Timespan m_deltaTime;
         SelectionContext m_selection;
         PropertySerializer m_propertySerializer;

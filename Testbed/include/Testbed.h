@@ -23,6 +23,7 @@
 #include "Serialization/YamlSerializer.h"
 
 #include "Physics/PhysicsSystem.h"
+#include "Physics/ColliderRenderingSystem.h"
 
 #include "Editor/EditorLayer.h"
 #include "SandboxCamera.h"
@@ -101,6 +102,7 @@ namespace Testbed
         Slayer::AnimationSystem m_animationSystem;
         Slayer::TransformSystem m_transformSystem;
         Slayer::PhysicsSystem m_physicsSystem;
+        Slayer::ColliderRenderingSystem m_colliderRenderingSystem;
 
         template<typename T>
         bool LoadScene(std::future<T>& future)
@@ -210,7 +212,7 @@ namespace Testbed
             m_renderer.BeginScene();
 
             m_renderingSystem.Render(m_renderer, m_world.GetStore());
-            m_physicsSystem.Render(m_renderer, m_world.GetStore());
+            m_colliderRenderingSystem.Render(m_renderer, m_world.GetStore());
 
             m_renderer.Draw();
 

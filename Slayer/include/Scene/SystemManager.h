@@ -19,8 +19,8 @@ namespace Slayer
         Dict<SystemGroup, SystemCollection> m_systemCollections;
 
     public:
-        SystemManager();
-        ~SystemManager();
+        SystemManager() = default;
+        ~SystemManager() = default;
 
         void Initialize();
         void Shutdown();

@@ -24,6 +24,7 @@ namespace Slayer
         SL_GROUP_RENDER = 1 << 9,
     };
 
+
     class System
     {
     public:

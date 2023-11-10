@@ -19,6 +19,7 @@ set(SLAYER_SRC
 
     src/Physics/PhysicsWorld.cpp
     src/Physics/PhysicsSystem.cpp
+    src/Physics/ColliderRenderingSystem.cpp
 
     src/Rendering/RenderingManager.cpp
     src/Rendering/Renderer/Texture.cpp

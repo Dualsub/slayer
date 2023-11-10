@@ -14,6 +14,6 @@ namespace Slayer {
         void Shutdown() {}
         void Update(float dt, class ComponentStore& store);
 
-        void Render(class Renderer& renderer, class ComponentStore& store);
+        void Render(class Renderer& renderer, class ComponentStore& store) {}
     };
 }

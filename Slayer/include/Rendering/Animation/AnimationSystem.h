@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Scene/System.h"
 #include "Scene/ComponentStore.h"
 #include "Scene/Components.h"
@@ -7,8 +9,9 @@
 
 namespace Slayer {
 
-	class AnimationSystem : public System<SystemGroup::SL_GROUP_ANIMATION>
+	class AnimationSystem : public System
 	{
+		SL_SYSTEM(SystemGroup::SL_GROUP_ANIMATION)
 	public:
 		AnimationSystem() = default;
 		virtual ~AnimationSystem() = default;

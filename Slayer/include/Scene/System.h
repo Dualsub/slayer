@@ -4,7 +4,7 @@
 
 #include <functional>
 
-#define SL_SYSTEM_GROUP(group) \
+#define SL_SYSTEM(group) \
     constexpr uint32_t GetGroup() const { return group; }
 
 namespace Slayer
@@ -34,9 +34,9 @@ namespace Slayer
 
         virtual void Initialize() = 0;
         virtual void Shutdown() = 0;
-        virtual void Update(Timespan dt, class ComponentStore &store) { SL_ASSERT(false && "Render function not implemented"); }
-        virtual void Render(class Renderer &renderer, class ComponentStore &store) { SL_ASSERT(false && "Render function not implemented"); }
-        virtual void OnActivated(class ComponentStore &store) { SL_ASSERT(false && "OnActivated function not implemented"); }
-        virtual void OnDeactivated(class ComponentStore &store) { SL_ASSERT(false && "OnDeactivated function not implemented"); }
+        virtual void Update(Timespan dt, class ComponentStore& store) { SL_ASSERT(false && "Render function not implemented"); }
+        virtual void Render(class Renderer& renderer, class ComponentStore& store) { SL_ASSERT(false && "Render function not implemented"); }
+        virtual void OnActivated(class ComponentStore& store) { SL_ASSERT(false && "OnActivated function not implemented"); }
+        virtual void OnDeactivated(class ComponentStore& store) { SL_ASSERT(false && "OnDeactivated function not implemented"); }
     };
 }

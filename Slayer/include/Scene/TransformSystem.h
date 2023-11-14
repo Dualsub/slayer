@@ -8,8 +8,9 @@
 
 namespace Slayer {
 
-	class TransformSystem : public System<SystemGroup::SL_GROUP_TRANSFORM>
+	class TransformSystem : public System
 	{
+		SL_SYSTEM(SystemGroup::SL_GROUP_TRANSFORM)
 	public:
 		virtual void Initialize() {};
 		virtual void Shutdown() {};

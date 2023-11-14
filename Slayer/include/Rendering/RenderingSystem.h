@@ -9,8 +9,9 @@
 
 namespace Slayer {
 
-    class RenderingSystem : public System<SystemGroup::SL_GROUP_RENDER>
+    class RenderingSystem : public System
     {
+        SL_SYSTEM(SystemGroup::SL_GROUP_RENDER)
     public:
         RenderingSystem() = default;
         virtual ~RenderingSystem() = default;

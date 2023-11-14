@@ -22,6 +22,12 @@ namespace Testbed
 
     void TestbedApplication::InitializeScene()
     {
+        m_systemManager.RegisterSystem<Slayer::RenderingSystem>();
+        m_systemManager.RegisterSystem<Slayer::AnimationSystem>();
+        m_systemManager.RegisterSystem<Slayer::TransformSystem>();
+        m_systemManager.RegisterSystem<Slayer::PhysicsSystem>();
+        m_systemManager.RegisterSystem<Slayer::ColliderRenderingSystem>();
+
         auto& store = m_world.GetStore();
 
         Slayer::ForEachComponentType([&store]<typename T>() {

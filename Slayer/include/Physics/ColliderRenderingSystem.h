@@ -4,8 +4,9 @@
 
 namespace Slayer {
 
-    class ColliderRenderingSystem : public System<SystemGroup::SL_GROUP_RENDER>
+    class ColliderRenderingSystem : public System
     {
+        SL_SYSTEM(SystemGroup::SL_GROUP_RENDER)
     public:
         ColliderRenderingSystem() = default;
         virtual ~ColliderRenderingSystem() = default;

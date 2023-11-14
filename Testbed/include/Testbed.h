@@ -17,6 +17,7 @@
 #include "Scene/Components.h"
 #include "Scene/ComponentStore.h"
 #include "Scene/World.h"
+#include "Scene/SystemManager.h"
 #include "Resources/AssetPack.h"
 #include "Resources/ResourceManager.h"
 #include "Serialization/SceneSerializer.h"
@@ -98,6 +99,8 @@ namespace Testbed
 
         Slayer::Shared<SandboxCamera> m_camera;
         Slayer::Renderer m_renderer;
+
+        Slayer::SystemManager m_systemManager;
         Slayer::RenderingSystem m_renderingSystem;
         Slayer::AnimationSystem m_animationSystem;
         Slayer::TransformSystem m_transformSystem;
@@ -175,6 +178,7 @@ namespace Testbed
                     Slayer::GPULoadData gpuLoadData = m_levelLoadFuture.get();
                     rm->LoadGPUAssets(gpuLoadData);
                     InitializeRendering();
+                    m_systemManager.ActivateAllGroups(m_world.GetStore());
                     m_state = AS_Running;
                 }
                 else

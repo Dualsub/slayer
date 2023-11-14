@@ -5,7 +5,8 @@
 #include <functional>
 
 #define SL_SYSTEM(group) \
-    constexpr uint32_t GetGroup() const { return group; }
+    friend class SystemManager; \
+    constexpr SystemGroup GetGroup() const { return group; }
 
 namespace Slayer
 {
@@ -28,8 +29,6 @@ namespace Slayer
     class System
     {
     public:
-        friend class SystemManager;
-
         System() = default;
         virtual ~System() = default;
 
@@ -37,7 +36,7 @@ namespace Slayer
         virtual void Shutdown() = 0;
         virtual void Update(Timespan dt, class ComponentStore& store) { SL_ASSERT(false && "Render function not implemented"); }
         virtual void Render(class Renderer& renderer, class ComponentStore& store) { SL_ASSERT(false && "Render function not implemented"); }
-        virtual void OnActivated(class ComponentStore& store) { SL_ASSERT(false && "OnActivated function not implemented"); }
-        virtual void OnDeactivated(class ComponentStore& store) { SL_ASSERT(false && "OnDeactivated function not implemented"); }
+        virtual void OnActivated(class ComponentStore& store) { }
+        virtual void OnDeactivated(class ComponentStore& store) { }
     };
 }

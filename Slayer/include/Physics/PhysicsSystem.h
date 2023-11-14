@@ -4,8 +4,9 @@
 
 namespace Slayer {
 
-    class PhysicsSystem : public System<SystemGroup::SL_GROUP_PHYSICS>
+    class PhysicsSystem : public System
     {
+        SL_SYSTEM(SystemGroup::SL_GROUP_FIXED_PHYSICS)
     public:
         PhysicsSystem() = default;
         virtual ~PhysicsSystem() = default;

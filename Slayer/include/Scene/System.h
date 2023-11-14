@@ -4,9 +4,8 @@
 
 #include <functional>
 
-#define SL_SYSTEM_GROUPS(groups)                                \
-    constexpr uint32_t GetGroupFlags() const { return groups; } \
-    bool IsInGroup(SystemGroup group) const { return groups & group; }
+#define SL_SYSTEM_GROUP(group) \
+    constexpr uint32_t GetGroup() const { return group; }
 
 namespace Slayer
 {

@@ -39,6 +39,7 @@ set(SLAYER_SRC
     src/Resources/ResourceManager.cpp
 
     src/Scene/World.cpp
+    src/Scene/SystemManager.cpp
 
     src/Input/Input.cpp
 )

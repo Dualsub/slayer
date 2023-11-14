@@ -52,7 +52,7 @@ namespace Slayer
     void SystemManager::RegisterSystem(Args &&...args)
     {
         Unique<System> system = MakeUnique<T>(std::forward<Args>(args)...);
-        SystemGroup group = system->GetGroupFlags();
+        SystemGroup group = static_cast<T *>(system.get())->GetGroup();
         m_systemCollections[group].systems.push_back(std::move(system));
     }
 

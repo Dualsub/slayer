@@ -25,6 +25,20 @@ namespace Slayer
         }
     }
 
+    void SystemManager::FixedUpdate(SystemGroup group, float dt, class ComponentStore& store)
+    {
+        SystemCollection& collection = m_systemCollections[group];
+        if (!collection.active)
+        {
+            return;
+        }
+
+        for (const Unique<System>& system : collection.systems)
+        {
+            system->FixedUpdate(dt, store);
+        }
+    }
+
     void SystemManager::Render(SystemGroup group, class Renderer& renderer, class ComponentStore& store)
     {
         SystemCollection& collection = m_systemCollections[group];
@@ -77,6 +91,11 @@ namespace Slayer
 
     void SystemManager::ActivateSystemGroup(SystemGroup group, class ComponentStore& store)
     {
+        if (group == SystemGroup::SL_GROUP_NONE && m_systemCollections.contains(group))
+        {
+            return;
+        }
+
         SystemCollection& collection = m_systemCollections[group];
         if (collection.active)
         {
@@ -92,6 +111,11 @@ namespace Slayer
 
     void SystemManager::DeactivateSystemGroup(SystemGroup group, class ComponentStore& store)
     {
+        if (group == SystemGroup::SL_GROUP_NONE && m_systemCollections.contains(group))
+        {
+            return;
+        }
+
         SystemCollection& collection = m_systemCollections[group];
         if (!collection.active)
         {

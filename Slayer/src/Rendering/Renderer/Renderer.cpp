@@ -64,6 +64,7 @@ namespace Slayer
 		const size_t vectorsPerBone = 4;
 		const size_t floatsPerVector = 4;
 		m_boneTransformTexture = Texture::CreateBuffer(SL_MAX_INSTANCES, SL_MAX_BONES * vectorsPerBone, floatsPerVector, 0, 12);
+		m_boneTransformPixelBuffer = PixelBuffer::Create(SL_MAX_INSTANCES * SL_MAX_BONES * sizeof(Mat4));
 
 		// Lights
 		m_lightsBuffer = UniformBuffer::Create(sizeof(LightsData), 1);
@@ -480,13 +481,33 @@ namespace Slayer
 
 		{
 			SL_EVENT("Compute Shader Dispatch");
-			m_animationShader->Dispatch(SL_MAX_BONES, m_mainPass.animationStates.size(), 1);
+			m_animationShader->Dispatch(SL_MAX_BONES, static_cast<uint32_t>(m_mainPass.animationStates.size()), 1);
 			m_animationShader->MemoryBarrier(MemoryBarrierBits::SL_IMAGE_ACCESS);
 		}
 
+		// TODO: Read texture data back to CPU.
+		// glGetTextureImage(m_boneTransformTexture->GetTextureID(), 0, GL_RGBA, GL_FLOAT, SL_MAX_INSTANCES * SL_MAX_BONES * sizeof(Mat4), m_boneTransformBuffer.data());
+
+		// Mat4* boneTransforms = m_boneTransformPixelBuffer->MapBuffer<Mat4>();
+		// if (boneTransforms)
+		// {
+		// 	Copy(boneTransforms, m_boneTransformBuffer.data(), SL_MAX_INSTANCES * SL_MAX_BONES * sizeof(Mat4));
+		// 	m_boneTransformPixelBuffer->UnmapBuffer();
+		// }
+
+		// m_boneTransformPixelBuffer->Unbind();
 		m_boneTransformTexture->Unbind();
+
 		m_animationShader->Unbind();
 		m_animationBuffer->Unbind();
+	}
+
+	Mat4 Renderer::GetBoneTransform(int32_t instanceId, int32_t boneId)
+	{
+		if (boneId > SL_MAX_BONES || boneId < 0)
+			return Mat4(1.0f);
+
+		return m_boneTransformBuffer[instanceId * SL_MAX_BONES + boneId];
 	}
 
 	void Renderer::DrawLines()
@@ -677,6 +698,7 @@ namespace Slayer
 		m_animationShader->Dispose();
 		m_animationBuffer->Dispose();
 		m_boneTransformTexture->Dispose();
+		m_boneTransformPixelBuffer->Dispose();
 		m_hdrTexture->Dispose();
 		m_environmentMap->Dispose();
 		m_shaderStatic->Dispose();

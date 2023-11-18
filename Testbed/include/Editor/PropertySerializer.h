@@ -47,6 +47,12 @@ namespace Slayer::Editor {
         }
 
         template<>
+        void Transfer(bool& value, const std::string& name)
+        {
+            ImGui::Checkbox(name.c_str(), &value);
+        }
+
+        template<>
         void Transfer(uint32_t& value, const std::string& name)
         {
             ImGui::DragInt(name.c_str(), (int*)&value);

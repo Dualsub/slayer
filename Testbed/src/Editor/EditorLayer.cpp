@@ -4,6 +4,7 @@
 #include "Core/Events.h"
 #include "Input/Input.h"
 #include "Scene/World.h"
+#include "Scene/SystemManager.h"
 #include "Editor/EditorActions.h"
 #include "Serialization/YamlSerializer.h"
 #include "Rendering/Renderer/Renderer.h"
@@ -293,7 +294,7 @@ namespace Slayer::Editor {
         }
 
         auto& window = Application::Get()->GetWindow();
-        m_camera.SetProjectionMatrix(45.0f, (float)window.GetWidth(), (float)window.GetHeight(), 5.0f, 10000.0f);
+        // m_camera.SetProjectionMatrix(45.0f, (float)window.GetWidth(), (float)window.GetHeight(), 5.0f, 10000.0f);
     }
 
     void EditorLayer::OnDetach()
@@ -314,16 +315,16 @@ namespace Slayer::Editor {
             m_camera.SetFirstMouse(true);
         }
 
-        auto* renderer = Renderer::Get();
-        renderer->SetCameraData(
-            m_camera.GetNearPlane(),
-            m_camera.GetFarPlane(),
-            m_camera.GetFov(),
-            m_camera.GetAspectRatio(),
-            m_camera.GetProjectionMatrix(),
-            m_camera.GetViewMatrix(),
-            m_camera.GetPosition()
-        );
+        // auto* renderer = Renderer::Get();
+        // renderer->SetCameraData(
+        //     m_camera.GetNearPlane(),
+        //     m_camera.GetFarPlane(),
+        //     m_camera.GetFov(),
+        //     m_camera.GetAspectRatio(),
+        //     m_camera.GetProjectionMatrix(),
+        //     m_camera.GetViewMatrix(),
+        //     m_camera.GetPosition()
+        // );
 
         if (!m_loadingScene)
             return;
@@ -361,7 +362,7 @@ namespace Slayer::Editor {
         case SlayerKey::KEY_ESCAPE:
             Application::Get()->Stop();
             break;
-        case Slayer::KEY_F12:
+        case SlayerKey::KEY_F11:
         {
             auto& window = Application::Get()->GetWindow();
             window.SetFullscreen(!window.IsFullscreen());
@@ -373,9 +374,21 @@ namespace Slayer::Editor {
         //     window.SetVSync(!window.IsVSync());
         // }
         // break;
-        case Slayer::KEY_F10:
+        case SlayerKey::KEY_F10:
+        {
+            Slayer::Log::Info("Hello!");
             m_renderColliders = !m_renderColliders;
-            break;
+            auto& store = World::GetWorldStore();
+            if (m_renderColliders)
+            {
+                SystemManager::Get()->ActivateSystemGroup(SystemGroup::SL_GROUP_DEBUG_RENDER, store);
+            }
+            else
+            {
+                SystemManager::Get()->DeactivateSystemGroup(SystemGroup::SL_GROUP_DEBUG_RENDER, store);
+            }
+        }
+        break;
         case Slayer::KEY_TAB:
             if (Input::IsKeyPressed(SlayerKey::KEY_LEFT_SHIFT))
             {
@@ -506,6 +519,19 @@ namespace Slayer::Editor {
         m_editMode = !m_editMode;
         auto& window = Application::Get()->GetWindow();
         window.SetCursorEnabled(m_editMode);
+
+        auto& store = World::Get()->GetWorldStore();
+
+        if (m_editMode)
+        {
+            SystemManager::Get()->DeactivateSystemGroup(SystemGroup::SL_GROUP_FIXED_PHYSICS, store);
+            SystemManager::Get()->DeactivateSystemGroup(SystemGroup::SL_GROUP_ANIMATION, store);
+        }
+        else
+        {
+            SystemManager::Get()->ActivateSystemGroup(SystemGroup::SL_GROUP_FIXED_PHYSICS, store);
+            SystemManager::Get()->ActivateSystemGroup(SystemGroup::SL_GROUP_ANIMATION, store);
+        }
     }
 
     void EditorLayer::SaveScene(ComponentStore& store, const std::string& path)

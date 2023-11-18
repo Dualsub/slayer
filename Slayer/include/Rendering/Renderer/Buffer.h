@@ -101,8 +101,8 @@ namespace Slayer {
 		ShaderStorageBuffer(int ssboID);
 		~ShaderStorageBuffer();
 
-		void  Bind();
-		void  Unbind();
+		void Bind();
+		void Unbind();
 		void Dispose();
 
 		template<typename T>
@@ -120,5 +120,32 @@ namespace Slayer {
 		}
 
 		static Shared<ShaderStorageBuffer> Create(size_t size, int binding);
+	};
+
+	class PixelBuffer
+	{
+	private:
+		bool m_hasBeenDisposed = false;
+		unsigned int m_pboID;
+	public:
+		PixelBuffer(int pboID);
+		~PixelBuffer();
+
+		void Bind();
+		void Unbind();
+		void Dispose();
+
+		template<typename T>
+		T* MapBuffer()
+		{
+			return (T*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+		}
+
+		void UnmapBuffer()
+		{
+			glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+		}
+
+		static Shared<PixelBuffer> Create(size_t size);
 	};
 }

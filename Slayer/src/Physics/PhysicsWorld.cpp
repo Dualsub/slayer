@@ -83,7 +83,7 @@ namespace Slayer {
         }
     }
 
-    RigidBodyTransform PhysicsWorld::GetRigidBodyState(BodyID id)
+    RigidBodyState PhysicsWorld::GetRigidBodyState(BodyID id)
     {
         JPH::BodyInterface& interface = m_physicsSystem->GetBodyInterface();
         JPH::BodyID bodyId = m_bodyIDs[id];
@@ -97,8 +97,16 @@ namespace Slayer {
             JoltHelpers::ConvertWithUnits(position),
             JoltHelpers::Convert(rotation),
             JoltHelpers::ConvertWithUnits(linearVelocity),
-            JoltHelpers::ConvertWithUnits(angularVelocity)
+            JoltHelpers::Convert(angularVelocity)
         };
+    }
+
+    Vec3 PhysicsWorld::GetLinearVelocity(BodyID id)
+    {
+        JPH::BodyInterface& interface = m_physicsSystem->GetBodyInterface();
+        JPH::BodyID bodyId = m_bodyIDs[id];
+        JPH::Vec3 linearVelocity = interface.GetLinearVelocity(bodyId);
+        return JoltHelpers::ConvertWithUnits(linearVelocity);
     }
 
     BodyID PhysicsWorld::CreateRigidBody(RigidBodySettings& info, BodyType type)
@@ -128,7 +136,9 @@ namespace Slayer {
             settings.mLayer = Layers::MOVING;
             settings.mUp = JPH::Vec3::sAxisY();
             settings.mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -shape->GetLocalBounds().GetExtent().GetY());
-            settings.mFriction = 0.5f;
+            settings.mFriction = info.friction;
+            // Hardcoded for now
+            settings.mMaxSlopeAngle = glm::radians(45.0f);
 
             Unique<JPH::Character> character = MakeUnique<JPH::Character>(&settings, JoltHelpers::ConvertWithUnits(info.position), JoltHelpers::Convert(info.rotation), 0, m_physicsSystem.get());
             character->AddToPhysicsSystem(JPH::EActivation::Activate);
@@ -205,5 +215,14 @@ namespace Slayer {
         JPH::Character* character = m_characters[id].get();
         JPH::Character::EGroundState state = character->GetGroundState();
         return static_cast<CharacterGroundState>(state);
+    }
+
+    void PhysicsWorld::SetCharacterRotation(BodyID id, Quat rotation)
+    {
+        if (m_characters.find(id) == m_characters.end())
+            return;
+
+        JPH::Character* character = m_characters[id].get();
+        character->SetRotation(JoltHelpers::Convert(rotation));
     }
 }

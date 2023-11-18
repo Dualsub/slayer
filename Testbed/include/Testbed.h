@@ -9,11 +9,8 @@
 #include "Core/Events.h"
 
 #include "Rendering/Renderer/Renderer.h"
-#include "Rendering/RenderingSystem.h"
-#include "Rendering/Animation/AnimationSystem.h"
 #include "Rendering/Animation/AnimationChannel.h"
 
-#include "Scene/TransformSystem.h"
 #include "Scene/Components.h"
 #include "Scene/ComponentStore.h"
 #include "Scene/World.h"
@@ -22,9 +19,6 @@
 #include "Resources/ResourceManager.h"
 #include "Serialization/SceneSerializer.h"
 #include "Serialization/YamlSerializer.h"
-
-#include "Physics/PhysicsSystem.h"
-#include "Physics/ColliderRenderingSystem.h"
 
 #include "Editor/EditorLayer.h"
 #include "SandboxCamera.h"
@@ -101,11 +95,6 @@ namespace Testbed
         Slayer::Renderer m_renderer;
 
         Slayer::SystemManager m_systemManager;
-        Slayer::RenderingSystem m_renderingSystem;
-        Slayer::AnimationSystem m_animationSystem;
-        Slayer::TransformSystem m_transformSystem;
-        Slayer::PhysicsSystem m_physicsSystem;
-        Slayer::ColliderRenderingSystem m_colliderRenderingSystem;
 
         template<typename T>
         bool LoadScene(std::future<T>& future)
@@ -159,7 +148,10 @@ namespace Testbed
             if (m_state != AS_Running)
                 return;
 
-            m_physicsSystem.Update(ts, m_world.GetStore());
+            auto& store = m_world.GetStore();
+
+            m_systemManager.FixedUpdate(Slayer::SystemGroup::SL_GROUP_PRE_PHYSICS, ts, store);
+            m_systemManager.FixedUpdate(Slayer::SystemGroup::SL_GROUP_FIXED_PHYSICS, ts, store);
         }
 
         virtual void OnUpdate(Slayer::Timespan ts) override
@@ -194,10 +186,13 @@ namespace Testbed
                 m_camera->Update(ts);
                 auto& store = m_world.GetStore();
                 store.ClearTransitions();
-                m_transformSystem.Update(ts, store);
-                m_animationSystem.Update(ts, store);
-                m_animationSystem.Render(m_renderer, store);
-                m_renderingSystem.Update(ts, store);
+                m_systemManager.Update(Slayer::SystemGroup::SL_GROUP_PRE_PHYSICS, ts, store);
+                m_systemManager.Update(Slayer::SystemGroup::SL_GROUP_FIXED_PHYSICS, ts, store);
+                m_systemManager.Update(Slayer::SystemGroup::SL_GROUP_POST_PHYSICS, ts, store);
+                m_systemManager.Update(Slayer::SystemGroup::SL_GROUP_TRANSFORM, ts, store);
+                m_systemManager.Update(Slayer::SystemGroup::SL_GROUP_ANIMATION, ts, store);
+                m_systemManager.Render(Slayer::SystemGroup::SL_GROUP_ANIMATION, m_renderer, store);
+                m_systemManager.Update(Slayer::SystemGroup::SL_GROUP_RENDER, ts, store);
                 break;
             }
             case AS_Quitting:
@@ -215,16 +210,18 @@ namespace Testbed
             m_renderer.Clear();
             m_renderer.BeginScene();
 
-            m_renderingSystem.Render(m_renderer, m_world.GetStore());
-            m_colliderRenderingSystem.Render(m_renderer, m_world.GetStore());
+            auto& store = m_world.GetStore();
+
+            m_systemManager.Render(Slayer::SystemGroup::SL_GROUP_RENDER, m_renderer, store);
+            m_systemManager.Render(Slayer::SystemGroup::SL_GROUP_DEBUG_RENDER, m_renderer, store);
 
             m_renderer.Draw();
-
             m_renderer.EndScene();
         }
 
         virtual void OnShutdown() override
         {
+            m_renderer.CleanUp();
             Slayer::ResourceManager::Shutdown();
             m_window.Shutdown();
         }
@@ -235,12 +232,31 @@ namespace Testbed
                 m_camera->OnEvent(e);
 
             SL_EVENT_DISPATCH(Slayer::WindowResizeEvent, Testbed::TestbedApplication::OnResize);
+            SL_EVENT_DISPATCH(Slayer::MouseMoveEvent, Testbed::TestbedApplication::OnMouseMove);
         }
 
         bool OnResize(Slayer::WindowResizeEvent& e)
         {
             Slayer::Log::Info("Window resized to:", e.width, e.height);
             m_renderer.Resize(e.width, e.height);
+            return true;
+        }
+
+        bool OnMouseMove(Slayer::MouseMoveEvent& e)
+        {
+            auto& store = m_world.GetStore();
+            store.WithSingleton<MouseInput>([&e](MouseInput* mouseInput)
+                {
+                    Slayer::Vec2 pos = Slayer::Vec2(e.posX, e.posY);
+                    mouseInput->previousPosition = mouseInput->firstMouse ? pos : mouseInput->currentPosition;
+                    mouseInput->currentPosition = pos;
+
+                    if (mouseInput->firstMouse)
+                    {
+                        mouseInput->firstMouse = false;
+                    }
+                }
+            );
             return true;
         }
     };

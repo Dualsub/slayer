@@ -129,6 +129,12 @@ namespace Slayer {
         }
 
         template<>
+        void Transfer(bool& value, const std::string& name)
+        {
+            out << YAML::Key << name << YAML::Value << value;
+        }
+
+        template<>
         void Transfer(char& value, const std::string& name)
         {
             out << YAML::Key << name << YAML::Value << value;
@@ -368,6 +374,14 @@ namespace Slayer {
             auto node = nodeStack.top();
             if (node[name])
                 value = node[name].as<float>();
+        }
+
+        template<>
+        void Transfer(bool& value, const std::string& name)
+        {
+            auto node = nodeStack.top();
+            if (node[name])
+                value = node[name].as<bool>();
         }
 
         template<>

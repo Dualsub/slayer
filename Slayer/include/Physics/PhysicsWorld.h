@@ -42,11 +42,12 @@ namespace Slayer {
         Quat rotation = glm::identity<Quat>();
 
         float mass = 1.0f;
+        float friction = 0.5f;
 
         Unique<CollisionShape> shape;
     };
 
-    struct RigidBodyTransform
+    struct RigidBodyState
     {
         Vec3 position;
         Quat rotation;
@@ -80,7 +81,8 @@ namespace Slayer {
         void Shutdown();
 
         void StepSimulation(float dt);
-        RigidBodyTransform GetRigidBodyState(BodyID id);
+        RigidBodyState GetRigidBodyState(BodyID id);
+        Vec3 GetLinearVelocity(BodyID id);
 
         BodyID CreateRigidBody(RigidBodySettings& info, BodyType type);
         void UpdateRigidBody(BodyID id, RigidBodySettings& info);
@@ -93,5 +95,6 @@ namespace Slayer {
         void SetAngularVelocity(BodyID id, Vec3 velocity);
 
         CharacterGroundState GetCharacterGroundState(BodyID id);
+        void SetCharacterRotation(BodyID id, Quat rotation);
     };
 }

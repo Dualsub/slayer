@@ -6,14 +6,13 @@ namespace Slayer {
 
     class ColliderRenderingSystem : public System
     {
-        SL_SYSTEM(SystemGroup::SL_GROUP_RENDER)
+        SL_SYSTEM(SystemGroup::SL_GROUP_DEBUG_RENDER)
     public:
         ColliderRenderingSystem() = default;
         virtual ~ColliderRenderingSystem() = default;
 
         void Initialize() {}
         void Shutdown() {}
-        void Update(float dt, class ComponentStore& store) {}
 
         void Render(class Renderer& renderer, class ComponentStore& store);
     };

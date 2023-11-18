@@ -6,6 +6,7 @@
 #include "Rendering/Renderer/SkeletalModel.h"
 #include "Rendering/Animation/AnimationState.h"
 #include "Scene/SingletonComponent.h"
+#include "Physics/PhysicsWorld.h"
 
 #define ENGINE_COMPONENTS \
     Slayer::EntityID, \
@@ -270,6 +271,12 @@ namespace Slayer {
     {
         uint32_t id = 0;
         float mass = 1.0f;
+        float friction = 0.5f;
+        bool interpolatePosition = true;
+        bool interpolateRotation = true;
+
+        RigidBodyState lastState;
+        RigidBodyState currentState;
 
         RigidBody() = default;
         ~RigidBody() = default;
@@ -278,6 +285,9 @@ namespace Slayer {
         void Transfer(Serializer& serializer)
         {
             SL_TRANSFER_VAR(mass);
+            SL_TRANSFER_VAR(friction);
+            SL_TRANSFER_VAR(interpolatePosition);
+            SL_TRANSFER_VAR(interpolateRotation);
         }
     };
 
@@ -286,10 +296,26 @@ namespace Slayer {
         CharacterBody() = default;
         ~CharacterBody() = default;
 
+        float movementSpeed = 400.0f;
+        float sprintSpeed = 600.0f;
+        float jumpSpeed = 400.0f;
+        float movementControl = 0.25f;
+        float jumpControl = 0.005f;
+        bool hermiteInterpolation = true;
+
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
             SL_TRANSFER_VAR(mass);
+            SL_TRANSFER_VAR(friction);
+            SL_TRANSFER_VAR(interpolatePosition);
+            SL_TRANSFER_VAR(hermiteInterpolation);
+            SL_TRANSFER_VAR(interpolateRotation);
+            SL_TRANSFER_VAR(movementSpeed);
+            SL_TRANSFER_VAR(sprintSpeed);
+            SL_TRANSFER_VAR(jumpSpeed);
+            SL_TRANSFER_VAR(movementControl);
+            SL_TRANSFER_VAR(jumpControl);
         }
     };
 

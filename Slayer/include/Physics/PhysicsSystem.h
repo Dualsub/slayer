@@ -11,9 +11,12 @@ namespace Slayer {
         PhysicsSystem() = default;
         virtual ~PhysicsSystem() = default;
 
+        void OnActivated(class ComponentStore& store);
+
         void Initialize() {}
         void Shutdown() {}
-        void Update(float dt, class ComponentStore& store);
+        void Update(Timespan dt, class ComponentStore& store);
+        void FixedUpdate(Timespan dt, class ComponentStore& store);
 
         void Render(class Renderer& renderer, class ComponentStore& store) {}
     };

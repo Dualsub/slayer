@@ -1,12 +1,13 @@
 #pragma once
 
-#include <cstdint>
 #include "Slayer.h"
 #include "Scene/SingletonComponent.h"
 #include "Serialization/Serialization.h"
 
-#define GAME_COMPONENTS Testbed::Player
-#define GAME_SINGLETONS Testbed::TestSingleton
+#include <cstdint>
+
+#define GAME_COMPONENTS Testbed::Player, Testbed::FPCamera
+#define GAME_SINGLETONS Testbed::MouseInput
 
 namespace Testbed {
 
@@ -28,17 +29,28 @@ namespace Testbed {
         }
     };
 
-    struct TestSingleton : public Slayer::SingletonComponent
+    struct MouseInput : public Slayer::SingletonComponent
     {
-        float value = 0.0f;
+        Slayer::Vec2 currentPosition = { 0.0f, 0.0f };
+        Slayer::Vec2 previousPosition = { 0.0f, 0.0f };
+        bool firstMouse = true;
 
-        TestSingleton() = default;
-        ~TestSingleton() = default;
+        MouseInput() = default;
+        ~MouseInput() = default;
 
         template<typename Serializer>
         void Transfer(Serializer& serializer)
         {
-            SL_TRANSFER_VAR(value);
+
+        }
+    };
+
+    struct FPCamera
+    {
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+
         }
     };
 

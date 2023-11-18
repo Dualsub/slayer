@@ -150,7 +150,7 @@ namespace Slayer::Editor {
         dir.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
         m_forward = glm::normalize(dir);
         m_right = glm::cross(m_forward, m_up);
-        return true;
+        return false;
     }
 
     bool EditorCamera::OnWindowResize(Slayer::WindowResizeEvent& e)

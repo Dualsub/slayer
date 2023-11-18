@@ -23,15 +23,27 @@ namespace Slayer {
 			}
 
 			Transform* transform = store.GetComponent<Transform>(entity);
+			Mat4 localMatrix = transform->GetLocalMatrix();
 
 			Entity parentEntity = store.GetEntity(transform->parentId);
 			if (parentEntity != SL_INVALID_ENTITY)
 			{
-				return GetWorldTransform(parentEntity, store) * transform->GetLocalMatrix();
+				Mat4 parentMatrix = GetWorldTransform(parentEntity, store);
+				if (store.HasComponent<SocketAttacher>(entity) && store.HasComponent<SkeletalRenderer>(parentEntity))
+				{
+					SocketAttacher* socketAttacher = store.GetComponent<SocketAttacher>(entity);
+					SkeletalRenderer* renderer = store.GetComponent<SkeletalRenderer>(parentEntity);
+					Shared<SkeletalModel> model = ResourceManager::Get()->GetAsset<SkeletalModel>(renderer->modelID);
+					int32_t boneId = model->GetBoneID(socketAttacher->name);
+					Mat4 boneMarix = Renderer::Get()->GetBoneTransform(0, boneId);
+					parentMatrix *= boneMarix;
+				}
+
+				return parentMatrix * localMatrix;
 			}
 			else
 			{
-				return transform->GetLocalMatrix();
+				return localMatrix;
 			}
 		}
 

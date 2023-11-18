@@ -19,13 +19,21 @@ namespace Slayer
         Dict<SystemGroup, SystemCollection> m_systemCollections;
 
     public:
-        SystemManager() = default;
-        ~SystemManager() = default;
+        SystemManager()
+        {
+            SetInstance(this);
+        }
+
+        ~SystemManager()
+        {
+            SetInstance(nullptr);
+        }
 
         void Initialize();
         void Shutdown();
 
         void Update(SystemGroup group, float dt, class ComponentStore& store);
+        void FixedUpdate(SystemGroup group, float dt, class ComponentStore& store);
         void Render(SystemGroup group, class Renderer& renderer, class ComponentStore& store);
 
         template <typename T, typename... Args>

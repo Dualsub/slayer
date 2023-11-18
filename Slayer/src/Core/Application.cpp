@@ -21,11 +21,10 @@ namespace Slayer
 
     bool Application::CalculateFixedDeltaTime()
     {
-        auto ts = std::chrono::high_resolution_clock::now();
-        auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>(ts - m_lastFixedTime).count() / 1000000000.0f;
-        if (delta >= m_fixedDeltaTime)
+        m_timeSinceFixedUpdate += m_deltaTime;
+        if (m_timeSinceFixedUpdate >= m_fixedDeltaTime)
         {
-            m_lastFixedTime = ts;
+            m_timeSinceFixedUpdate -= m_fixedDeltaTime;
             return true;
         }
         return false;
@@ -34,15 +33,16 @@ namespace Slayer
     void Application::Update()
     {
         SL_EVENT();
+
+        // Update
+        CalculateDeltaTime();
+
         if (CalculateFixedDeltaTime())
         {
             OnFixedUpdate(m_fixedDeltaTime);
             for (auto& layer : m_layers)
                 layer->OnFixedUpdate(m_fixedDeltaTime);
         }
-
-        // Update
-        CalculateDeltaTime();
         OnUpdate(m_deltaTime);
         for (auto& layer : m_layers)
             layer->OnUpdate(m_deltaTime);

@@ -7,6 +7,8 @@ add_executable(Testbed
 
     src/Testbed.cpp
     src/SandboxCamera.cpp
+    src/Systems/CharacterMovementSystem.cpp
+    src/Systems/FiringSystem.cpp
 )
 
 target_link_libraries(Testbed PRIVATE Slayer)

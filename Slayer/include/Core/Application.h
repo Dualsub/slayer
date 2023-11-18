@@ -25,10 +25,13 @@ namespace Slayer
         std::chrono::steady_clock::time_point m_lastFrameTime = std::chrono::high_resolution_clock::now();
         Timespan m_deltaTime = 0.0f;
 
-        std::chrono::steady_clock::time_point m_lastFixedTime = std::chrono::high_resolution_clock::now();
-        const Timespan m_fixedDeltaTime = 1 / 60.0f;
+        Timespan m_timeSinceFixedUpdate = 0.0f;
+        const Timespan m_fixedDeltaTime = 1.0f / 60.0f;
 
         Window m_window;
+
+        void CalculateDeltaTime();
+        bool CalculateFixedDeltaTime();
     public:
 
         static Application* Get() { return s_instance; }
@@ -68,8 +71,8 @@ namespace Slayer
         bool IsRunning() const { return m_running; }
 
         Timespan GetDeltaTime() const { return m_deltaTime; }
-        void CalculateDeltaTime();
-        bool CalculateFixedDeltaTime();
+        constexpr Timespan GetFixedDeltaTime() const { return m_fixedDeltaTime; }
+        const Timespan GetTimeSinceFixedUpdate() const { return m_timeSinceFixedUpdate; }
 
         Window& GetWindow() { return m_window; }
     };

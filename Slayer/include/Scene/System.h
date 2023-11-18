@@ -6,7 +6,7 @@
 
 #define SL_SYSTEM(group) \
     friend class SystemManager; \
-    constexpr SystemGroup GetGroup() const { return group; }
+    constexpr Slayer::SystemGroup GetGroup() const { return group; }
 
 namespace Slayer
 {
@@ -23,6 +23,7 @@ namespace Slayer
         SL_GROUP_NETWORK = 1 << 7,
         SL_GROUP_AUDIO = 1 << 8,
         SL_GROUP_RENDER = 1 << 9,
+        SL_GROUP_DEBUG_RENDER = 1 << 10,
     };
 
 
@@ -35,6 +36,7 @@ namespace Slayer
         virtual void Initialize() = 0;
         virtual void Shutdown() = 0;
         virtual void Update(Timespan dt, class ComponentStore& store) { SL_ASSERT(false && "Render function not implemented"); }
+        virtual void FixedUpdate(Timespan dt, class ComponentStore& store) { SL_ASSERT(false && "Render function not implemented"); }
         virtual void Render(class Renderer& renderer, class ComponentStore& store) { SL_ASSERT(false && "Render function not implemented"); }
         virtual void OnActivated(class ComponentStore& store) { }
         virtual void OnDeactivated(class ComponentStore& store) { }

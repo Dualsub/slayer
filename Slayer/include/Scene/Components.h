@@ -21,7 +21,8 @@
     Slayer::CharacterBody, \
     Slayer::BoxCollider, \
     Slayer::SphereCollider, \
-    Slayer::CapsuleCollider
+    Slayer::CapsuleCollider, \
+    Slayer::CollisionListener
 
 #define ENGINE_SINGLETONS \
     Slayer::DirectionalLight, \
@@ -378,6 +379,15 @@ namespace Slayer {
         {
             SL_TRANSFER_VAR(radius);
             SL_TRANSFER_VAR(halfHeight);
+        }
+    };
+
+    // Contact
+    struct CollisionListener
+    {
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
         }
     };
 

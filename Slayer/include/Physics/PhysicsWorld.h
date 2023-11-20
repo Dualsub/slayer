@@ -2,6 +2,7 @@
 
 #include "Core/Core.h"
 #include "Core/Containers.h"
+#include "Physics/Body.h"
 #include "Physics/CollisionShapes.h"
 #include "Physics/Layers.h"
 #include "Physics/Listeners.h"
@@ -16,14 +17,6 @@
 #define SL_MAX_PHYSICS_BODIES 512
 
 namespace Slayer {
-
-    using BodyID = uint32_t;
-
-    enum BodyType : uint8_t
-    {
-        SL_BODY_TYPE_RIGID,
-        SL_BODY_TYPE_CHARACTER
-    };
 
     enum CharacterGroundState : uint8_t
     {
@@ -98,5 +91,10 @@ namespace Slayer {
 
         CharacterGroundState GetCharacterGroundState(BodyID id);
         void SetCharacterRotation(BodyID id, Quat rotation);
+
+        void RegisterContactListener(BodyID id);
+        void UnregisterContactListener(BodyID id);
+        const Vector<Contact>& GetContacts(BodyID id) const;
+        void ResetContacts();
     };
 }

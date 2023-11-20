@@ -127,6 +127,7 @@ namespace Slayer {
 
             JPH::BodyCreationSettings settings(shape, JoltHelpers::ConvertWithUnits(info.position), JoltHelpers::Convert(info.rotation), motionType, layer);
             settings.mMotionQuality = info.continuousCollision ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete;
+            settings.mUserData = id;
             JPH::BodyID bodyId = interface.CreateAndAddBody(settings, JPH::EActivation::Activate);
             interface.SetLinearVelocity(bodyId, JoltHelpers::ConvertWithUnits(info.initialVelocity));
             m_bodyIDs[id] = bodyId;
@@ -147,6 +148,7 @@ namespace Slayer {
             JPH::BodyID bodyId = character->GetBodyID();
             m_characters[id] = std::move(character);
             m_bodyIDs[id] = bodyId;
+            interface.SetUserData(bodyId, id);
         }
         else
         {
@@ -191,7 +193,6 @@ namespace Slayer {
         }
         m_characters.clear();
     }
-
 
     void PhysicsWorld::SetPosition(BodyID id, Vec3 position)
     {
@@ -238,5 +239,25 @@ namespace Slayer {
 
         JPH::Character* character = m_characters[id].get();
         character->SetRotation(JoltHelpers::Convert(rotation));
+    }
+
+    void PhysicsWorld::RegisterContactListener(BodyID id)
+    {
+        m_contactListener.Register(id);
+    }
+
+    void PhysicsWorld::UnregisterContactListener(BodyID id)
+    {
+        m_contactListener.Unregister(id);
+    }
+
+    const Vector<Contact>& PhysicsWorld::GetContacts(BodyID id) const
+    {
+        return m_contactListener.GetContacts(id);
+    }
+
+    void PhysicsWorld::ResetContacts()
+    {
+        m_contactListener.ClearContacts();
     }
 }

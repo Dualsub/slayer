@@ -5,6 +5,7 @@
 #include "Scene/Components.h"
 #include "Scene/TransformSystem.h"
 #include "Physics/PhysicsSystem.h"
+#include "Physics/ContactSystem.h"
 #include "Physics/ColliderRenderingSystem.h"
 #include "Rendering/RenderingSystem.h"
 #include "Rendering/Animation/AnimationSystem.h"
@@ -33,6 +34,7 @@ namespace Testbed
         m_systemManager.RegisterSystem<Slayer::AnimationSystem>();
         m_systemManager.RegisterSystem<Slayer::TransformSystem>();
         m_systemManager.RegisterSystem<Slayer::PhysicsSystem>();
+        m_systemManager.RegisterSystem<Slayer::ContactSystem>();
         m_systemManager.RegisterSystem<Slayer::ColliderRenderingSystem>();
         m_systemManager.RegisterSystem<CharacterMovementSystem>();
         m_systemManager.RegisterSystem<FiringSystem>();

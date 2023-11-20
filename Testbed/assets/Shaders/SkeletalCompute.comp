@@ -15,6 +15,20 @@ struct AnimationState {
     ivec4 frames;
 }; 
 
+// TODO: Add support for an arbitrary number of animations
+// struct Animation {
+//     int animationTextureID;
+//     vec2 frames;
+//     float time;
+//     float weight;
+// };
+
+// struct AnimationState {
+//     int skeletonID;
+//     int firstAnimationID;
+//     int numAnimations;
+// }; 
+
 layout(std140, binding = 4) uniform AnimationData {
     AnimationState states[MAX_INSTANCES];
     int parents[MAX_SKELETONS * MAX_BONES];

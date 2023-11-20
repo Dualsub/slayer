@@ -21,6 +21,7 @@
 #include <algorithm>
 
 #define SL_ASSERT(x) assert(x)
+#define SL_DEBUG_BREAK() __debugbreak()
 
 #define PROFILING_ENABLED 1
 // Profiling

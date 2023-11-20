@@ -272,12 +272,17 @@ namespace Slayer {
         uint32_t id = 0;
         float mass = 1.0f;
         float friction = 0.5f;
+        Vec3 initialVelocity = Vec3(0.0f);
         bool interpolatePosition = true;
         bool interpolateRotation = true;
+        bool continuousCollision = false;
 
         RigidBodyState lastState;
         RigidBodyState currentState;
 
+        RigidBody(float mass, float friction, bool interpolatePosition = true, bool interpolateRotation = true, bool continuousCollision = false) : mass(mass), friction(friction), interpolatePosition(interpolatePosition), interpolateRotation(interpolateRotation), continuousCollision(continuousCollision)
+        {
+        }
         RigidBody() = default;
         ~RigidBody() = default;
 
@@ -286,6 +291,7 @@ namespace Slayer {
         {
             SL_TRANSFER_VAR(mass);
             SL_TRANSFER_VAR(friction);
+            SL_TRANSFER_VAR(initialVelocity);
             SL_TRANSFER_VAR(interpolatePosition);
             SL_TRANSFER_VAR(interpolateRotation);
         }

@@ -1,5 +1,7 @@
 #include "Core/Application.h"
 
+#include <algorithm>
+
 namespace Slayer
 {
     Application* Application::s_instance = nullptr;
@@ -24,7 +26,9 @@ namespace Slayer
         m_timeSinceFixedUpdate += m_deltaTime;
         if (m_timeSinceFixedUpdate >= m_fixedDeltaTime)
         {
-            m_timeSinceFixedUpdate -= m_fixedDeltaTime;
+            uint32_t numFixedUpdates = std::clamp(uint32_t(m_timeSinceFixedUpdate / m_fixedDeltaTime), 1u, 5u);
+            m_timeSinceFixedUpdate -= m_fixedDeltaTime * numFixedUpdates;
+            m_fixedUpdateCount = numFixedUpdates;
             return true;
         }
         return false;

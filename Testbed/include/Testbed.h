@@ -193,6 +193,7 @@ namespace Testbed
                 m_systemManager.Update(Slayer::SystemGroup::SL_GROUP_ANIMATION, ts, store);
                 m_systemManager.Render(Slayer::SystemGroup::SL_GROUP_ANIMATION, m_renderer, store);
                 m_systemManager.Update(Slayer::SystemGroup::SL_GROUP_RENDER, ts, store);
+                store.DestroyDefferedEntities();
                 break;
             }
             case AS_Quitting:

@@ -25,6 +25,7 @@ namespace Slayer
         std::chrono::steady_clock::time_point m_lastFrameTime = std::chrono::high_resolution_clock::now();
         Timespan m_deltaTime = 0.0f;
 
+        uint32_t m_fixedUpdateCount = 1;
         Timespan m_timeSinceFixedUpdate = 0.0f;
         const Timespan m_fixedDeltaTime = 1.0f / 60.0f;
 
@@ -73,6 +74,7 @@ namespace Slayer
         Timespan GetDeltaTime() const { return m_deltaTime; }
         constexpr Timespan GetFixedDeltaTime() const { return m_fixedDeltaTime; }
         const Timespan GetTimeSinceFixedUpdate() const { return m_timeSinceFixedUpdate; }
+        const uint32_t GetFixedUpdateCount() const { return m_fixedUpdateCount; }
 
         Window& GetWindow() { return m_window; }
     };

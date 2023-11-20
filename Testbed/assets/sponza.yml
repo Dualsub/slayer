@@ -48,12 +48,14 @@ Scene:
           - id: 8484318114773897130
           - id: 17955001547278431938
           - id: 16468097820443372522
+      BulletSource:
+        offset: [0, 0, -40]
     - EntityID:
         id: 1332298156039006325
       TagComponent:
         tag: Camera
       Transform:
-        parentId: 100
+        parentId: 500
         position: [0, 49, 0]
         scale: [1, 1, 1]
         rotation: [0, -0, 0]
@@ -113,7 +115,102 @@ Scene:
       BoxCollider:
         halfExtents: [50, 50, 50]
     - EntityID:
-        id: 100
+        id: 5932199937713210256
+      TagComponent:
+        tag: Box2
+      Transform:
+        parentId: 0
+        position: [161.278473, 400, -357.988922]
+        scale: [0.100000001, 0.100000001, 0.100000001]
+        rotation: [0, 22.6957436, 0]
+      ModelRenderer:
+        modelID: 9086005318548266571
+        materialIDs:
+          - id: 17211454273108038073
+      RigidBody:
+        mass: 1
+        interpolatePosition: true
+        interpolateRotation: true
+      BoxCollider:
+        halfExtents: [50, 50, 50]
+    - EntityID:
+        id: 5932199937713210231
+      TagComponent:
+        tag: Box3
+      Transform:
+        parentId: 0
+        position: [161.278473, 500, -300]
+        scale: [0.100000001, 0.100000001, 0.100000001]
+        rotation: [0, 0, -179.999756]
+      ModelRenderer:
+        modelID: 9086005318548266571
+        materialIDs:
+          - id: 17211454273108038073
+      RigidBody:
+        mass: 1
+        interpolatePosition: true
+        interpolateRotation: true
+      BoxCollider:
+        halfExtents: [50, 50, 50]
+    - EntityID:
+        id: 5932199937713560231
+      TagComponent:
+        tag: Box4
+      Transform:
+        parentId: 0
+        position: [161.278473, 700, -200]
+        scale: [0.100000001, 0.100000001, 0.100000001]
+        rotation: [100, 0, -179.999756]
+      ModelRenderer:
+        modelID: 9086005318548266571
+        materialIDs:
+          - id: 17211454273108038073
+      RigidBody:
+        mass: 1
+        interpolatePosition: true
+        interpolateRotation: true
+      BoxCollider:
+        halfExtents: [50, 50, 50]
+    - EntityID:
+        id: 5932199937713210231
+      TagComponent:
+        tag: Box5
+      Transform:
+        parentId: 0
+        position: [245.278473, 800, -300]
+        scale: [0.100000001, 0.100000001, 0.100000001]
+        rotation: [0, 20, -179.999756]
+      ModelRenderer:
+        modelID: 9086005318548266571
+        materialIDs:
+          - id: 17211454273108038073
+      RigidBody:
+        mass: 1
+        interpolatePosition: true
+        interpolateRotation: true
+      BoxCollider:
+        halfExtents: [50, 50, 50]
+    - EntityID:
+        id: 5932199937713210231
+      TagComponent:
+        tag: Box6
+      Transform:
+        parentId: 0
+        position: [100, 800, -200]
+        scale: [0.100000001, 0.100000001, 0.100000001]
+        rotation: [0, 40, 60]
+      ModelRenderer:
+        modelID: 9086005318548266571
+        materialIDs:
+          - id: 17211454273108038073
+      RigidBody:
+        mass: 1
+        interpolatePosition: true
+        interpolateRotation: true
+      BoxCollider:
+        halfExtents: [50, 50, 50]
+    - EntityID:
+        id: 500
       TagComponent:
         tag: Character
       Transform:
@@ -125,6 +222,7 @@ Scene:
         friction: 0.0
         mass: 1
         interpolatePosition: true
+        hermiteInterpolation: false
         interpolateRotation: false
         movementSpeed: 400
         jumpSpeed: 400

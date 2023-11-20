@@ -40,9 +40,11 @@ namespace Slayer {
     {
         Vec3 position = Vec3(0.0f);
         Quat rotation = glm::identity<Quat>();
+        Vec3 initialVelocity = Vec3(0.0f);
 
         float mass = 1.0f;
         float friction = 0.5f;
+        bool continuousCollision = false;
 
         Unique<CollisionShape> shape;
     };
@@ -80,7 +82,7 @@ namespace Slayer {
         void Initialize();
         void Shutdown();
 
-        void StepSimulation(float dt);
+        void StepSimulation(float dt, uint32_t numSubSteps = 1);
         RigidBodyState GetRigidBodyState(BodyID id);
         Vec3 GetLinearVelocity(BodyID id);
 

@@ -27,11 +27,24 @@ namespace Slayer {
     void CreateBodyWithShape(Entity entity, RigidBody* body, Transform* transform, PhysicsWorld& pw, BodyType type, ShapeArgs... args)
     {
         RigidBodySettings settings;
+
+        // Properties
         settings.mass = body->mass;
+        settings.friction = body->friction;
+
+        // State
         settings.position = transform->position;
         settings.rotation = transform->rotation;
+        settings.initialVelocity = body->initialVelocity;
+
+        // Slags
+        settings.continuousCollision = body->continuousCollision;
+
+        // Shape
         settings.shape = MakeUnique<Shape>(args...);
         BodyID id = pw.CreateRigidBody(settings, type);
+
+        // Read back the state
         body->id = id;
         body->currentState = pw.GetRigidBodyState(id);
         body->lastState = body->currentState;
@@ -40,15 +53,15 @@ namespace Slayer {
     template<typename ComponentType>
     void CreateBodies(ComponentStore& store, PhysicsWorld& pw, BodyType type)
     {
-        store.ForTransitionTo<ComponentType, BoxCollider, Transform>([&pw, &type](Entity entity, ComponentType* body, BoxCollider* collider, Transform* transform) {
+        store.ForTransitionTo<ComponentType, BoxCollider, Transform>([&](Entity entity, ComponentType* body, BoxCollider* collider, Transform* transform) {
             CreateBodyWithShape<BoxShape>(entity, body, transform, pw, type, collider->halfExtents);
             });
 
-        store.ForTransitionTo<ComponentType, SphereCollider, Transform>([&pw, &type](Entity entity, ComponentType* body, SphereCollider* collider, Transform* transform) {
+        store.ForTransitionTo<ComponentType, SphereCollider, Transform>([&](Entity entity, ComponentType* body, SphereCollider* collider, Transform* transform) {
             CreateBodyWithShape<SphereShape>(entity, body, transform, pw, type, collider->radius);
             });
 
-        store.ForTransitionTo<ComponentType, CapsuleCollider, Transform>([&pw, &type](Entity entity, ComponentType* body, CapsuleCollider* collider, Transform* transform) {
+        store.ForTransitionTo<ComponentType, CapsuleCollider, Transform>([&](Entity entity, ComponentType* body, CapsuleCollider* collider, Transform* transform) {
             CreateBodyWithShape<CapsuleShape>(entity, body, transform, pw, type, collider->radius, collider->halfHeight);
             });
 
@@ -58,9 +71,9 @@ namespace Slayer {
     {
         PhysicsWorld& pw = World::GetPhysicsWorld();
 
-        // When a rigid body is added to the store, add it to the physics world
-        CreateBodies<RigidBody>(store, pw, BodyType::SL_BODY_TYPE_RIGID);
-        CreateBodies<CharacterBody>(store, pw, BodyType::SL_BODY_TYPE_CHARACTER);
+        // // When a rigid body is added to the store, add it to the physics world
+        // CreateBodies<RigidBody>(store, pw, BodyType::SL_BODY_TYPE_RIGID);
+        // CreateBodies<CharacterBody>(store, pw, BodyType::SL_BODY_TYPE_CHARACTER);
     }
 
     void PhysicsSystem::FixedUpdate(Timespan dt, ComponentStore& store)
@@ -72,12 +85,21 @@ namespace Slayer {
         CreateBodies<CharacterBody>(store, pw, BodyType::SL_BODY_TYPE_CHARACTER);
 
         // When a rigid body is removed from the store, remove it from the physics world
-        store.ForTransitionFrom<RigidBody>([&pw](Entity entity, RigidBody* body) {
-            pw.RemoveRigidBody(entity);
-            });
+        store.ForTransitionFrom<RigidBody>([&pw](Entity entity, RigidBody* body)
+            {
+                pw.RemoveRigidBody(body->id);
+            }
+        );
 
+        store.ForTransitionFrom<EntityID, CharacterBody>([&pw](Entity entity, EntityID* id, CharacterBody* body)
+            {
+                pw.RemoveRigidBody(body->id);
+            }
+        );
+
+        const uint32_t numSubSteps = Application::Get()->GetFixedUpdateCount();
         // Update the physics world
-        pw.StepSimulation(dt);
+        pw.StepSimulation(dt, numSubSteps);
 
         store.ForEachAsync<RigidBody>([&pw](Entity entity, RigidBody* body)
             {
@@ -92,7 +114,6 @@ namespace Slayer {
                 body->currentState = pw.GetRigidBodyState(body->id);
             }
         );
-
     }
 
     void PhysicsSystem::Update(Timespan dt, ComponentStore& store)

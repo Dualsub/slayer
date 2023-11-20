@@ -72,9 +72,9 @@ namespace Slayer {
         JPH::Factory::sInstance = nullptr;
     }
 
-    void PhysicsWorld::StepSimulation(float dt)
+    void PhysicsWorld::StepSimulation(float dt, uint32_t numSubSteps)
     {
-        m_physicsSystem->Update(dt, 1, s_tempAllocator.get(), s_jobSystem.get());
+        m_physicsSystem->Update(dt, numSubSteps, s_tempAllocator.get(), s_jobSystem.get());
 
         const float collisionTolerance = 0.05f;
         for (auto& [id, character] : m_characters)
@@ -126,7 +126,9 @@ namespace Slayer {
             JPH::EMotionType motionType = info.mass > 0.0f ? JPH::EMotionType::Dynamic : JPH::EMotionType::Static;
 
             JPH::BodyCreationSettings settings(shape, JoltHelpers::ConvertWithUnits(info.position), JoltHelpers::Convert(info.rotation), motionType, layer);
+            settings.mMotionQuality = info.continuousCollision ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete;
             JPH::BodyID bodyId = interface.CreateAndAddBody(settings, JPH::EActivation::Activate);
+            interface.SetLinearVelocity(bodyId, JoltHelpers::ConvertWithUnits(info.initialVelocity));
             m_bodyIDs[id] = bodyId;
         }
         else if (type == BodyType::SL_BODY_TYPE_CHARACTER)
@@ -156,8 +158,18 @@ namespace Slayer {
 
     void PhysicsWorld::RemoveRigidBody(BodyID id)
     {
+        if (m_bodyIDs.find(id) == m_bodyIDs.end())
+            return;
+
+        if (m_characters.find(id) != m_characters.end())
+        {
+            m_characters[id]->RemoveFromPhysicsSystem();
+            m_characters.erase(id);
+        }
+
         JPH::BodyInterface& interface = m_physicsSystem->GetBodyInterface();
-        JPH::BodyID bodyId = m_bodyIDs[id];
+        JPH::BodyID& bodyId = m_bodyIDs[id];
+        interface.RemoveBody(bodyId);
         interface.DestroyBody(bodyId);
         m_bodyIDs.erase(id);
     }
@@ -167,6 +179,7 @@ namespace Slayer {
         JPH::BodyInterface& interface = m_physicsSystem->GetBodyInterface();
         for (auto& [id, bodyId] : m_bodyIDs)
         {
+            interface.RemoveBody(bodyId);
             interface.DestroyBody(bodyId);
         }
         m_bodyIDs.clear();
@@ -174,6 +187,7 @@ namespace Slayer {
         for (auto& [id, character] : m_characters)
         {
             character->RemoveFromPhysicsSystem();
+            character.release();
         }
         m_characters.clear();
     }

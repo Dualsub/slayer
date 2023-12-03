@@ -46,6 +46,7 @@ namespace Slayer
 
         void ActivateAllGroups(class ComponentStore& store);
         void DeactivateAllGroups(class ComponentStore& store);
+        void ToggleSystemGroup(bool activate, SystemGroup group, class ComponentStore& store);
         void ActivateSystemGroup(SystemGroup group, class ComponentStore& store);
         void DeactivateSystemGroup(SystemGroup group, class ComponentStore& store);
     };

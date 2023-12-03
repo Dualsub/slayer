@@ -89,6 +89,18 @@ namespace Slayer
         }
     }
 
+    void SystemManager::ToggleSystemGroup(bool activate, SystemGroup group, class ComponentStore& store)
+    {
+        if (activate)
+        {
+            ActivateSystemGroup(group, store);
+        }
+        else
+        {
+            DeactivateSystemGroup(group, store);
+        }
+    }
+
     void SystemManager::ActivateSystemGroup(SystemGroup group, class ComponentStore& store)
     {
         if (group == SystemGroup::SL_GROUP_NONE && m_systemCollections.contains(group))

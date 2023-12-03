@@ -295,6 +295,8 @@ namespace Slayer::Editor {
 
         auto& window = Application::Get()->GetWindow();
         // m_camera.SetProjectionMatrix(45.0f, (float)window.GetWidth(), (float)window.GetHeight(), 5.0f, 10000.0f);
+
+        SystemManager::Get()->ToggleSystemGroup(m_renderColliders, SystemGroup::SL_GROUP_DEBUG_RENDER, World::GetWorldStore());
     }
 
     void EditorLayer::OnDetach()
@@ -376,17 +378,8 @@ namespace Slayer::Editor {
         // break;
         case SlayerKey::KEY_F10:
         {
-            Slayer::Log::Info("Hello!");
             m_renderColliders = !m_renderColliders;
-            auto& store = World::GetWorldStore();
-            if (m_renderColliders)
-            {
-                SystemManager::Get()->ActivateSystemGroup(SystemGroup::SL_GROUP_DEBUG_RENDER, store);
-            }
-            else
-            {
-                SystemManager::Get()->DeactivateSystemGroup(SystemGroup::SL_GROUP_DEBUG_RENDER, store);
-            }
+            SystemManager::Get()->ToggleSystemGroup(m_renderColliders, SystemGroup::SL_GROUP_DEBUG_RENDER, World::GetWorldStore());
         }
         break;
         case Slayer::KEY_TAB:

@@ -1,7 +1,16 @@
 #include "Testbed.h"
+
 #include "Resources/ResourceManager.h"
 #include "Input/Input.h"
 #include "Scene/Components.h"
+#include "Scene/TransformSystem.h"
+#include "Physics/PhysicsSystem.h"
+#include "Physics/ContactSystem.h"
+#include "Physics/ColliderRenderingSystem.h"
+#include "Rendering/RenderingSystem.h"
+#include "Rendering/Animation/AnimationSystem.h"
+#include "Systems/CharacterMovementSystem.h"
+#include "Systems/FiringSystem.h"
 #include "Utils.h"
 
 #include <filesystem>
@@ -21,6 +30,15 @@ namespace Testbed
 
     void TestbedApplication::InitializeScene()
     {
+        m_systemManager.RegisterSystem<Slayer::RenderingSystem>();
+        m_systemManager.RegisterSystem<Slayer::AnimationSystem>();
+        m_systemManager.RegisterSystem<Slayer::TransformSystem>();
+        m_systemManager.RegisterSystem<Slayer::PhysicsSystem>();
+        m_systemManager.RegisterSystem<Slayer::ContactSystem>();
+        m_systemManager.RegisterSystem<Slayer::ColliderRenderingSystem>();
+        m_systemManager.RegisterSystem<CharacterMovementSystem>();
+        m_systemManager.RegisterSystem<FiringSystem>();
+
         auto& store = m_world.GetStore();
 
         Slayer::ForEachComponentType([&store]<typename T>() {
@@ -41,7 +59,7 @@ namespace Testbed
 
     void TestbedApplication::InitializeWindow()
     {
-        m_window.Initialize("Testbed", 1920, 1080);
+        m_window.Initialize("Testbed", 1600, 900);
         m_window.SetEventCallback(SL_EVENT_BIND(Application::HandleEvent));
 
         Slayer::Input::Initialize(&m_window);

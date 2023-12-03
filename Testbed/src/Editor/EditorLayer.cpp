@@ -4,6 +4,7 @@
 #include "Core/Events.h"
 #include "Input/Input.h"
 #include "Scene/World.h"
+#include "Scene/SystemManager.h"
 #include "Editor/EditorActions.h"
 #include "Serialization/YamlSerializer.h"
 #include "Rendering/Renderer/Renderer.h"
@@ -15,24 +16,6 @@
 namespace Slayer::Editor {
 
     namespace Panels {
-
-        void ShadowMapPanel()
-        {
-            ImGui::Begin("Shadow Map Viewer");
-
-            auto* renderer = Renderer::Get();
-            if (!renderer || !renderer->GetShadowFramebuffer())
-            {
-                ImGui::End();
-                return;
-            }
-
-            auto shadowMapId = renderer->GetShadowFramebuffer()->GetDepthAttachmentID();
-            uint32_t size = std::min(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
-            ImGui::Image((ImTextureID)shadowMapId, ImVec2(size, size), ImVec2(0, 1), ImVec2(1, 0));
-
-            ImGui::End();
-        }
 
         void RenderMenuBar(auto&& saveScene = []() {}, auto&& loadScene = []() {})
         {
@@ -311,7 +294,9 @@ namespace Slayer::Editor {
         }
 
         auto& window = Application::Get()->GetWindow();
-        m_camera.SetProjectionMatrix(45.0f, (float)window.GetWidth(), (float)window.GetHeight(), 5.0f, 10000.0f);
+        // m_camera.SetProjectionMatrix(45.0f, (float)window.GetWidth(), (float)window.GetHeight(), 5.0f, 10000.0f);
+
+        SystemManager::Get()->ToggleSystemGroup(m_renderColliders, SystemGroup::SL_GROUP_DEBUG_RENDER, World::GetWorldStore());
     }
 
     void EditorLayer::OnDetach()
@@ -332,16 +317,16 @@ namespace Slayer::Editor {
             m_camera.SetFirstMouse(true);
         }
 
-        auto* renderer = Renderer::Get();
-        renderer->SetCameraData(
-            m_camera.GetNearPlane(),
-            m_camera.GetFarPlane(),
-            m_camera.GetFov(),
-            m_camera.GetAspectRatio(),
-            m_camera.GetProjectionMatrix(),
-            m_camera.GetViewMatrix(),
-            m_camera.GetPosition()
-        );
+        // auto* renderer = Renderer::Get();
+        // renderer->SetCameraData(
+        //     m_camera.GetNearPlane(),
+        //     m_camera.GetFarPlane(),
+        //     m_camera.GetFov(),
+        //     m_camera.GetAspectRatio(),
+        //     m_camera.GetProjectionMatrix(),
+        //     m_camera.GetViewMatrix(),
+        //     m_camera.GetPosition()
+        // );
 
         if (!m_loadingScene)
             return;
@@ -379,7 +364,7 @@ namespace Slayer::Editor {
         case SlayerKey::KEY_ESCAPE:
             Application::Get()->Stop();
             break;
-        case Slayer::KEY_F12:
+        case SlayerKey::KEY_F11:
         {
             auto& window = Application::Get()->GetWindow();
             window.SetFullscreen(!window.IsFullscreen());
@@ -391,6 +376,12 @@ namespace Slayer::Editor {
         //     window.SetVSync(!window.IsVSync());
         // }
         // break;
+        case SlayerKey::KEY_F10:
+        {
+            m_renderColliders = !m_renderColliders;
+            SystemManager::Get()->ToggleSystemGroup(m_renderColliders, SystemGroup::SL_GROUP_DEBUG_RENDER, World::GetWorldStore());
+        }
+        break;
         case Slayer::KEY_TAB:
             if (Input::IsKeyPressed(SlayerKey::KEY_LEFT_SHIFT))
             {
@@ -501,7 +492,6 @@ namespace Slayer::Editor {
             Panels::RenderMenuBar(saveScene, loadScene);
             Panels::RenderScenePanel(m_selection);
             Panels::RenderInspectorPanel(m_propertySerializer, m_selection);
-            Panels::ShadowMapPanel();
 
             ImGui::End();
         }
@@ -522,6 +512,19 @@ namespace Slayer::Editor {
         m_editMode = !m_editMode;
         auto& window = Application::Get()->GetWindow();
         window.SetCursorEnabled(m_editMode);
+
+        auto& store = World::Get()->GetWorldStore();
+
+        if (m_editMode)
+        {
+            SystemManager::Get()->DeactivateSystemGroup(SystemGroup::SL_GROUP_FIXED_PHYSICS, store);
+            SystemManager::Get()->DeactivateSystemGroup(SystemGroup::SL_GROUP_ANIMATION, store);
+        }
+        else
+        {
+            SystemManager::Get()->ActivateSystemGroup(SystemGroup::SL_GROUP_FIXED_PHYSICS, store);
+            SystemManager::Get()->ActivateSystemGroup(SystemGroup::SL_GROUP_ANIMATION, store);
+        }
     }
 
     void EditorLayer::SaveScene(ComponentStore& store, const std::string& path)

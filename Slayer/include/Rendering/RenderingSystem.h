@@ -28,20 +28,8 @@ namespace Slayer {
 
         void Update(float dt, ComponentStore& store)
         {
-        }
-
-        void Render(Renderer& renderer, ComponentStore& store)
-        {
-            SL_EVENT();
-
-            store.WithSingleton<WorldRenderingSettings>([&](WorldRenderingSettings* settings)
-                {
-                    renderer.SetGamma(settings->gamma);
-                    renderer.SetExposure(settings->exposure);
-                    renderer.SetShadowCascadeIndex(settings->shadowCascadeIndex);
-                });
-
-            store.WithSingleton<WorldCamera>([&store, &renderer](WorldCamera* camera)
+            auto* renderer = Renderer::Get();
+            store.WithSingleton<WorldCamera>([&store, renderer](WorldCamera* camera)
                 {
                     Entity attachEntity = store.GetEntity(camera->attachEntityId);
                     if (!store.IsValid(attachEntity) || !store.HasComponent<Transform>(attachEntity))
@@ -54,16 +42,30 @@ namespace Slayer {
                     float height = (float)app->GetWindow().GetHeight();
                     Mat4 projection = glm::perspective(glm::radians(camera->fov), width / height, camera->nearPlane, camera->farPlane);
 
-                    Mat4 view = glm::inverse(transform->GetMatrix());
+                    Mat4 view = glm::inverse(transform->worldTransform);
+                    Vec3 position = Vec3(transform->worldTransform[3]);
 
-                    renderer.SetCameraData(
+                    renderer->SetCameraData(
                         camera->nearPlane,
                         camera->farPlane,
                         camera->fov,
                         width / height,
                         projection,
                         view,
-                        transform->position);
+                        position);
+                });
+
+        }
+
+        void Render(Renderer& renderer, ComponentStore& store)
+        {
+            SL_EVENT();
+
+            store.WithSingleton<WorldRenderingSettings>([&](WorldRenderingSettings* settings)
+                {
+                    renderer.SetGamma(settings->gamma);
+                    renderer.SetExposure(settings->exposure);
+                    renderer.SetShadowCascadeIndex(settings->shadowCascadeIndex);
                 });
 
             store.WithSingleton<DirectionalLight>([&](DirectionalLight* light)

@@ -1,5 +1,7 @@
 #include "Core/Application.h"
 
+#include <algorithm>
+
 namespace Slayer
 {
     Application* Application::s_instance = nullptr;
@@ -19,10 +21,32 @@ namespace Slayer
         return;
     }
 
+    bool Application::CalculateFixedDeltaTime()
+    {
+        m_timeSinceFixedUpdate += m_deltaTime;
+        if (m_timeSinceFixedUpdate >= m_fixedDeltaTime)
+        {
+            uint32_t numFixedUpdates = std::clamp(uint32_t(m_timeSinceFixedUpdate / m_fixedDeltaTime), 1u, 5u);
+            m_timeSinceFixedUpdate -= m_fixedDeltaTime * numFixedUpdates;
+            m_fixedUpdateCount = numFixedUpdates;
+            return true;
+        }
+        return false;
+    }
+
     void Application::Update()
     {
         SL_EVENT();
+
+        // Update
         CalculateDeltaTime();
+
+        if (CalculateFixedDeltaTime())
+        {
+            OnFixedUpdate(m_fixedDeltaTime);
+            for (auto& layer : m_layers)
+                layer->OnFixedUpdate(m_fixedDeltaTime);
+        }
         OnUpdate(m_deltaTime);
         for (auto& layer : m_layers)
             layer->OnUpdate(m_deltaTime);

@@ -13,6 +13,7 @@ namespace Slayer {
 
         virtual void OnAttach() = 0;
         virtual void OnDetach() = 0;
+        virtual void OnFixedUpdate(Timespan ts) = 0;
         virtual void OnUpdate(Timespan ts) = 0;
         virtual void OnRender() = 0;
         virtual void OnEvent(Event& e) = 0;

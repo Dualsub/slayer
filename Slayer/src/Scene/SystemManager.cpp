@@ -3,15 +3,6 @@
 
 namespace Slayer
 {
-
-    SystemManager::SystemManager()
-    {
-    }
-
-    SystemManager::~SystemManager()
-    {
-    }
-
     void SystemManager::Initialize()
     {
     }
@@ -20,103 +11,131 @@ namespace Slayer
     {
     }
 
-    void SystemManager::Update(SystemGroup group, float dt, class ComponentStore &store)
+    void SystemManager::Update(SystemGroup group, float dt, class ComponentStore& store)
     {
-        SystemCollection &collection = m_systemCollections[group];
+        SystemCollection& collection = m_systemCollections[group];
         if (!collection.active)
         {
             return;
         }
 
-        for (const Unique<System> &system : collection.systems)
+        for (const Unique<System>& system : collection.systems)
         {
             system->Update(dt, store);
         }
     }
 
-    void SystemManager::Render(SystemGroup group, class Renderer &renderer, class ComponentStore &store)
+    void SystemManager::FixedUpdate(SystemGroup group, float dt, class ComponentStore& store)
     {
-        SystemCollection &collection = m_systemCollections[group];
+        SystemCollection& collection = m_systemCollections[group];
         if (!collection.active)
         {
             return;
         }
 
-        for (const Unique<System> &system : collection.systems)
+        for (const Unique<System>& system : collection.systems)
+        {
+            system->FixedUpdate(dt, store);
+        }
+    }
+
+    void SystemManager::Render(SystemGroup group, class Renderer& renderer, class ComponentStore& store)
+    {
+        SystemCollection& collection = m_systemCollections[group];
+        if (!collection.active)
+        {
+            return;
+        }
+
+        for (const Unique<System>& system : collection.systems)
         {
             system->Render(renderer, store);
         }
     }
 
-    template <typename T, typename... Args>
-    void SystemManager::RegisterSystem(Args &&...args)
+    void SystemManager::ActivateAllGroups(class ComponentStore& store)
     {
-        Unique<System> system = MakeUnique<T>(std::forward<Args>(args)...);
-        SystemGroup group = static_cast<T *>(system.get())->GetGroup();
-        m_systemCollections[group].systems.push_back(std::move(system));
-    }
-
-    void SystemManager::ActivateAllGroups(class ComponentStore &store)
-    {
-        for (auto &pair : m_systemCollections)
+        for (auto& pair : m_systemCollections)
         {
-            SystemCollection &collection = pair.second;
+            SystemCollection& collection = pair.second;
             if (collection.active)
             {
                 continue;
             }
 
             collection.active = true;
-            for (const Unique<System> &system : collection.systems)
+            for (const Unique<System>& system : collection.systems)
             {
                 system->OnActivated(store);
             }
         }
     }
 
-    void SystemManager::DeactivateAllGroups(class ComponentStore &store)
+    void SystemManager::DeactivateAllGroups(class ComponentStore& store)
     {
-        for (auto &pair : m_systemCollections)
+        for (auto& pair : m_systemCollections)
         {
-            SystemCollection &collection = pair.second;
+            SystemCollection& collection = pair.second;
             if (!collection.active)
             {
                 continue;
             }
 
             collection.active = false;
-            for (const Unique<System> &system : collection.systems)
+            for (const Unique<System>& system : collection.systems)
             {
                 system->OnDeactivated(store);
             }
         }
     }
 
-    void SystemManager::ActivateSystemGroup(SystemGroup group, class ComponentStore &store)
+    void SystemManager::ToggleSystemGroup(bool activate, SystemGroup group, class ComponentStore& store)
     {
-        SystemCollection &collection = m_systemCollections[group];
+        if (activate)
+        {
+            ActivateSystemGroup(group, store);
+        }
+        else
+        {
+            DeactivateSystemGroup(group, store);
+        }
+    }
+
+    void SystemManager::ActivateSystemGroup(SystemGroup group, class ComponentStore& store)
+    {
+        if (group == SystemGroup::SL_GROUP_NONE && m_systemCollections.contains(group))
+        {
+            return;
+        }
+
+        SystemCollection& collection = m_systemCollections[group];
         if (collection.active)
         {
             return;
         }
 
         collection.active = true;
-        for (const Unique<System> &system : collection.systems)
+        for (const Unique<System>& system : collection.systems)
         {
             system->OnActivated(store);
         }
     }
 
-    void SystemManager::DeactivateSystemGroup(SystemGroup group, class ComponentStore &store)
+    void SystemManager::DeactivateSystemGroup(SystemGroup group, class ComponentStore& store)
     {
-        SystemCollection &collection = m_systemCollections[group];
+        if (group == SystemGroup::SL_GROUP_NONE && m_systemCollections.contains(group))
+        {
+            return;
+        }
+
+        SystemCollection& collection = m_systemCollections[group];
         if (!collection.active)
         {
             return;
         }
 
         collection.active = false;
-        for (const Unique<System> &system : collection.systems)
+        for (const Unique<System>& system : collection.systems)
         {
             system->OnDeactivated(store);
         }

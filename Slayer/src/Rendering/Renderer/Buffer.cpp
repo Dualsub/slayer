@@ -157,4 +157,39 @@ namespace Slayer {
 		return MakeShared<ShaderStorageBuffer>(ssbo);
 	}
 
+	PixelBuffer::PixelBuffer(int pboID) : m_pboID(pboID)
+	{
+	}
+
+	PixelBuffer::~PixelBuffer()
+	{
+		SL_ASSERT(m_hasBeenDisposed && "PixelBuffer has not been disposed!");
+	}
+
+	void PixelBuffer::Bind()
+	{
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pboID);
+	}
+
+	void PixelBuffer::Unbind()
+	{
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+	}
+
+	void PixelBuffer::Dispose()
+	{
+		glDeleteBuffers(1, &m_pboID);
+		m_hasBeenDisposed = true;
+	}
+
+	Shared<PixelBuffer> PixelBuffer::Create(size_t size)
+	{
+		uint32_t pbo;
+		glGenBuffers(1, &pbo);
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, size, 0, GL_STREAM_READ);
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+		return MakeShared<PixelBuffer>(pbo);
+	}
 }

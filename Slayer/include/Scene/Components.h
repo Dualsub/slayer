@@ -6,6 +6,7 @@
 #include "Rendering/Renderer/SkeletalModel.h"
 #include "Rendering/Animation/AnimationState.h"
 #include "Scene/SingletonComponent.h"
+#include "Physics/PhysicsWorld.h"
 
 #define ENGINE_COMPONENTS \
     Slayer::EntityID, \
@@ -15,7 +16,13 @@
     Slayer::SkeletalRenderer, \
     Slayer::SkeletalSockets, \
     Slayer::SocketAttacher, \
-    Slayer::AnimationPlayer
+    Slayer::AnimationPlayer, \
+    Slayer::RigidBody, \
+    Slayer::CharacterBody, \
+    Slayer::BoxCollider, \
+    Slayer::SphereCollider, \
+    Slayer::CapsuleCollider, \
+    Slayer::CollisionListener
 
 #define ENGINE_SINGLETONS \
     Slayer::DirectionalLight, \
@@ -73,7 +80,7 @@ namespace Slayer {
         }
         ~Transform() = default;
 
-        Mat4 GetMatrix() const
+        Mat4 GetLocalMatrix() const
         {
             Mat4 matrix = Mat4(1.0f);
             matrix = glm::translate(matrix, position);
@@ -258,6 +265,129 @@ namespace Slayer {
         void Transfer(Serializer& serializer)
         {
             SL_TRANSFER_VEC_FIXED(animationClips, SL_MAX_BLEND_ANIMATIONS);
+        }
+    };
+
+    struct RigidBody
+    {
+        uint32_t id = 0;
+        float mass = 1.0f;
+        float friction = 0.5f;
+        Vec3 initialVelocity = Vec3(0.0f);
+        bool interpolatePosition = true;
+        bool interpolateRotation = true;
+        bool continuousCollision = false;
+
+        RigidBodyState lastState;
+        RigidBodyState currentState;
+
+        RigidBody(float mass, float friction, bool interpolatePosition = true, bool interpolateRotation = true, bool continuousCollision = false) : mass(mass), friction(friction), interpolatePosition(interpolatePosition), interpolateRotation(interpolateRotation), continuousCollision(continuousCollision)
+        {
+        }
+        RigidBody() = default;
+        ~RigidBody() = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(mass);
+            SL_TRANSFER_VAR(friction);
+            SL_TRANSFER_VAR(initialVelocity);
+            SL_TRANSFER_VAR(interpolatePosition);
+            SL_TRANSFER_VAR(interpolateRotation);
+        }
+    };
+
+    struct CharacterBody : public RigidBody
+    {
+        CharacterBody() = default;
+        ~CharacterBody() = default;
+
+        float movementSpeed = 400.0f;
+        float sprintSpeed = 600.0f;
+        float jumpSpeed = 400.0f;
+        float movementControl = 0.25f;
+        float jumpControl = 0.005f;
+        bool hermiteInterpolation = true;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(mass);
+            SL_TRANSFER_VAR(friction);
+            SL_TRANSFER_VAR(interpolatePosition);
+            SL_TRANSFER_VAR(hermiteInterpolation);
+            SL_TRANSFER_VAR(interpolateRotation);
+            SL_TRANSFER_VAR(movementSpeed);
+            SL_TRANSFER_VAR(sprintSpeed);
+            SL_TRANSFER_VAR(jumpSpeed);
+            SL_TRANSFER_VAR(movementControl);
+            SL_TRANSFER_VAR(jumpControl);
+        }
+    };
+
+    struct BoxCollider
+    {
+        Vec3 halfExtents = Vec3(1.0f);
+
+        BoxCollider() = default;
+        BoxCollider(const Vec3& halfExtents) :
+            halfExtents(halfExtents)
+        {
+        }
+        ~BoxCollider() = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(halfExtents);
+        }
+    };
+
+    struct SphereCollider
+    {
+        float radius = 1.0f;
+
+        SphereCollider() = default;
+        SphereCollider(float radius) :
+            radius(radius)
+        {
+        }
+        ~SphereCollider() = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(radius);
+        }
+    };
+
+    struct CapsuleCollider
+    {
+        float radius = 1.0f;
+        float halfHeight = 1.0f;
+
+        CapsuleCollider() = default;
+        CapsuleCollider(float radius, float halfHeight) :
+            radius(radius), halfHeight(halfHeight)
+        {
+        }
+        ~CapsuleCollider() = default;
+
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
+            SL_TRANSFER_VAR(radius);
+            SL_TRANSFER_VAR(halfHeight);
+        }
+    };
+
+    // Contact
+    struct CollisionListener
+    {
+        template<typename Serializer>
+        void Transfer(Serializer& serializer)
+        {
         }
     };
 

@@ -32,6 +32,7 @@ namespace Slayer {
 		~Texture();
 
 		void Bind();
+		void BindBuffer(uint32_t unit);
 		void Bind(int slotOffset);
 		void Unbind();
 		void Dispose();

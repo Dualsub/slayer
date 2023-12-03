@@ -44,6 +44,10 @@ namespace Slayer {
 		bool HasSocket(const std::string& name) { return sockets.find(name) != sockets.end(); }
 		Dict<std::string, Socket>& GetSockets() { return sockets; }
 		const Vector<BoneInfo>& GetBones() { return bones; }
+		int32_t GetBoneID(const std::string& name)
+		{
+			return bonesIds.find(name) != bonesIds.end() ? bonesIds[name] : -1;
+		}
 		const BoneInfo& GetBone(const std::string& name)
 		{
 			SL_ASSERT(bonesIds.find(name) != bonesIds.end() && "Cannot find bone.");

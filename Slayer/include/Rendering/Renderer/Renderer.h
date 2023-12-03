@@ -335,6 +335,8 @@ namespace Slayer {
 		Shared<ComputeShader> m_animationShader;
 		Shared<UniformBuffer> m_animationBuffer;
 		Shared<Texture> m_boneTransformTexture;
+		Array<Mat4, SL_MAX_INSTANCES* SL_MAX_BONES> m_boneTransformBuffer;
+		Shared<PixelBuffer> m_boneTransformPixelBuffer;
 
 
 		// Shadow
@@ -405,6 +407,7 @@ namespace Slayer {
 		void Skin();
 		void DrawShadows();
 		void DrawLines();
+		void DrawMain();
 		void Draw();
 		void EndScene();
 		void CleanUp();
@@ -416,6 +419,8 @@ namespace Slayer {
 		// Getters
 		Shared<Framebuffer> GetViewportFramebuffer() { return m_viewportFramebuffer; }
 		Shared<Framebuffer> GetShadowFramebuffer() { return m_shadowFramebuffer; }
+
+		Mat4 GetBoneTransform(int32_t instanceId, int32_t boneId);
 	};
 
 }

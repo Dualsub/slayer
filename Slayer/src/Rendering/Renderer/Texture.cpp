@@ -30,6 +30,11 @@ namespace Slayer {
 		glBindTexture(target, textureID);
 	}
 
+	void Texture::BindBuffer(uint32_t unit)
+	{
+		glBindImageTexture(unit, textureID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+	}
+
 	void Texture::Bind(int slotOffset)
 	{
 		glActiveTexture(GL_TEXTURE0 + slotOffset);

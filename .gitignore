@@ -14,6 +14,7 @@ CmakeSettings.json
 
 **/__pycache__/*
 **/.venv/*
+
 *.pyc
 *.*.pyc
 *.pyd

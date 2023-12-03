@@ -20,3 +20,6 @@
 [submodule "Slayer/thirdparty/optick"]
 	path = Slayer/thirdparty/optick
 	url = https://github.com/bombomby/optick.git
+[submodule "Slayer\\thirdparty\\jolt"]
+	path = Slayer\\thirdparty\\jolt
+	url = https://github.com/jrouwe/JoltPhysics.git
